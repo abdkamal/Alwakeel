@@ -1,0 +1,54 @@
+# Secrets / environment
+.env
+.env.*
+*.key
+*.pem
+*.pfx
+*.p12
+*.jks
+*.keystore
+secrets/
+keys/
+
+# Runtime data / artifacts of real installations
+data/
+vault/
+backups/
+*.wakeel-backup
+*.wakeel-sync
+*.wakeel-setup
+*.wakeel-msg
+*.db
+*.db-wal
+*.db-shm
+
+# .NET
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+TestResults/
+*.trx
+
+# Web / node
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Android / Gradle
+**/.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+**/.kotlin/
+
+# Installer output
+installer/output/
+
+# Logs / temp
+*.log
+tmp/
+temp/
+.tmp/
