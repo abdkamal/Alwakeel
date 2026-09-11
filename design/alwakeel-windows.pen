@@ -5,7 +5,7 @@
       "type": "frame",
       "id": "voVsM",
       "x": 0,
-      "y": 0,
+      "y": 36,
       "name": "Button.Primary",
       "reusable": true,
       "height": 38,
@@ -44,8 +44,8 @@
     {
       "type": "frame",
       "id": "zObxv",
-      "x": 200,
-      "y": 0,
+      "x": 132,
+      "y": 36,
       "name": "Button.Secondary",
       "reusable": true,
       "height": 38,
@@ -87,8 +87,8 @@
     {
       "type": "frame",
       "id": "a31uFu",
-      "x": 400,
-      "y": 0,
+      "x": 264,
+      "y": 36,
       "name": "Button.Danger",
       "reusable": true,
       "height": 38,
@@ -127,8 +127,8 @@
     {
       "type": "frame",
       "id": "jhm7L",
-      "x": 600,
-      "y": 0,
+      "x": 396,
+      "y": 36,
       "name": "Button.Text",
       "reusable": true,
       "height": 38,
@@ -166,8 +166,8 @@
     {
       "type": "frame",
       "id": "HDJC2",
-      "x": 800,
-      "y": 0,
+      "x": 528,
+      "y": 36,
       "name": "Button.Disabled",
       "reusable": true,
       "height": 38,
@@ -206,8 +206,8 @@
     {
       "type": "frame",
       "id": "u1krF2",
-      "x": 1000,
-      "y": 0,
+      "x": 660,
+      "y": 36,
       "name": "Button.Icon",
       "reusable": true,
       "width": 38,
@@ -235,8 +235,8 @@
     {
       "type": "frame",
       "id": "i2kMQ",
-      "x": 1100,
-      "y": 0,
+      "x": 746,
+      "y": 36,
       "name": "Button.Split",
       "reusable": true,
       "clip": true,
@@ -302,8 +302,8 @@
     {
       "type": "frame",
       "id": "vkZPZ",
-      "x": 1300,
-      "y": 0,
+      "x": 892,
+      "y": 36,
       "name": "Tooltip",
       "reusable": true,
       "fill": "$text",
@@ -329,7 +329,7 @@
       "type": "frame",
       "id": "b88Gl",
       "x": 0,
-      "y": 120,
+      "y": 182,
       "name": "Input.Text",
       "reusable": true,
       "width": 260,
@@ -419,8 +419,8 @@
     {
       "type": "frame",
       "id": "U7OLVt",
-      "x": 290,
-      "y": 120,
+      "x": 308,
+      "y": 182,
       "name": "Input.Select",
       "reusable": true,
       "width": 260,
@@ -520,8 +520,8 @@
     {
       "type": "frame",
       "id": "iRj78",
-      "x": 580,
-      "y": 120,
+      "x": 616,
+      "y": 182,
       "name": "Input.Search",
       "reusable": true,
       "width": 260,
@@ -621,8 +621,8 @@
     {
       "type": "frame",
       "id": "n3zFw",
-      "x": 870,
-      "y": 120,
+      "x": 924,
+      "y": 182,
       "name": "Input.Date",
       "reusable": true,
       "width": 260,
@@ -722,8 +722,8 @@
     {
       "type": "frame",
       "id": "M7PARe",
-      "x": 1160,
-      "y": 120,
+      "x": 1232,
+      "y": 182,
       "name": "Input.Textarea",
       "reusable": true,
       "width": 260,
@@ -812,8 +812,8 @@
     {
       "type": "frame",
       "id": "nGfOt",
-      "x": 1450,
-      "y": 120,
+      "x": 1540,
+      "y": 182,
       "name": "Input.Error",
       "reusable": true,
       "width": 260,
@@ -912,8 +912,8 @@
     {
       "type": "frame",
       "id": "Us8YS",
-      "x": 1740,
-      "y": 120,
+      "x": 0,
+      "y": 453,
       "name": "Checkbox",
       "reusable": true,
       "gap": 8,
@@ -957,8 +957,8 @@
     {
       "type": "frame",
       "id": "js2FB",
-      "x": 1740,
-      "y": 170,
+      "x": 148,
+      "y": 453,
       "name": "Segmented",
       "reusable": true,
       "fill": "$surface2",
@@ -1044,8 +1044,8 @@
     {
       "type": "frame",
       "id": "aA8KP",
-      "x": 1740,
-      "y": 230,
+      "x": 429,
+      "y": 453,
       "name": "Toggle",
       "reusable": true,
       "gap": 8,
@@ -1088,8 +1088,8 @@
     {
       "type": "frame",
       "id": "HKz4z",
-      "x": 0,
-      "y": 330,
+      "x": 802,
+      "y": 453,
       "name": "Chip.Status",
       "reusable": true,
       "fill": "$primary-soft",
@@ -1124,8 +1124,8 @@
     {
       "type": "frame",
       "id": "nrumO",
-      "x": 140,
-      "y": 330,
+      "x": 941,
+      "y": 453,
       "name": "Chip.Samples",
       "gap": 8,
       "children": [
@@ -1231,7 +1231,7 @@
       "type": "frame",
       "id": "RxuDt",
       "x": 0,
-      "y": 390,
+      "y": 607,
       "name": "Card.Standard",
       "reusable": true,
       "width": 360,
@@ -1272,8 +1272,8 @@
     {
       "type": "frame",
       "id": "uiYQZ",
-      "x": 380,
-      "y": 390,
+      "x": 408,
+      "y": 607,
       "name": "Card.Info",
       "reusable": true,
       "width": 360,
@@ -1336,8 +1336,8 @@
     {
       "type": "frame",
       "id": "K0bmsm",
-      "x": 760,
-      "y": 390,
+      "x": 816,
+      "y": 607,
       "name": "Card.Warning",
       "reusable": true,
       "width": 360,
@@ -1400,8 +1400,8 @@
     {
       "type": "frame",
       "id": "MCc3W",
-      "x": 1140,
-      "y": 390,
+      "x": 1224,
+      "y": 607,
       "name": "Card.Danger",
       "reusable": true,
       "width": 360,
@@ -1464,8 +1464,8 @@
     {
       "type": "frame",
       "id": "BZLTc",
-      "x": 1520,
-      "y": 390,
+      "x": 1632,
+      "y": 607,
       "name": "Card.Success",
       "reusable": true,
       "width": 360,
@@ -1529,7 +1529,7 @@
       "type": "frame",
       "id": "ljDRw",
       "x": 0,
-      "y": 560,
+      "y": 968,
       "name": "Tabs",
       "reusable": true,
       "fill": "$surface",
@@ -1679,8 +1679,8 @@
     {
       "type": "frame",
       "id": "vVbSi",
-      "x": 0,
-      "y": 620,
+      "x": 527,
+      "y": 968,
       "name": "Stepper",
       "reusable": true,
       "width": 900,
@@ -1960,8 +1960,8 @@
     {
       "type": "frame",
       "id": "MoThh",
-      "x": 0,
-      "y": 700,
+      "x": 1475,
+      "y": 968,
       "name": "Pager",
       "reusable": true,
       "fill": "$surface",
@@ -2100,8 +2100,8 @@
     {
       "type": "frame",
       "id": "cYa48",
-      "x": 400,
-      "y": 560,
+      "x": 2040,
+      "y": 607,
       "name": "KPI.Card",
       "reusable": true,
       "width": 210,
@@ -2179,7 +2179,7 @@
       "type": "frame",
       "id": "IUMJ0",
       "x": 0,
-      "y": 800,
+      "y": 1155,
       "name": "Table.Header",
       "reusable": true,
       "width": 1000,
@@ -2399,7 +2399,7 @@
       "type": "frame",
       "id": "RJz7S",
       "x": 0,
-      "y": 840,
+      "y": 1201,
       "name": "Table.Row",
       "reusable": true,
       "width": 1000,
@@ -2610,8 +2610,8 @@
     {
       "type": "frame",
       "id": "mwsIs",
-      "x": 0,
-      "y": 900,
+      "x": 1616,
+      "y": 1155,
       "name": "Timeline.Item",
       "reusable": true,
       "width": 480,
@@ -2697,8 +2697,8 @@
     {
       "type": "frame",
       "id": "TuG5g",
-      "x": 520,
-      "y": 900,
+      "x": 1048,
+      "y": 1155,
       "name": "Document.Row",
       "reusable": true,
       "width": 520,
@@ -2771,8 +2771,8 @@
     {
       "type": "frame",
       "id": "RjHWE",
-      "x": 1080,
-      "y": 900,
+      "x": 2298,
+      "y": 607,
       "name": "State.Card",
       "reusable": true,
       "width": 360,
@@ -2857,7 +2857,7 @@
       "type": "frame",
       "id": "Lyfyh",
       "x": 0,
-      "y": 1020,
+      "y": 1453,
       "name": "Toast",
       "reusable": true,
       "fill": "$success-fill",
@@ -2894,8 +2894,8 @@
     {
       "type": "frame",
       "id": "D6y5Hg",
-      "x": 520,
-      "y": 1020,
+      "x": 360,
+      "y": 1453,
       "name": "Dialog",
       "reusable": true,
       "width": 520,
@@ -3015,7 +3015,7 @@
       "type": "frame",
       "id": "s7Urbn",
       "x": 0,
-      "y": -1100,
+      "y": -700,
       "name": "BRAND — الهوية البصرية",
       "width": 1366,
       "fill": "$surface",
@@ -3350,7 +3350,7 @@
       "type": "frame",
       "id": "syE0P",
       "x": 0,
-      "y": 1150,
+      "y": 1780,
       "name": "Nav.Item",
       "reusable": true,
       "width": 200,
@@ -3364,6 +3364,42 @@
       "justifyContent": "end",
       "alignItems": "center",
       "children": [
+        {
+          "type": "frame",
+          "id": "vVZ6H",
+          "x": 0,
+          "y": 0,
+          "name": "Badge",
+          "enabled": false,
+          "height": 18,
+          "fill": "$danger",
+          "cornerRadius": 9,
+          "padding": [
+            0,
+            6
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "SOEXN",
+              "name": "Count",
+              "fill": "$white",
+              "content": "5",
+              "fontFamily": "$font",
+              "fontSize": 11,
+              "fontWeight": "700"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "zEsLZ",
+          "name": "Spacer",
+          "width": "fill_container",
+          "height": 1
+        },
         {
           "type": "text",
           "id": "cyL6U",
@@ -3389,8 +3425,8 @@
     {
       "type": "frame",
       "id": "Ydoka",
-      "x": 300,
-      "y": 1150,
+      "x": 744,
+      "y": 1780,
       "name": "Sidebar",
       "reusable": true,
       "width": 232,
@@ -3407,20 +3443,20 @@
           "width": "fill_container",
           "gap": 10,
           "padding": [
-            0,
+            2,
             0,
             14,
             0
           ],
           "justifyContent": "end",
-          "alignItems": "center",
           "children": [
             {
               "type": "frame",
               "id": "en515",
               "name": "BrandTexts",
+              "width": "fill_container",
               "layout": "vertical",
-              "gap": 1,
+              "gap": 2,
               "alignItems": "end",
               "children": [
                 {
@@ -3428,9 +3464,13 @@
                   "id": "mzBAM",
                   "name": "AppName",
                   "fill": "$white",
-                  "content": "الوكيل",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "هيئة تنمية المناطق الريفية",
+                  "lineHeight": 1.3,
+                  "textAlign": "right",
                   "fontFamily": "$font",
-                  "fontSize": 20,
+                  "fontSize": 14,
                   "fontWeight": "700"
                 },
                 {
@@ -3438,9 +3478,12 @@
                   "id": "rdCRb",
                   "name": "OfficeName",
                   "fill": "$sidebar-muted",
-                  "content": "المكتب التنفيذي",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "مكتب مدير دائرة التخطيط",
+                  "textAlign": "right",
                   "fontFamily": "$font",
-                  "fontSize": "$fs-meta",
+                  "fontSize": 12,
                   "fontWeight": "normal"
                 }
               ]
@@ -3448,11 +3491,11 @@
             {
               "type": "frame",
               "id": "YHHBx",
-              "name": "LogoTile",
-              "width": 36,
-              "height": 36,
-              "fill": "$primary-fill",
-              "cornerRadius": 9,
+              "name": "OrgLogo",
+              "width": 40,
+              "height": 40,
+              "fill": "$white",
+              "cornerRadius": 8,
               "justifyContent": "center",
               "alignItems": "center",
               "children": [
@@ -3460,11 +3503,11 @@
                   "type": "icon",
                   "id": "ag6E2",
                   "name": "LogoIcon",
-                  "width": 20,
-                  "height": 20,
-                  "icon": "stamp",
+                  "width": 22,
+                  "height": 22,
+                  "icon": "landmark",
                   "library": "lucide",
-                  "fill": "$white"
+                  "fill": "$primary"
                 }
               ]
             }
@@ -3776,17 +3819,48 @@
               ]
             },
             {
-              "type": "text",
-              "id": "vMeVp",
-              "name": "Version",
-              "fill": "$sidebar-muted",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "Bnlej",
+              "name": "AppBrand",
               "width": "fill_container",
-              "content": "الإصدار v0.21",
-              "textAlign": "right",
-              "fontFamily": "$font",
-              "fontSize": 11,
-              "fontWeight": "normal"
+              "gap": 6,
+              "justifyContent": "end",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "unjnx",
+                  "name": "AppVersion",
+                  "fill": "$sidebar-muted",
+                  "content": "الوكيل • الإصدار v0.21",
+                  "fontFamily": "$font",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "Gx4OF",
+                  "name": "Mark",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$primary-fill",
+                  "cornerRadius": 4,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "h03lb",
+                      "name": "MarkIcon",
+                      "width": 10,
+                      "height": 10,
+                      "icon": "stamp",
+                      "library": "lucide",
+                      "fill": "$white"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -3795,8 +3869,8 @@
     {
       "type": "frame",
       "id": "HRbEo",
-      "x": 560,
-      "y": 1150,
+      "x": 1024,
+      "y": 1780,
       "name": "TopBar",
       "reusable": true,
       "width": 1134,
@@ -4002,8 +4076,8 @@
     {
       "type": "frame",
       "id": "RdnXv",
-      "x": 0,
-      "y": 2100,
+      "x": 1450,
+      "y": 3000,
       "name": "W01 — المراسلات / القائمة",
       "clip": true,
       "width": 1366,
@@ -4741,8 +4815,26 @@
           "ref": "Ydoka",
           "name": "Sidebar",
           "descendants": {
+            "gW2Ih/iLzvK": {
+              "enabled": true
+            },
+            "gW2Ih/Z70Cy": {
+              "content": "18"
+            },
+            "TSIzy/vVZ6H": {
+              "enabled": true
+            },
+            "TSIzy/SOEXN": {
+              "content": "5"
+            },
             "X4Lvx": {
               "fill": "$sidebar-selected"
+            },
+            "X4Lvx/vVZ6H": {
+              "enabled": true
+            },
+            "X4Lvx/SOEXN": {
+              "content": "12"
             },
             "X4Lvx/cyL6U": {
               "fill": "$white",
@@ -4750,6 +4842,18 @@
             },
             "X4Lvx/XxcvK": {
               "fill": "$white"
+            },
+            "IcWyW/vVZ6H": {
+              "enabled": true
+            },
+            "IcWyW/SOEXN": {
+              "content": "3"
+            },
+            "Y1Fgf9/vVZ6H": {
+              "enabled": true
+            },
+            "Y1Fgf9/SOEXN": {
+              "content": "2"
             }
           }
         }
@@ -4758,8 +4862,8 @@
     {
       "type": "frame",
       "id": "MH2VG",
-      "x": 0,
-      "y": 1300,
+      "x": 2944,
+      "y": 968,
       "name": "KV.Row",
       "reusable": true,
       "width": 420,
@@ -4796,8 +4900,8 @@
     {
       "type": "frame",
       "id": "BDj54",
-      "x": 460,
-      "y": 1300,
+      "x": 2476,
+      "y": 968,
       "name": "Section.Header",
       "reusable": true,
       "width": 420,
@@ -4853,8 +4957,8 @@
     {
       "type": "frame",
       "id": "zc3s1",
-      "x": 920,
-      "y": 1300,
+      "x": 2144,
+      "y": 1155,
       "name": "Menu",
       "reusable": true,
       "width": 220,
@@ -5026,8 +5130,8 @@
     {
       "type": "frame",
       "id": "Ds00A",
-      "x": 1180,
-      "y": 1300,
+      "x": 2412,
+      "y": 1155,
       "name": "Calendar.Day",
       "reusable": true,
       "width": 140,
@@ -5133,8 +5237,8 @@
     {
       "type": "frame",
       "id": "P6NBxe",
-      "x": 0,
-      "y": 1380,
+      "x": 2008,
+      "y": 968,
       "name": "Progress.Bar",
       "reusable": true,
       "width": 420,
@@ -5196,8 +5300,8 @@
     {
       "type": "frame",
       "id": "d0D9M4",
-      "x": 460,
-      "y": 1380,
+      "x": 1707,
+      "y": 968,
       "name": "Breadcrumb",
       "reusable": true,
       "fill": "$primary-soft",
@@ -5264,8 +5368,8 @@
     {
       "type": "frame",
       "id": "MhpyY",
-      "x": 920,
-      "y": 1420,
+      "x": 595,
+      "y": 453,
       "name": "Radio",
       "reusable": true,
       "gap": 8,
@@ -5309,8 +5413,8 @@
     {
       "type": "frame",
       "id": "IzP1c",
-      "x": 920,
-      "y": 1460,
+      "x": 1409,
+      "y": 453,
       "name": "Confidentiality.Row",
       "reusable": true,
       "width": 220,
@@ -5349,8 +5453,8 @@
     {
       "type": "frame",
       "id": "hoORs",
-      "x": 0,
-      "y": 1460,
+      "x": 928,
+      "y": 1453,
       "name": "Banner.Clock",
       "reusable": true,
       "width": 880,
@@ -5430,8 +5534,8 @@
     {
       "type": "frame",
       "id": "aUO70",
-      "x": 1400,
-      "y": 2100,
+      "x": 2900,
+      "y": 3000,
       "name": "W01 — المراسلات / القائمة — داكن",
       "theme": {
         "mode": "dark"
@@ -6177,8 +6281,8 @@
     {
       "type": "frame",
       "id": "xxr5B",
-      "x": 0,
-      "y": 1560,
+      "x": 248,
+      "y": 1780,
       "name": "Nav.Group",
       "reusable": true,
       "width": 200,
@@ -6190,7 +6294,7 @@
         0,
         6
       ],
-      "justifyContent": "space_between",
+      "justifyContent": "end",
       "alignItems": "center",
       "children": [
         {
@@ -6202,6 +6306,42 @@
           "icon": "chevron-down",
           "library": "lucide",
           "fill": "$sidebar-muted"
+        },
+        {
+          "type": "frame",
+          "id": "sIaOr",
+          "name": "Spacer",
+          "width": "fill_container",
+          "height": 1
+        },
+        {
+          "type": "frame",
+          "id": "iLzvK",
+          "x": 0,
+          "y": 0,
+          "name": "Badge",
+          "enabled": false,
+          "height": 16,
+          "fill": "$sidebar-selected",
+          "cornerRadius": 8,
+          "padding": [
+            0,
+            5
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "Z70Cy",
+              "name": "Count",
+              "fill": "$sidebar-text",
+              "content": "9",
+              "fontFamily": "$font",
+              "fontSize": 10,
+              "fontWeight": "700"
+            }
+          ]
         },
         {
           "type": "text",
@@ -6218,8 +6358,8 @@
     {
       "type": "frame",
       "id": "Gom89",
-      "x": 220,
-      "y": 1560,
+      "x": 496,
+      "y": 1780,
       "name": "Nav.Group — مطوية (عينة)",
       "width": 200,
       "fill": "$sidebar",
@@ -6282,6 +6422,845 @@
           "fontFamily": "$font",
           "fontSize": 11,
           "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ot5s8",
+      "x": 0,
+      "y": 0,
+      "name": "§ الأزرار والتلميح",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "mRpdV",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "الأزرار والتلميح",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "s9KE1c",
+      "x": 0,
+      "y": 146,
+      "name": "§ حقول الإدخال",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "WBs5e",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "حقول الإدخال",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "HbzUR",
+      "x": 0,
+      "y": 417,
+      "name": "§ الاختيار والحالات",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "QTOSd",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "الاختيار والحالات",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Bg1Wd",
+      "x": 0,
+      "y": 571,
+      "name": "§ البطاقات",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "ZYyme",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "البطاقات",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "WwZFf",
+      "x": 0,
+      "y": 932,
+      "name": "§ التنقل داخل الشاشة",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "MokXC",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "التنقل داخل الشاشة",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TFX3z",
+      "x": 0,
+      "y": 1119,
+      "name": "§ الجداول والقوائم",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "xQYRY",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "الجداول والقوائم",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zKaxL",
+      "x": 0,
+      "y": 1417,
+      "name": "§ الرسائل والحوارات",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "nhhRd",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "الرسائل والحوارات",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "mtBei",
+      "x": 0,
+      "y": 1744,
+      "name": "§ هيكل الشاشة",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "VXKms",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "هيكل الشاشة",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "f60Q0",
+      "x": 0,
+      "y": 2620,
+      "name": "§ عناصر مضافة",
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "padding": [
+        4,
+        10
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "AYDCl",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "الشارات والبحث المحلي والحفظ التلقائي",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "J6gxKY",
+      "x": 0,
+      "y": 2656,
+      "name": "Badge.Count",
+      "reusable": true,
+      "height": 18,
+      "fill": "$danger",
+      "cornerRadius": 9,
+      "padding": [
+        0,
+        6
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "GIHQ6",
+          "name": "Count",
+          "fill": "$white",
+          "content": "3",
+          "fontFamily": "$font",
+          "fontSize": 11,
+          "fontWeight": "700"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LotpO",
+      "x": 60,
+      "y": 2656,
+      "name": "Badge.Count.Tab",
+      "reusable": true,
+      "height": 18,
+      "fill": "$neutral-soft",
+      "cornerRadius": 9,
+      "padding": [
+        0,
+        6
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "eqRSK",
+          "name": "Count",
+          "fill": "$muted",
+          "content": "3",
+          "fontFamily": "$font",
+          "fontSize": 11,
+          "fontWeight": "700"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ZP4WP",
+      "x": 130,
+      "y": 2656,
+      "name": "Badge.Count.Group",
+      "reusable": true,
+      "height": 18,
+      "fill": "$sidebar-selected",
+      "cornerRadius": 9,
+      "padding": [
+        0,
+        6
+      ],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "BDnvi",
+          "name": "Count",
+          "fill": "$sidebar-text",
+          "content": "3",
+          "fontFamily": "$font",
+          "fontSize": 11,
+          "fontWeight": "700"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "d79gRp",
+      "x": 210,
+      "y": 2656,
+      "name": "Avatar",
+      "reusable": true,
+      "width": 32,
+      "height": 32,
+      "fill": "$primary-soft",
+      "cornerRadius": 16,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "yOkzL",
+          "name": "Initial",
+          "fill": "$primary",
+          "content": "أ",
+          "fontFamily": "$font",
+          "fontSize": 13,
+          "fontWeight": "700"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "L9MBd",
+      "x": 290,
+      "y": 2656,
+      "name": "Tab.Item",
+      "reusable": true,
+      "cornerRadius": 4,
+      "gap": 6,
+      "padding": [
+        7,
+        14
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Y5nOE",
+          "name": "Badge",
+          "height": 18,
+          "fill": "$neutral-soft",
+          "cornerRadius": 9,
+          "padding": [
+            0,
+            6
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "fL1Ok",
+              "name": "Count",
+              "fill": "$muted",
+              "content": "12",
+              "fontFamily": "$font",
+              "fontSize": 11,
+              "fontWeight": "700"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "y1zUK",
+          "name": "Label",
+          "fill": "$muted",
+          "content": "الوارد",
+          "fontFamily": "$font",
+          "fontSize": 13,
+          "fontWeight": "500"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LKzbL",
+      "x": 400,
+      "y": 2656,
+      "name": "Tab.Item.Active",
+      "reusable": true,
+      "fill": "$primary-soft",
+      "cornerRadius": 4,
+      "gap": 6,
+      "padding": [
+        7,
+        14
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "W4kEG",
+          "name": "Badge",
+          "height": 18,
+          "fill": "$primary",
+          "cornerRadius": 9,
+          "padding": [
+            0,
+            6
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "wbgTI",
+              "name": "Count",
+              "fill": "$white",
+              "content": "12",
+              "fontFamily": "$font",
+              "fontSize": 11,
+              "fontWeight": "700"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "efc1R",
+          "name": "Label",
+          "fill": "$primary",
+          "content": "الوارد",
+          "fontFamily": "$font",
+          "fontSize": 13,
+          "fontWeight": "700"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "uIN6p",
+      "x": 520,
+      "y": 2656,
+      "name": "Tabs.Bar",
+      "reusable": true,
+      "fill": "$surface",
+      "cornerRadius": "$radius",
+      "stroke": "$border",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 2,
+      "padding": 4,
+      "justifyContent": "end",
+      "children": [
+        {
+          "id": "x93Qe",
+          "type": "ref",
+          "ref": "L9MBd",
+          "name": "Tab4",
+          "descendants": {
+            "Y5nOE": {
+              "enabled": false
+            },
+            "y1zUK": {
+              "content": "المؤرشف"
+            }
+          }
+        },
+        {
+          "id": "oBsNG",
+          "type": "ref",
+          "ref": "L9MBd",
+          "name": "Tab3",
+          "descendants": {
+            "fL1Ok": {
+              "content": "2"
+            },
+            "y1zUK": {
+              "content": "المسودات"
+            }
+          }
+        },
+        {
+          "id": "zGsaA",
+          "type": "ref",
+          "ref": "L9MBd",
+          "name": "Tab2",
+          "descendants": {
+            "fL1Ok": {
+              "content": "7"
+            },
+            "y1zUK": {
+              "content": "الصادر"
+            }
+          }
+        },
+        {
+          "id": "I1Q0Mv",
+          "type": "ref",
+          "ref": "LKzbL",
+          "name": "Tab1",
+          "descendants": {
+            "wbgTI": {
+              "content": "12"
+            },
+            "efc1R": {
+              "content": "الوارد"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TQr2O",
+      "x": 960,
+      "y": 2656,
+      "name": "Search.Local",
+      "reusable": true,
+      "width": 380,
+      "height": 38,
+      "fill": "$surface",
+      "cornerRadius": "$radius",
+      "stroke": "$border",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "gap": 8,
+      "padding": [
+        0,
+        8,
+        0,
+        12
+      ],
+      "justifyContent": "space_between",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "r596Gv",
+          "name": "Kbd",
+          "fill": "$neutral-soft",
+          "cornerRadius": 4,
+          "stroke": "$border",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "padding": [
+            1,
+            6
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "aXsi4",
+              "name": "KbdText",
+              "fill": "$muted",
+              "content": "Ctrl+F",
+              "fontFamily": "$font",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "fDFLC",
+          "name": "Lead",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "OQPO7",
+              "name": "Placeholder",
+              "fill": "$placeholder",
+              "content": "ابحث في هذه القائمة…",
+              "fontFamily": "$font",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "icon",
+              "id": "cWX4S",
+              "name": "Icon",
+              "width": 16,
+              "height": 16,
+              "icon": "search",
+              "library": "lucide",
+              "fill": "$muted"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Tb1aR",
+      "x": 1380,
+      "y": 2656,
+      "name": "Autosave.Indicator",
+      "reusable": true,
+      "gap": 6,
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "XjENr",
+          "name": "Text",
+          "fill": "$muted",
+          "content": "آخر حفظ تلقائي 10:24",
+          "fontFamily": "$font",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "icon",
+          "id": "uk12f",
+          "name": "Icon",
+          "width": 14,
+          "height": 14,
+          "icon": "circle-check",
+          "library": "lucide",
+          "fill": "$success"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "UVzZJ",
+      "x": 1560,
+      "y": 2656,
+      "name": "Kbd",
+      "reusable": true,
+      "fill": "$neutral-soft",
+      "cornerRadius": 4,
+      "stroke": "$border",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
+      "padding": [
+        1,
+        6
+      ],
+      "children": [
+        {
+          "type": "text",
+          "id": "GFpkz",
+          "name": "Key",
+          "fill": "$muted",
+          "content": "Ctrl+S",
+          "fontFamily": "$font",
+          "fontSize": 11,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "atJKT",
+      "x": 0,
+      "y": 3000,
+      "name": "T00 — قالب الشاشة (ويندوز)",
+      "clip": true,
+      "width": 1366,
+      "height": 768,
+      "fill": "$bg",
+      "children": [
+        {
+          "type": "frame",
+          "id": "zQ9tD",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "e91hS8",
+              "type": "ref",
+              "ref": "HRbEo",
+              "name": "TopBar",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "WAZQD",
+              "name": "Page",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                22,
+                28
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gQLQX",
+                  "name": "PageHeader",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "BDxs7",
+                      "name": "Actions",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "id": "OdWN2",
+                          "type": "ref",
+                          "ref": "zObxv",
+                          "name": "NewOutgoing",
+                          "descendants": {
+                            "LL17I": {
+                              "content": "إجراء ثانوي"
+                            },
+                            "v5XRL": {
+                              "icon": "download"
+                            }
+                          }
+                        },
+                        {
+                          "id": "V33h9",
+                          "type": "ref",
+                          "ref": "voVsM",
+                          "name": "RegisterIncoming",
+                          "descendants": {
+                            "Ds0MU": {
+                              "content": "إجراء رئيسي"
+                            },
+                            "N2zNb": {
+                              "icon": "plus"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "M8PAG",
+                      "name": "Titles",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lo7Ka",
+                          "name": "Title",
+                          "fill": "$text",
+                          "content": "عنوان الشاشة",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-title",
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "h22Yd",
+                          "name": "Subtitle",
+                          "fill": "$muted",
+                          "content": "وصف قصير لما تعرضه الشاشة",
+                          "fontFamily": "$font",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Q3oWnW",
+                  "name": "Content",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B6nevX",
+          "type": "ref",
+          "ref": "Ydoka",
+          "name": "Sidebar",
+          "descendants": {
+            "gW2Ih/iLzvK": {
+              "enabled": true
+            },
+            "gW2Ih/Z70Cy": {
+              "content": "18"
+            },
+            "TSIzy/vVZ6H": {
+              "enabled": true
+            },
+            "TSIzy/SOEXN": {
+              "content": "5"
+            },
+            "X4Lvx": {
+              "fill": "$sidebar-selected"
+            },
+            "X4Lvx/vVZ6H": {
+              "enabled": true
+            },
+            "X4Lvx/SOEXN": {
+              "content": "12"
+            },
+            "X4Lvx/cyL6U": {
+              "fill": "$white",
+              "fontWeight": "700"
+            },
+            "X4Lvx/XxcvK": {
+              "fill": "$white"
+            },
+            "IcWyW/vVZ6H": {
+              "enabled": true
+            },
+            "IcWyW/SOEXN": {
+              "content": "3"
+            },
+            "Y1Fgf9/vVZ6H": {
+              "enabled": true
+            },
+            "Y1Fgf9/SOEXN": {
+              "content": "2"
+            }
+          }
         }
       ]
     }
