@@ -9,3 +9,4 @@ Run with the Claude Code `Workflow` tool (`scriptPath` + `args`).
 
 Every execute snippet starts with the guard from docs/design/DESIGN-GUIDE.md; save the .pen with `../pen-save.ps1` after each batch and commit.
 - `alwakeel-android-kit-review.js` — review-only pass over an already-inserted M.* kit (args.comps = [{name,nodeId}]); used after the kit builders died at the usage limit. Fixes the kit and builds TM0.
+- `alwakeel-design-rows-routed-v3.js` — v2 plus the Android phone template `TM0` (row.template "TM0" → 412×915, xStep 500; screen.nav = bottom-nav label | "—" (detail/form, no BottomNav) | "بلا قائمة" (onboarding); screen.org=true inserts M.OrgHeader). Use with `batch8-args.json` (M01–M32). TM0 node id: z3AH5.
