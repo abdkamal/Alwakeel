@@ -2,7 +2,8 @@
 # Alt (focus menu bar) -> Down (open File) -> End (last item "Close") -> Up x3 (Save) -> Enter.
 # Safety: keys are sent ONLY when the Pen window is verified to be the foreground window and the
 # user has been idle for at least -MinIdleSeconds; otherwise it waits (up to -MaxWaitMinutes).
-# Verified by the file's mtime. Exit 0 saved, 2 not saved, 3 gave up waiting.
+# Note: the injected Alt press resets GetLastInputInfo, so idle is checked only BEFORE the injection.
+# Verified by the file mtime. Exit 0 saved, 2 not saved, 3 gave up waiting.
 param(
     [string]$File = 'D:\AI\Administration2\design\alwakeel-windows.pen',
     [int]$MinIdleSeconds = 20,
@@ -42,7 +43,6 @@ while ((Get-Date) -lt $deadline -and $attempt -lt $Attempts) {
     try { [Microsoft.VisualBasic.Interaction]::AppActivate($win.Id) } catch {}
     Start-Sleep -Milliseconds 800
     if ([PenSave.Native]::GetForegroundWindow() -ne $h) { Start-Sleep -Seconds 5; continue }
-    if ((IdleSeconds) -lt 2) { Start-Sleep -Seconds 5; continue }
     $attempt++
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     Start-Sleep -Milliseconds 300
