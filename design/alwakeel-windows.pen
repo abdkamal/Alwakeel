@@ -6859,7 +6859,7 @@
                       "id": "D1Q8s",
                       "name": "نص الساعة",
                       "fill": "$muted",
-                      "content": "الساعة الآن 10:24 · السبت 12/09/2026 · متزامنة مع خادم المكتب",
+                      "content": "الساعة الآن 10:24 · السبت 12/09/2026 · متطابقة مع آخر نشاط مسجل",
                       "fontFamily": "$font",
                       "fontSize": "$fs-meta",
                       "fontWeight": "normal"
@@ -18435,7 +18435,7 @@
                                       "fill": "$text",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "متصلة · PostgreSQL 18 على المنفذ 5432",
+                                      "content": "سليمة · مشفّرة داخل البرنامج (SQLCipher)",
                                       "textAlign": "right",
                                       "fontFamily": "$font",
                                       "fontSize": 13,
@@ -18448,7 +18448,7 @@
                                       "fill": "$muted",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "الحجم 2.4 GB · 14 اتصالًا نشطًا · زمن الاستجابة 3 مللي ثانية",
+                                      "content": "الحجم 2.4 GB · فحص السلامة سليم · نسخة احتياطية أمس 23:00",
                                       "textAlign": "right",
                                       "fontFamily": "$font",
                                       "fontSize": "$fs-meta",
@@ -18468,13 +18468,13 @@
                                       "id": "kK0Kt",
                                       "type": "ref",
                                       "ref": "jhm7L",
-                                      "name": "إجراء: فحص الاتصال",
+                                      "name": "إجراء: فحص السلامة",
                                       "descendants": {
                                         "g4RbI5": {
-                                          "content": "فحص الاتصال"
+                                          "content": "فحص السلامة"
                                         },
                                         "OhLBU": {
-                                          "icon": "plug-zap"
+                                          "icon": "shield-check"
                                         }
                                       }
                                     },
@@ -18619,7 +18619,7 @@
                                       "fill": "$text",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "فرق 4 دقائق عن خادم الوقت",
+                                      "content": "فرق 4 دقائق عن ساعة جهاز السكرتير عند آخر مزامنة",
                                       "textAlign": "right",
                                       "fontFamily": "$font",
                                       "fontSize": 13,
@@ -30137,6 +30137,876 @@
               "content": "2"
             }
           }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "L7rzV",
+      "x": 10150,
+      "y": 5700,
+      "name": "W19 — اعتماد الصادر",
+      "clip": true,
+      "width": 1366,
+      "height": 768,
+      "fill": "$bg",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Ut2Ac",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "E9oe4l",
+              "type": "ref",
+              "ref": "HRbEo",
+              "name": "TopBar",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "vkWPD",
+              "name": "Page",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                22,
+                28
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Nb1FL",
+                  "name": "PageHeader",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "nOQAE",
+                      "name": "Actions",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "id": "NqCch",
+                          "type": "ref",
+                          "ref": "zObxv",
+                          "name": "PrintPreviewBtn",
+                          "descendants": {
+                            "LL17I": {
+                              "content": "معاينة الطباعة"
+                            },
+                            "v5XRL": {
+                              "enabled": false
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "q3Fsz",
+                      "name": "Titles",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Y3AAT",
+                          "name": "Title",
+                          "fill": "$text",
+                          "content": "مراجعة الصادر",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-title",
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VyOUj",
+                          "name": "Subtitle",
+                          "fill": "$muted",
+                          "content": "إنشاء صادر — الخطوة 5 من 7: المراجعة",
+                          "fontFamily": "$font",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hP8UK",
+                  "name": "Content",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "id": "V5WPjC",
+                      "type": "ref",
+                      "ref": "vVbSi",
+                      "name": "Stepper",
+                      "width": "fill_container",
+                      "descendants": {
+                        "exij4": {
+                          "fill": "$primary-soft"
+                        },
+                        "J9XEbq": {
+                          "fill": "$primary",
+                          "fontWeight": "700"
+                        },
+                        "WrstZ": {
+                          "fill": "$primary-fill"
+                        },
+                        "ZPiEC": {
+                          "fill": "$primary"
+                        },
+                        "H8w5QG": {
+                          "fill": "$primary-fill"
+                        }
+                      }
+                    },
+                    {
+                      "id": "ygOXb",
+                      "type": "ref",
+                      "ref": "BDj54",
+                      "name": "ReadinessHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "kNBF4": {
+                          "enabled": false
+                        },
+                        "h8VnZ": {
+                          "content": "التحقق من الجاهزية"
+                        },
+                        "wxCLj": {
+                          "content": "جميع العناصر التالية جاهزة للاعتماد قبل إصدار الرقم",
+                          "enabled": false
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sNmml",
+                      "name": "Checklist",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "limfN",
+                          "name": "ChecklistRow1",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "PDSpK",
+                              "name": "ReadyItem",
+                              "width": "fill_container",
+                              "fill": "$success-soft",
+                              "cornerRadius": 6,
+                              "stroke": "$success-border",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "OVOBJ",
+                                  "name": "Label",
+                                  "fill": "$success",
+                                  "content": "القالب الرسمي مطبّق",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$fs-meta",
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "RO73p",
+                                  "name": "Icon",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "circle-check",
+                                  "library": "lucide",
+                                  "fill": "$success"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "kxNfo",
+                              "name": "ReadyItem",
+                              "width": "fill_container",
+                              "fill": "$success-soft",
+                              "cornerRadius": 6,
+                              "stroke": "$success-border",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "usHm8",
+                                  "name": "Label",
+                                  "fill": "$success",
+                                  "content": "المستلم محدد بدقة",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$fs-meta",
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "t92sqa",
+                                  "name": "Icon",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "circle-check",
+                                  "library": "lucide",
+                                  "fill": "$success"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "j5hFxI",
+                              "name": "ReadyItem",
+                              "width": "fill_container",
+                              "fill": "$success-soft",
+                              "cornerRadius": 6,
+                              "stroke": "$success-border",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "djkPM",
+                                  "name": "Label",
+                                  "fill": "$success",
+                                  "content": "المستند سليم وبصيغة نهائية",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$fs-meta",
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "gkuvQ",
+                                  "name": "Icon",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "circle-check",
+                                  "library": "lucide",
+                                  "fill": "$success"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "P44Z6R",
+                          "name": "ChecklistRow2",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "w4tRo6",
+                              "name": "ReadyItem",
+                              "width": "fill_container",
+                              "fill": "$success-soft",
+                              "cornerRadius": 6,
+                              "stroke": "$success-border",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "I0GMQd",
+                                  "name": "Label",
+                                  "fill": "$success",
+                                  "content": "المرفقات مكتملة (2)",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$fs-meta",
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "eEyaQ",
+                                  "name": "Icon",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "circle-check",
+                                  "library": "lucide",
+                                  "fill": "$success"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "J2gK7",
+                              "name": "ReadyItem",
+                              "width": "fill_container",
+                              "fill": "$warning-soft",
+                              "cornerRadius": 6,
+                              "stroke": "$warning-border",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n59hv",
+                                  "name": "Label",
+                                  "fill": "$warning",
+                                  "content": "مستوى السرية: سري",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$fs-meta",
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "eDDnQ",
+                                  "name": "Icon",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "lock",
+                                  "library": "lucide",
+                                  "fill": "$warning"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Ztdt3",
+                              "name": "ReadyItem",
+                              "width": "fill_container",
+                              "fill": "$success-soft",
+                              "cornerRadius": 6,
+                              "stroke": "$success-border",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                8,
+                                12
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "p7FC9W",
+                                  "name": "Label",
+                                  "fill": "$success",
+                                  "content": "لا يوجد ازدواج بالرقم",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$fs-meta",
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon",
+                                  "id": "wwkIt",
+                                  "name": "Icon",
+                                  "width": 16,
+                                  "height": 16,
+                                  "icon": "circle-check",
+                                  "library": "lucide",
+                                  "fill": "$success"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mfhob",
+                      "name": "ReviewSplit",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "id": "p0HjZb",
+                          "type": "ref",
+                          "ref": "RxuDt",
+                          "name": "PreviewCard",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "descendants": {
+                            "D9CmLO": {
+                              "content": "معاينة مطابقة للطباعة"
+                            },
+                            "QsGnU": {
+                              "height": "fill_container",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "Dg1hC",
+                                  "name": "MiniPage",
+                                  "width": "fill_container",
+                                  "height": "fill_container",
+                                  "fill": "$surface",
+                                  "cornerRadius": 6,
+                                  "stroke": "$border",
+                                  "strokeWidth": 1,
+                                  "layout": "vertical",
+                                  "gap": 4,
+                                  "padding": 16,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "RNqh1",
+                                      "name": "InstName",
+                                      "fill": "$text",
+                                      "content": "هيئة تنمية المناطق الريفية",
+                                      "textAlign": "center",
+                                      "fontFamily": "$font",
+                                      "fontSize": 11,
+                                      "fontWeight": "700"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "oy73E",
+                                      "name": "OfficeName",
+                                      "fill": "$muted",
+                                      "content": "مكتب مدير دائرة التخطيط",
+                                      "textAlign": "center",
+                                      "fontFamily": "$font",
+                                      "fontSize": 9,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "rectangle",
+                                      "id": "B4MDX",
+                                      "name": "Divider",
+                                      "fill": "$border",
+                                      "width": "fill_container",
+                                      "height": 1
+                                    },
+                                    {
+                                      "type": "rectangle",
+                                      "cornerRadius": 3,
+                                      "id": "Xe4Jn",
+                                      "name": "TextLine1",
+                                      "fill": "$border",
+                                      "width": 460,
+                                      "height": 7
+                                    },
+                                    {
+                                      "type": "rectangle",
+                                      "cornerRadius": 3,
+                                      "id": "qTXHI",
+                                      "name": "TextLine2",
+                                      "fill": "$border",
+                                      "width": 430,
+                                      "height": 7
+                                    },
+                                    {
+                                      "type": "rectangle",
+                                      "cornerRadius": 3,
+                                      "id": "KyUcX",
+                                      "name": "TextLine3",
+                                      "fill": "$border",
+                                      "width": 445,
+                                      "height": 7
+                                    },
+                                    {
+                                      "type": "rectangle",
+                                      "cornerRadius": 3,
+                                      "id": "NyT8W",
+                                      "name": "TextLine4",
+                                      "fill": "$border",
+                                      "width": 260,
+                                      "height": 7
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "hJZDj",
+                                      "name": "ExpectedNumber",
+                                      "fill": "$muted",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "الرقم المتوقع: 20260912/12046",
+                                      "textAlign": "right",
+                                      "fontFamily": "$font",
+                                      "fontSize": 9,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "id": "rjOs8",
+                          "type": "ref",
+                          "ref": "RxuDt",
+                          "name": "SummaryCard",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "descendants": {
+                            "D9CmLO": {
+                              "content": "ملخص بيانات الصادر"
+                            },
+                            "QsGnU": {
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "heB76",
+                                  "name": "SummaryList",
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "gap": 6,
+                                  "children": [
+                                    {
+                                      "id": "yqbWT",
+                                      "type": "ref",
+                                      "ref": "MH2VG",
+                                      "name": "KV-الموضوع",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "CnhSE": {
+                                          "content": "طلب تزويد بيانات المشروع الزراعي - المرحلة الثانية",
+                                          "fontSize": "$fs-meta"
+                                        },
+                                        "RVsKO": {
+                                          "content": "الموضوع",
+                                          "fontSize": "$fs-meta"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "M0rfu",
+                                      "type": "ref",
+                                      "ref": "MH2VG",
+                                      "name": "KV-الجهة المستلمة",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "CnhSE": {
+                                          "content": "دائرة الإحصاء المركزي",
+                                          "fontSize": "$fs-meta"
+                                        },
+                                        "RVsKO": {
+                                          "content": "الجهة المستلمة",
+                                          "fontSize": "$fs-meta"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "ig4Hm",
+                                      "type": "ref",
+                                      "ref": "MH2VG",
+                                      "name": "KV-مستوى السرية",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "CnhSE": {
+                                          "content": "سري",
+                                          "fontSize": "$fs-meta"
+                                        },
+                                        "RVsKO": {
+                                          "content": "مستوى السرية",
+                                          "fontSize": "$fs-meta"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "JZWMn",
+                                      "type": "ref",
+                                      "ref": "MH2VG",
+                                      "name": "KV-الرقم المتوقع",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "CnhSE": {
+                                          "content": "20260912/12046",
+                                          "fontSize": "$fs-meta"
+                                        },
+                                        "RVsKO": {
+                                          "content": "الرقم المتوقع",
+                                          "fontSize": "$fs-meta"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "TF4cU",
+                      "name": "ApproveBar",
+                      "width": "fill_container",
+                      "fill": "$surface",
+                      "stroke": "$border",
+                      "strokeWidth": {
+                        "top": 1
+                      },
+                      "padding": [
+                        14,
+                        20
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "bY2G9",
+                          "type": "ref",
+                          "ref": "zObxv",
+                          "name": "CancelBtn",
+                          "descendants": {
+                            "LL17I": {
+                              "content": "إلغاء"
+                            },
+                            "v5XRL": {
+                              "enabled": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ami3O",
+                          "name": "RightGroup",
+                          "gap": 16,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "rBG63",
+                              "type": "ref",
+                              "ref": "Tb1aR",
+                              "name": "Autosave"
+                            },
+                            {
+                              "id": "ryAOy",
+                              "type": "ref",
+                              "ref": "voVsM",
+                              "name": "ApproveBtn",
+                              "descendants": {
+                                "Ds0MU": {
+                                  "content": "اعتماد وإصدار الرقم"
+                                },
+                                "N2zNb": {
+                                  "enabled": true,
+                                  "icon": "circle-check"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tmK6J",
+          "type": "ref",
+          "ref": "Ydoka",
+          "name": "Sidebar",
+          "descendants": {
+            "gW2Ih/iLzvK": {
+              "enabled": true
+            },
+            "gW2Ih/Z70Cy": {
+              "content": "18"
+            },
+            "TSIzy/vVZ6H": {
+              "enabled": true
+            },
+            "TSIzy/SOEXN": {
+              "content": "5"
+            },
+            "X4Lvx": {
+              "fill": "$sidebar-selected"
+            },
+            "X4Lvx/vVZ6H": {
+              "enabled": true
+            },
+            "X4Lvx/SOEXN": {
+              "content": "12"
+            },
+            "X4Lvx/cyL6U": {
+              "fill": "$white",
+              "fontWeight": "700"
+            },
+            "X4Lvx/XxcvK": {
+              "fill": "$white"
+            },
+            "IcWyW/vVZ6H": {
+              "enabled": true
+            },
+            "IcWyW/SOEXN": {
+              "content": "3"
+            },
+            "Y1Fgf9/vVZ6H": {
+              "enabled": true
+            },
+            "Y1Fgf9/SOEXN": {
+              "content": "2"
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "R3jzMk",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "name": "Scrim",
+          "width": 1366,
+          "height": 768,
+          "fill": "$scrim",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "j3dsP2",
+              "type": "ref",
+              "ref": "D6y5Hg",
+              "name": "ApproveDialog",
+              "descendants": {
+                "K3zUoZ": {
+                  "content": "اعتماد الصادر وإصدار الرقم"
+                },
+                "KkWTG": {
+                  "content": "سيتم اعتماد هذا الكتاب رسميًا وإصدار رقمه من سجل الصادر."
+                },
+                "MldEN": {
+                  "children": [
+                    {
+                      "id": "Rl0jA",
+                      "type": "ref",
+                      "ref": "K0bmsm",
+                      "name": "IrreversibleWarning",
+                      "width": "fill_container",
+                      "descendants": {
+                        "dufI4": {
+                          "content": "لا يمكن التراجع بعد الاعتماد"
+                        },
+                        "NtYnt": {
+                          "content": "بعد الاعتماد لا يمكن تعديل المستند وسيُستهلك الرقم الرسمي نهائيًا."
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "O0EDjI",
+                      "name": "ExpectedNumberBox",
+                      "width": "fill_container",
+                      "fill": "$primary-soft",
+                      "cornerRadius": 6,
+                      "padding": [
+                        10,
+                        14
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lKGHs",
+                          "name": "NumberValue",
+                          "fill": "$primary",
+                          "content": "20260912/12046",
+                          "fontFamily": "$font",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "pivyU",
+                          "name": "NumberLabel",
+                          "fill": "$muted",
+                          "content": "الرقم المتوقع",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-meta",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "qVHXG/LL17I": {
+                  "content": "رجوع للمراجعة"
+                },
+                "rDG0R": {
+                  "id": "r9auC7",
+                  "type": "ref",
+                  "ref": "a31uFu",
+                  "descendants": {
+                    "PEpiF": {
+                      "content": "تأكيد الاعتماد"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "j2MUX",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 20,
+          "name": "ToastLayer",
+          "width": 1366,
+          "height": 60,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Z7GaUF",
+              "type": "ref",
+              "ref": "Lyfyh",
+              "name": "SuccessToast",
+              "descendants": {
+                "m4fVtS": {
+                  "content": "تم الاعتماد وإصدار الرقم 20260912/12046"
+                }
+              }
+            }
+          ]
         }
       ]
     }
