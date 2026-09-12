@@ -58,7 +58,7 @@
 
 على ref القائمة داخل شاشتك (اسمه `Sidebar`) استعمل:
 `Update(sidebarRefId, {descendants:{ 'ITEM':{fill:'$sidebar-selected'}, 'ITEM/cyL6U':{fill:'$white', fontWeight:'700'}, 'ITEM/XxcvK':{fill:'$white'}, …الشارات… }})`
-حيث ITEM هو معرّف العنصر (مثل `X4Lvx`). القالب `atJKT` يأتي والمراسلات محددة وشارات عينة (`X4Lvx/vVZ6H` 12، `TSIzy/vVZ6H` 5، `IcWyW/vVZ6H` 3، `gW2Ih/iLzvK` 18، `Y1Fgf9/vVZ6H` 2)؛ أعد ضبط `descendants` كاملًا لشاشتك (Update يستبدل الخريطة كلها) مع إبقاء الشارات.
+حيث ITEM هو معرّف العنصر (مثل `X4Lvx`). القالب `atJKT` يأتي بلا عنصر محدد ومع شارات عينة (`X4Lvx/vVZ6H` 12، `TSIzy/vVZ6H` 5، `IcWyW/vVZ6H` 3، `gW2Ih/iLzvK` 18، `Y1Fgf9/vVZ6H` 2)؛ أعد ضبط `descendants` كاملًا لشاشتك (Update يستبدل الخريطة كلها) مع إبقاء الشارات، ولا تترك أكثر من عنصر واحد محددًا.
 
 ## بنية الشاشة القياسية (1366×768)
 
