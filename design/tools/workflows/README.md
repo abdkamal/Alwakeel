@@ -8,3 +8,4 @@ Run with the Claude Code `Workflow` tool (`scriptPath` + `args`).
 - `batch6-args.json`, `batch7-args.json` — the row arguments used for batches 6 and 7.
 
 Every execute snippet starts with the guard from docs/design/DESIGN-GUIDE.md; save the .pen with `../pen-save.ps1` after each batch and commit.
+- `alwakeel-android-kit-review.js` — review-only pass over an already-inserted M.* kit (args.comps = [{name,nodeId}]); used after the kit builders died at the usage limit. Fixes the kit and builds TM0.
