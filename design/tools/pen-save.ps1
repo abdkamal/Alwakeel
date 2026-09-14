@@ -25,7 +25,10 @@ function IdleSeconds {
     $lii = New-Object PenSave.Native+LASTINPUTINFO
     $lii.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf($lii)
     [PenSave.Native]::GetLastInputInfo([ref]$lii) | Out-Null
-    return ([Environment]::TickCount - $lii.dwTime) / 1000.0
+    $now = [uint32]([Environment]::TickCount64 -band 0xFFFFFFFF)
+    $delta = [int64]$now - [int64]$lii.dwTime
+    if ($delta -lt 0) { $delta += 4294967296 }
+    return $delta / 1000.0
 }
 $name = [System.IO.Path]::GetFileName($File)
 $before = (Get-Item $File).LastWriteTimeUtc
