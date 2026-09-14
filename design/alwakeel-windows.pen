@@ -64934,7 +64934,7 @@
                           "id": "NG47I",
                           "name": "Subtitle",
                           "fill": "$muted",
-                          "content": "كتاب صادر إلى وزارة التخطيط بشأن الطريق الزراعي — PDF 20260912/12046 من 6 صفحات، وتم استخراج النص منه",
+                          "content": "كتاب صادر إلى وزارة التخطيط بشأن الطريق الزراعي — ملف PDF برقم 20260912/12046 من 6 صفحات، وتم استخراج النص منه",
                           "fontFamily": "$font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -70615,7 +70615,7 @@
                                           "id": "K92Ow",
                                           "name": "Meta",
                                           "fill": "$muted",
-                                          "content": "ملف PDF · 09/09/2026 · بحجم 4.2 م.ب",
+                                          "content": "ملف PDF بتاريخ 09/09/2026 · بحجم 4.2 م.ب",
                                           "lineHeight": 1.3,
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -71680,7 +71680,7 @@
                                   "id": "nLBbu",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF · 1.2 ميغابايت",
+                                  "content": "ملف PDF بحجم 1.2 ميغابايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -71887,7 +71887,7 @@
                                   "id": "L5CnmX",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف Word · 340 كيلوبايت",
+                                  "content": "ملف Word بحجم 340 كيلوبايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72094,7 +72094,7 @@
                                   "id": "MC2rr",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF · 890 كيلوبايت",
+                                  "content": "ملف PDF بحجم 890 كيلوبايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72301,7 +72301,7 @@
                                   "id": "r2fiVL",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف JPG · 2.1 ميغابايت",
+                                  "content": "ملف JPG بحجم 2.1 ميغابايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72508,7 +72508,7 @@
                                   "id": "SYhv2",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF · 4.6 ميغابايت",
+                                  "content": "ملف PDF بحجم 4.6 ميغابايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72715,7 +72715,7 @@
                                   "id": "Lx1nr",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF · 610 كيلوبايت",
+                                  "content": "ملف PDF بحجم 610 كيلوبايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72922,7 +72922,7 @@
                                   "id": "I05rDS",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف Word · 210 كيلوبايت",
+                                  "content": "ملف Word بحجم 210 كيلوبايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -73129,7 +73129,7 @@
                                   "id": "FBKW3",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF · 3.3 ميغابايت",
+                                  "content": "ملف PDF بحجم 3.3 ميغابايت",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -82295,7 +82295,7 @@
                               "id": "q7L2X",
                               "name": "DropHint",
                               "fill": "$muted",
-                              "content": "بحد أقصى 10 م.ب، يُقبل صورة الكشف أو PDF",
+                              "content": "صورة الكشف أو PDF، حتى 10 م.ب",
                               "textAlign": "center",
                               "fontFamily": "$font",
                               "fontSize": "$fs-meta",
@@ -296612,7 +296612,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "frame",
@@ -296651,7 +296652,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -296664,7 +296666,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -296691,7 +296694,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         }
                                       ]
                                     },
@@ -296760,7 +296764,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "frame",
@@ -296799,7 +296804,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -296812,7 +296818,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -296839,7 +296846,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         }
                                       ]
                                     },
@@ -296905,7 +296913,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "frame",
@@ -296944,7 +296953,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -296957,7 +296967,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -296984,7 +296995,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         }
                                       ]
                                     }
@@ -297208,7 +297220,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -297221,7 +297234,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -297304,7 +297318,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -297317,7 +297332,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -297397,7 +297413,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -297410,7 +297427,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -297423,7 +297441,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -310902,7 +310921,8 @@
                   "content": "العنصر 4 من 6 · صورة مستند للكتاب 20260912/12046",
                   "textAlign": "right",
                   "fontFamily": "$font",
-                  "fontSize": 12
+                  "fontSize": 12,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -310953,7 +310973,8 @@
                   "fill": "$muted",
                   "content": "6 عناصر",
                   "fontFamily": "$font",
-                  "fontSize": 12
+                  "fontSize": 12,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -323919,7 +323940,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "frame",
@@ -323958,7 +323980,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -323971,7 +323994,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -323998,7 +324022,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         }
                                       ]
                                     },
@@ -324067,7 +324092,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "frame",
@@ -324106,7 +324132,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324119,7 +324146,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324146,7 +324174,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         }
                                       ]
                                     },
@@ -324212,7 +324241,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "frame",
@@ -324251,7 +324281,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324264,7 +324295,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324291,7 +324323,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         }
                                       ]
                                     }
@@ -324515,7 +324548,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324528,7 +324562,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324611,7 +324646,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324624,7 +324660,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324704,7 +324741,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324717,7 +324755,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -324730,7 +324769,8 @@
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
-                                          "fontSize": 13
+                                          "fontSize": 13,
+                                          "fontWeight": "normal"
                                         },
                                         {
                                           "type": "text",
@@ -343103,7 +343143,8 @@
                   "content": "العنصر 4 من 6 · صورة مستند للكتاب 20260912/12046",
                   "textAlign": "right",
                   "fontFamily": "$font",
-                  "fontSize": 12
+                  "fontSize": 12,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
@@ -343154,7 +343195,8 @@
                   "fill": "$muted",
                   "content": "6 عناصر",
                   "fontFamily": "$font",
-                  "fontSize": 12
+                  "fontSize": 12,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "frame",
