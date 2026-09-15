@@ -53835,7 +53835,7 @@
                           "content": "بنود الاجتماع"
                         },
                         "c83JE": {
-                          "height": 64
+                          "height": 90
                         },
                         "Tp0V2": {
                           "content": "1) مراجعة نسبة الإنجاز الفصلية\n2) مناقشة معوقات التنفيذ الميدانية\n3) تحديد المهام والمسؤوليات للربع القادم",
@@ -124675,7 +124675,7 @@
                               "name": "ColThresholds",
                               "width": 480,
                               "layout": "vertical",
-                              "gap": 16,
+                              "gap": 12,
                               "alignItems": "end",
                               "children": [
                                 {
@@ -124803,12 +124803,44 @@
                                   "name": "Toggle تنبيه قبل بدء الاجتماع بـ 15 دقيقة",
                                   "descendants": {
                                     "ce3k1": {
-                                      "content": "تنبيه قبل بدء الاجتماع بـ 15 دقيقة"
+                                      "content": "تنبيه قبل بدء الاجتماع"
                                     }
                                   }
                                 },
                                 {
-                                  "id": "oBO8U",
+                                  "id": "MSEA6",
+                                  "type": "ref",
+                                  "ref": "U7OLVt",
+                                  "name": "Select وقت تنبيه الاجتماع",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "k5GtPC": {
+                                      "enabled": false
+                                    },
+                                    "qoJcV": {
+                                      "content": "وقت التنبيه قبل بدء الاجتماع"
+                                    },
+                                    "l8EQY8": {
+                                      "content": "قبل 15 دقيقة"
+                                    },
+                                    "Z7OeTV": {
+                                      "content": "اختر 5 أو 10 أو 15 أو 30 أو 60 دقيقة، أو ساعتين، أو يومًا، أو أدخل وقتًا مخصصًا بالدقائق"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "qlWVt",
+                                  "type": "ref",
+                                  "ref": "aA8KP",
+                                  "name": "Toggle إرسال تنبيهات الاجتماعات إلى الهاتف",
+                                  "descendants": {
+                                    "ce3k1": {
+                                      "content": "إرسال تنبيهات الاجتماعات إلى الهاتف عبر المزامنة"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "uNrVF",
                                   "type": "ref",
                                   "ref": "aA8KP",
                                   "name": "Toggle تنبيه بمهام اليوم عند بدء الدوام",
@@ -124819,7 +124851,7 @@
                                   }
                                 },
                                 {
-                                  "id": "zQQvA",
+                                  "id": "Y778er",
                                   "type": "ref",
                                   "ref": "aA8KP",
                                   "name": "Toggle تنبيه بالاستحقاقات خلال 24 ساعة",
@@ -227919,7 +227951,7 @@
                           "content": "بنود الاجتماع"
                         },
                         "c83JE": {
-                          "height": 64
+                          "height": 90
                         },
                         "Tp0V2": {
                           "content": "1) مراجعة نسبة الإنجاز الفصلية\n2) مناقشة معوقات التنفيذ الميدانية\n3) تحديد المهام والمسؤوليات للربع القادم",
@@ -295602,864 +295634,6 @@
     },
     {
       "type": "frame",
-      "id": "iJmpf",
-      "x": 16350,
-      "y": 16500,
-      "name": "W86 — الإعدادات — التنبيهات والحدود",
-      "theme": {
-        "mode": "dark"
-      },
-      "clip": true,
-      "width": 1366,
-      "height": 768,
-      "fill": "$bg",
-      "children": [
-        {
-          "type": "frame",
-          "id": "n4oLpN",
-          "name": "Main",
-          "width": "fill_container",
-          "height": "fill_container",
-          "layout": "vertical",
-          "children": [
-            {
-              "id": "KOW3h",
-              "type": "ref",
-              "ref": "HRbEo",
-              "name": "TopBar",
-              "width": "fill_container"
-            },
-            {
-              "type": "frame",
-              "id": "ydEEi",
-              "name": "Page",
-              "width": "fill_container",
-              "height": "fill_container",
-              "layout": "vertical",
-              "gap": 16,
-              "padding": [
-                22,
-                28
-              ],
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "ZT1FE",
-                  "name": "PageHeader",
-                  "width": "fill_container",
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "N1uUQU",
-                      "name": "Actions",
-                      "gap": 10,
-                      "children": [
-                        {
-                          "id": "scKEz",
-                          "type": "ref",
-                          "ref": "jhm7L",
-                          "name": "ResetDefaults",
-                          "descendants": {
-                            "g4RbI5": {
-                              "content": "استعادة الافتراضي"
-                            },
-                            "OhLBU": {
-                              "icon": "rotate-ccw"
-                            }
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "mk8Rm",
-                      "name": "Titles",
-                      "layout": "vertical",
-                      "gap": 2,
-                      "alignItems": "end",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "I433BD",
-                          "name": "Title",
-                          "fill": "$text",
-                          "content": "الإعدادات — التنبيهات والحدود",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-title",
-                          "fontWeight": "700"
-                        },
-                        {
-                          "type": "text",
-                          "id": "ydb4Z",
-                          "name": "Subtitle",
-                          "fill": "$muted",
-                          "content": "حدود التأخر والاقتراب والركود، وتذكير التقرير الشهري، وتنبيهات التقويم والأصوات",
-                          "fontFamily": "$font",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "Y45TpH",
-                  "name": "Content",
-                  "width": "fill_container",
-                  "height": "fill_container",
-                  "gap": 24,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "fUl8K",
-                      "name": "FieldsWrap",
-                      "width": "fill_container",
-                      "height": "fill_container",
-                      "layout": "vertical",
-                      "gap": 20,
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "dczMM",
-                          "name": "ColumnsRow",
-                          "width": "fill_container",
-                          "gap": 24,
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "svJGV",
-                              "name": "ColReminders",
-                              "width": "fill_container",
-                              "layout": "vertical",
-                              "gap": 16,
-                              "alignItems": "end",
-                              "children": [
-                                {
-                                  "id": "BBQHB",
-                                  "type": "ref",
-                                  "ref": "BDj54",
-                                  "name": "Header تذكير التقرير الشهري",
-                                  "width": "fill_container",
-                                  "justifyContent": "end",
-                                  "alignItems": "center",
-                                  "descendants": {
-                                    "kNBF4": {
-                                      "enabled": false
-                                    },
-                                    "h8VnZ": {
-                                      "content": "تذكير التقرير الشهري"
-                                    },
-                                    "wxCLj": {
-                                      "content": "إظهار تذكير قبل نهاية الدورة الشهرية"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "JXgF8",
-                                  "type": "ref",
-                                  "ref": "b88Gl",
-                                  "name": "Field تذكير قبل نهاية الدورة بـ",
-                                  "width": "fill_container",
-                                  "descendants": {
-                                    "rkdDK": {
-                                      "enabled": false
-                                    },
-                                    "kJnIz": {
-                                      "content": "تذكير قبل نهاية الدورة بـ"
-                                    },
-                                    "N5oAg": {
-                                      "content": "7 أيام",
-                                      "fill": "$text",
-                                      "fontWeight": "600"
-                                    },
-                                    "x2o34Q": {
-                                      "content": "يظهر التذكير في مركز الانتباه بهذا العدد من الأيام"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "OS1Qc",
-                                  "type": "ref",
-                                  "ref": "BDj54",
-                                  "name": "Header الأصوات",
-                                  "width": "fill_container",
-                                  "justifyContent": "end",
-                                  "alignItems": "center",
-                                  "descendants": {
-                                    "kNBF4": {
-                                      "enabled": false
-                                    },
-                                    "h8VnZ": {
-                                      "content": "الأصوات"
-                                    },
-                                    "wxCLj": {
-                                      "content": "أصوات الإشعارات داخل التطبيق"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "I0OLvF",
-                                  "type": "ref",
-                                  "ref": "aA8KP",
-                                  "name": "Toggle تشغيل صوت عند وصول إشعار جديد",
-                                  "descendants": {
-                                    "ce3k1": {
-                                      "content": "تشغيل صوت عند وصول إشعار جديد"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "bNnut",
-                                  "type": "ref",
-                                  "ref": "U7OLVt",
-                                  "name": "Field نغمة التنبيه",
-                                  "width": "fill_container",
-                                  "descendants": {
-                                    "k5GtPC": {
-                                      "enabled": false
-                                    },
-                                    "qoJcV": {
-                                      "content": "نغمة التنبيه"
-                                    },
-                                    "l8EQY8": {
-                                      "content": "افتراضية",
-                                      "fill": "$text",
-                                      "fontWeight": "600"
-                                    },
-                                    "Z7OeTV": {
-                                      "enabled": true,
-                                      "content": "تُستخدم مع كل التنبيهات الصوتية داخل التطبيق"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "kChk5",
-                                  "type": "ref",
-                                  "ref": "aA8KP",
-                                  "name": "Toggle صوت عند اكتمال المزامنة",
-                                  "descendants": {
-                                    "ce3k1": {
-                                      "content": "صوت عند اكتمال المزامنة"
-                                    }
-                                  }
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "TwFdX",
-                              "name": "ColThresholds",
-                              "width": 480,
-                              "layout": "vertical",
-                              "gap": 16,
-                              "alignItems": "end",
-                              "children": [
-                                {
-                                  "id": "x0abj",
-                                  "type": "ref",
-                                  "ref": "BDj54",
-                                  "name": "Header حدود المتابعة الزمنية",
-                                  "width": 480,
-                                  "justifyContent": "end",
-                                  "alignItems": "center",
-                                  "descendants": {
-                                    "kNBF4": {
-                                      "enabled": false
-                                    },
-                                    "h8VnZ": {
-                                      "content": "حدود المتابعة الزمنية"
-                                    },
-                                    "wxCLj": {
-                                      "content": "متى تصبح المراسلة أو المهمة متأخرة أو قريبة أو راكدة"
-                                    }
-                                  }
-                                },
-                                {
-                                  "type": "frame",
-                                  "id": "s3aoJk",
-                                  "name": "ThresholdsRow",
-                                  "width": 480,
-                                  "gap": 16,
-                                  "children": [
-                                    {
-                                      "id": "fPAXX",
-                                      "type": "ref",
-                                      "ref": "b88Gl",
-                                      "name": "Field الركود",
-                                      "width": 144,
-                                      "descendants": {
-                                        "rkdDK": {
-                                          "enabled": false
-                                        },
-                                        "kJnIz": {
-                                          "content": "الركود"
-                                        },
-                                        "N5oAg": {
-                                          "content": "7 أيام",
-                                          "fill": "$text",
-                                          "fontWeight": "600"
-                                        },
-                                        "x2o34Q": {
-                                          "content": "بلا متابعة منذ 7 أيام"
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "id": "q62pM",
-                                      "type": "ref",
-                                      "ref": "b88Gl",
-                                      "name": "Field الاقتراب",
-                                      "width": 144,
-                                      "descendants": {
-                                        "rkdDK": {
-                                          "enabled": false
-                                        },
-                                        "kJnIz": {
-                                          "content": "الاقتراب"
-                                        },
-                                        "N5oAg": {
-                                          "content": "3 أيام",
-                                          "fill": "$text",
-                                          "fontWeight": "600"
-                                        },
-                                        "x2o34Q": {
-                                          "content": "قبل 3 أيام من الاستحقاق"
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "id": "mZkSD",
-                                      "type": "ref",
-                                      "ref": "b88Gl",
-                                      "name": "Field التأخر",
-                                      "width": 144,
-                                      "descendants": {
-                                        "rkdDK": {
-                                          "enabled": false
-                                        },
-                                        "kJnIz": {
-                                          "content": "التأخر"
-                                        },
-                                        "N5oAg": {
-                                          "content": "1 يوم",
-                                          "fill": "$text",
-                                          "fontWeight": "600"
-                                        },
-                                        "x2o34Q": {
-                                          "content": "بعد يوم من الاستحقاق"
-                                        }
-                                      }
-                                    }
-                                  ]
-                                },
-                                {
-                                  "id": "foppH",
-                                  "type": "ref",
-                                  "ref": "BDj54",
-                                  "name": "Header تنبيهات التقويم",
-                                  "width": 480,
-                                  "justifyContent": "end",
-                                  "alignItems": "center",
-                                  "descendants": {
-                                    "kNBF4": {
-                                      "enabled": false
-                                    },
-                                    "h8VnZ": {
-                                      "content": "تنبيهات التقويم"
-                                    },
-                                    "wxCLj": {
-                                      "content": "إشعارات مرتبطة بالاجتماعات والاستحقاقات اليومية"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "SUTuM",
-                                  "type": "ref",
-                                  "ref": "aA8KP",
-                                  "name": "Toggle تنبيه قبل بدء الاجتماع بـ 15 دقيقة",
-                                  "descendants": {
-                                    "ce3k1": {
-                                      "content": "تنبيه قبل بدء الاجتماع بـ 15 دقيقة"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "Qzj4z",
-                                  "type": "ref",
-                                  "ref": "aA8KP",
-                                  "name": "Toggle تنبيه بمهام اليوم عند بدء الدوام",
-                                  "descendants": {
-                                    "ce3k1": {
-                                      "content": "تنبيه بمهام اليوم عند بدء الدوام"
-                                    }
-                                  }
-                                },
-                                {
-                                  "id": "GEEsq",
-                                  "type": "ref",
-                                  "ref": "aA8KP",
-                                  "name": "Toggle تنبيه بالاستحقاقات خلال 24 ساعة",
-                                  "descendants": {
-                                    "ce3k1": {
-                                      "content": "تنبيه بالاستحقاقات خلال 24 ساعة"
-                                    }
-                                  }
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "NIMty",
-                          "name": "AutosaveFooter",
-                          "width": "fill_container",
-                          "gap": 6,
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "vJSuB",
-                              "name": "AutosaveText",
-                              "fill": "$muted",
-                              "content": "تُحفظ التعديلات تلقائيًا",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-meta",
-                              "fontWeight": "normal"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "c6BFf",
-                              "name": "AutosaveIcon",
-                              "width": 14,
-                              "height": 14,
-                              "icon": "check",
-                              "library": "lucide",
-                              "fill": "$success"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "DJMov",
-                      "name": "SettingsNav",
-                      "width": 210,
-                      "height": "fill_container",
-                      "layout": "vertical",
-                      "gap": 10,
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "KggdL",
-                          "name": "NavHeading",
-                          "fill": "$muted",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "أقسام الإعدادات",
-                          "textAlign": "right",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-meta",
-                          "fontWeight": "700"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "r4G1L",
-                          "name": "NavItem-الحساب",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "U3V5C",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "الحساب",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "slbmw",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "user",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "N8Od4r",
-                          "name": "NavItem-الصورة",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "x7Zn7",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "الصورة",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "mmUx6",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "image",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "hqnKw",
-                          "name": "NavItem-المظهر",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "cmv9X",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "المظهر",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "vZDb7",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "palette",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "ZSulV",
-                          "name": "NavItem-التنبيهات",
-                          "width": "fill_container",
-                          "fill": "$primary-soft",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "AvfVR",
-                              "name": "Label",
-                              "fill": "$primary",
-                              "content": "التنبيهات",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "700"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "eV3hM",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "bell",
-                              "library": "lucide",
-                              "fill": "$primary"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "O90LZ",
-                          "name": "NavItem-البحث والنماذج",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "l0FnoY",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "البحث والنماذج",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "RqxCi",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "search",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "hlfbr",
-                          "name": "NavItem-الطباعة والمسح",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "IV661",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "الطباعة والمسح",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "yK0N9",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "printer",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "ftE7a",
-                          "name": "NavItem-المزامنة والنسخ",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "WdU0I",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "المزامنة والنسخ",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "bbZNu",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "refresh-cw",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "o1Rk8F",
-                          "name": "NavItem-الرواتب",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "s6hBBP",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "الرواتب",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "i8LmR",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "wallet",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "YMFTY",
-                          "name": "NavItem-حول",
-                          "width": "fill_container",
-                          "fill": "$bg",
-                          "cornerRadius": 8,
-                          "gap": 10,
-                          "padding": [
-                            10,
-                            14
-                          ],
-                          "justifyContent": "end",
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "qSTdh",
-                              "name": "Label",
-                              "fill": "$text",
-                              "content": "حول",
-                              "fontFamily": "$font",
-                              "fontSize": "$fs-body",
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon",
-                              "id": "ODFz8",
-                              "name": "Icon",
-                              "width": 16,
-                              "height": 16,
-                              "icon": "info",
-                              "library": "lucide",
-                              "fill": "$muted"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "l3By0",
-          "type": "ref",
-          "ref": "Ydoka",
-          "name": "Sidebar",
-          "descendants": {
-            "gW2Ih/iLzvK": {
-              "enabled": true
-            },
-            "gW2Ih/Z70Cy": {
-              "content": "18"
-            },
-            "TSIzy/vVZ6H": {
-              "enabled": true
-            },
-            "TSIzy/SOEXN": {
-              "content": "5"
-            },
-            "X4Lvx": {
-              "fill": "$sidebar"
-            },
-            "X4Lvx/vVZ6H": {
-              "enabled": true
-            },
-            "X4Lvx/SOEXN": {
-              "content": "12"
-            },
-            "X4Lvx/cyL6U": {
-              "fill": "$sidebar-text",
-              "fontWeight": "500"
-            },
-            "X4Lvx/XxcvK": {
-              "fill": "$sidebar-text"
-            },
-            "IcWyW/vVZ6H": {
-              "enabled": true
-            },
-            "IcWyW/SOEXN": {
-              "content": "3"
-            },
-            "Y1Fgf9/vVZ6H": {
-              "enabled": true
-            },
-            "Y1Fgf9/SOEXN": {
-              "content": "2"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "e0PPt",
       "x": 13450,
       "y": 16500,
@@ -354192,6 +353366,896 @@
           "fontFamily": "$font",
           "fontSize": "$fs-meta",
           "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "CqhvV",
+      "x": 16349,
+      "y": 16500,
+      "name": "W86 — الإعدادات — التنبيهات والحدود",
+      "theme": {
+        "mode": "dark"
+      },
+      "clip": true,
+      "width": 1366,
+      "height": 768,
+      "fill": "$bg",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Bkle9",
+          "name": "Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "pGS5s",
+              "type": "ref",
+              "ref": "HRbEo",
+              "name": "TopBar",
+              "width": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "x2BpV",
+              "name": "Page",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                22,
+                28
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YZEWG",
+                  "name": "PageHeader",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "i90zt",
+                      "name": "Actions",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "id": "eJcd1",
+                          "type": "ref",
+                          "ref": "jhm7L",
+                          "name": "ResetDefaults",
+                          "descendants": {
+                            "g4RbI5": {
+                              "content": "استعادة الافتراضي"
+                            },
+                            "OhLBU": {
+                              "icon": "rotate-ccw"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h0QNbH",
+                      "name": "Titles",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "YpCfC",
+                          "name": "Title",
+                          "fill": "$text",
+                          "content": "الإعدادات — التنبيهات والحدود",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-title",
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "EIczZ",
+                          "name": "Subtitle",
+                          "fill": "$muted",
+                          "content": "حدود التأخر والاقتراب والركود، وتذكير التقرير الشهري، وتنبيهات التقويم والأصوات",
+                          "fontFamily": "$font",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fbbrG",
+                  "name": "Content",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "mSd3Z",
+                      "name": "FieldsWrap",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "cdSCs",
+                          "name": "ColumnsRow",
+                          "width": "fill_container",
+                          "gap": 24,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "foVL4",
+                              "name": "ColReminders",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 16,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "id": "f4cFo",
+                                  "type": "ref",
+                                  "ref": "BDj54",
+                                  "name": "Header تذكير التقرير الشهري",
+                                  "width": "fill_container",
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "descendants": {
+                                    "kNBF4": {
+                                      "enabled": false
+                                    },
+                                    "h8VnZ": {
+                                      "content": "تذكير التقرير الشهري"
+                                    },
+                                    "wxCLj": {
+                                      "content": "إظهار تذكير قبل نهاية الدورة الشهرية"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "idLih",
+                                  "type": "ref",
+                                  "ref": "b88Gl",
+                                  "name": "Field تذكير قبل نهاية الدورة بـ",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "rkdDK": {
+                                      "enabled": false
+                                    },
+                                    "kJnIz": {
+                                      "content": "تذكير قبل نهاية الدورة بـ"
+                                    },
+                                    "N5oAg": {
+                                      "content": "7 أيام",
+                                      "fill": "$text",
+                                      "fontWeight": "600"
+                                    },
+                                    "x2o34Q": {
+                                      "content": "يظهر التذكير في مركز الانتباه بهذا العدد من الأيام"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "zoxf4",
+                                  "type": "ref",
+                                  "ref": "BDj54",
+                                  "name": "Header الأصوات",
+                                  "width": "fill_container",
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "descendants": {
+                                    "kNBF4": {
+                                      "enabled": false
+                                    },
+                                    "h8VnZ": {
+                                      "content": "الأصوات"
+                                    },
+                                    "wxCLj": {
+                                      "content": "أصوات الإشعارات داخل التطبيق"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "S21yI",
+                                  "type": "ref",
+                                  "ref": "aA8KP",
+                                  "name": "Toggle تشغيل صوت عند وصول إشعار جديد",
+                                  "descendants": {
+                                    "ce3k1": {
+                                      "content": "تشغيل صوت عند وصول إشعار جديد"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "lukiD",
+                                  "type": "ref",
+                                  "ref": "U7OLVt",
+                                  "name": "Field نغمة التنبيه",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "k5GtPC": {
+                                      "enabled": false
+                                    },
+                                    "qoJcV": {
+                                      "content": "نغمة التنبيه"
+                                    },
+                                    "l8EQY8": {
+                                      "content": "افتراضية",
+                                      "fill": "$text",
+                                      "fontWeight": "600"
+                                    },
+                                    "Z7OeTV": {
+                                      "enabled": true,
+                                      "content": "تُستخدم مع كل التنبيهات الصوتية داخل التطبيق"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "PxQ1V",
+                                  "type": "ref",
+                                  "ref": "aA8KP",
+                                  "name": "Toggle صوت عند اكتمال المزامنة",
+                                  "descendants": {
+                                    "ce3k1": {
+                                      "content": "صوت عند اكتمال المزامنة"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "wxyyM",
+                              "name": "ColThresholds",
+                              "width": 480,
+                              "layout": "vertical",
+                              "gap": 12,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "id": "uD7g8",
+                                  "type": "ref",
+                                  "ref": "BDj54",
+                                  "name": "Header حدود المتابعة الزمنية",
+                                  "width": 480,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "descendants": {
+                                    "kNBF4": {
+                                      "enabled": false
+                                    },
+                                    "h8VnZ": {
+                                      "content": "حدود المتابعة الزمنية"
+                                    },
+                                    "wxCLj": {
+                                      "content": "متى تصبح المراسلة أو المهمة متأخرة أو قريبة أو راكدة"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "uGfQb",
+                                  "name": "ThresholdsRow",
+                                  "width": 480,
+                                  "gap": 16,
+                                  "children": [
+                                    {
+                                      "id": "z6wLm1",
+                                      "type": "ref",
+                                      "ref": "b88Gl",
+                                      "name": "Field الركود",
+                                      "width": 144,
+                                      "descendants": {
+                                        "rkdDK": {
+                                          "enabled": false
+                                        },
+                                        "kJnIz": {
+                                          "content": "الركود"
+                                        },
+                                        "N5oAg": {
+                                          "content": "7 أيام",
+                                          "fill": "$text",
+                                          "fontWeight": "600"
+                                        },
+                                        "x2o34Q": {
+                                          "content": "بلا متابعة منذ 7 أيام"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "r8byKv",
+                                      "type": "ref",
+                                      "ref": "b88Gl",
+                                      "name": "Field الاقتراب",
+                                      "width": 144,
+                                      "descendants": {
+                                        "rkdDK": {
+                                          "enabled": false
+                                        },
+                                        "kJnIz": {
+                                          "content": "الاقتراب"
+                                        },
+                                        "N5oAg": {
+                                          "content": "3 أيام",
+                                          "fill": "$text",
+                                          "fontWeight": "600"
+                                        },
+                                        "x2o34Q": {
+                                          "content": "قبل 3 أيام من الاستحقاق"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "DRmPB",
+                                      "type": "ref",
+                                      "ref": "b88Gl",
+                                      "name": "Field التأخر",
+                                      "width": 144,
+                                      "descendants": {
+                                        "rkdDK": {
+                                          "enabled": false
+                                        },
+                                        "kJnIz": {
+                                          "content": "التأخر"
+                                        },
+                                        "N5oAg": {
+                                          "content": "1 يوم",
+                                          "fill": "$text",
+                                          "fontWeight": "600"
+                                        },
+                                        "x2o34Q": {
+                                          "content": "بعد يوم من الاستحقاق"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "p6ZeWy",
+                                  "type": "ref",
+                                  "ref": "BDj54",
+                                  "name": "Header تنبيهات التقويم",
+                                  "width": 480,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "descendants": {
+                                    "kNBF4": {
+                                      "enabled": false
+                                    },
+                                    "h8VnZ": {
+                                      "content": "تنبيهات التقويم"
+                                    },
+                                    "wxCLj": {
+                                      "content": "إشعارات مرتبطة بالاجتماعات والاستحقاقات اليومية"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "Q4biU",
+                                  "type": "ref",
+                                  "ref": "aA8KP",
+                                  "name": "Toggle تنبيه قبل بدء الاجتماع بـ 15 دقيقة",
+                                  "descendants": {
+                                    "ce3k1": {
+                                      "content": "تنبيه قبل بدء الاجتماع"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "X4dm4",
+                                  "type": "ref",
+                                  "ref": "U7OLVt",
+                                  "name": "Select وقت تنبيه الاجتماع",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "k5GtPC": {
+                                      "enabled": false
+                                    },
+                                    "qoJcV": {
+                                      "content": "وقت التنبيه قبل بدء الاجتماع"
+                                    },
+                                    "l8EQY8": {
+                                      "content": "قبل 15 دقيقة"
+                                    },
+                                    "Z7OeTV": {
+                                      "content": "اختر 5 أو 10 أو 15 أو 30 أو 60 دقيقة، أو ساعتين، أو يومًا، أو أدخل وقتًا مخصصًا بالدقائق"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "D7zDro",
+                                  "type": "ref",
+                                  "ref": "aA8KP",
+                                  "name": "Toggle إرسال تنبيهات الاجتماعات إلى الهاتف",
+                                  "descendants": {
+                                    "ce3k1": {
+                                      "content": "إرسال تنبيهات الاجتماعات إلى الهاتف عبر المزامنة"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "ipqNo",
+                                  "type": "ref",
+                                  "ref": "aA8KP",
+                                  "name": "Toggle تنبيه بمهام اليوم عند بدء الدوام",
+                                  "descendants": {
+                                    "ce3k1": {
+                                      "content": "تنبيه بمهام اليوم عند بدء الدوام"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "ac7Ex",
+                                  "type": "ref",
+                                  "ref": "aA8KP",
+                                  "name": "Toggle تنبيه بالاستحقاقات خلال 24 ساعة",
+                                  "descendants": {
+                                    "ce3k1": {
+                                      "content": "تنبيه بالاستحقاقات خلال 24 ساعة"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xQqQy",
+                          "name": "AutosaveFooter",
+                          "width": "fill_container",
+                          "gap": 6,
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "pIj9S",
+                              "name": "AutosaveText",
+                              "fill": "$muted",
+                              "content": "تُحفظ التعديلات تلقائيًا",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-meta",
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "n7t1x",
+                              "name": "AutosaveIcon",
+                              "width": 14,
+                              "height": 14,
+                              "icon": "check",
+                              "library": "lucide",
+                              "fill": "$success"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "eK6zF",
+                      "name": "SettingsNav",
+                      "width": 210,
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "DVm8E",
+                          "name": "NavHeading",
+                          "fill": "$muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "أقسام الإعدادات",
+                          "textAlign": "right",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-meta",
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "V8nAuV",
+                          "name": "NavItem-الحساب",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "r7GMc",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "الحساب",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "BvevX",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "user",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xT0X2",
+                          "name": "NavItem-الصورة",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "f1IMYI",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "الصورة",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "GHqAf",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "image",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "HMB2W",
+                          "name": "NavItem-المظهر",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "q7sZk",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "المظهر",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "UHCdE",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "palette",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "J9J5K",
+                          "name": "NavItem-التنبيهات",
+                          "width": "fill_container",
+                          "fill": "$primary-soft",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n2Kxx",
+                              "name": "Label",
+                              "fill": "$primary",
+                              "content": "التنبيهات",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "JxbS2",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "bell",
+                              "library": "lucide",
+                              "fill": "$primary"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Z4ET1W",
+                          "name": "NavItem-البحث والنماذج",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Zpc4d",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "البحث والنماذج",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "x3mEK",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "search",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "NQq7N",
+                          "name": "NavItem-الطباعة والمسح",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "syQke",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "الطباعة والمسح",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "STb1M",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "printer",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "w0UgGr",
+                          "name": "NavItem-المزامنة والنسخ",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "B2Bt7N",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "المزامنة والنسخ",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "cfAcW",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "refresh-cw",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ScQVF",
+                          "name": "NavItem-الرواتب",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "qQouT",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "الرواتب",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "v50F6",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "wallet",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "t3AdC",
+                          "name": "NavItem-حول",
+                          "width": "fill_container",
+                          "fill": "$bg",
+                          "cornerRadius": 8,
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "I5fZGw",
+                              "name": "Label",
+                              "fill": "$text",
+                              "content": "حول",
+                              "fontFamily": "$font",
+                              "fontSize": "$fs-body",
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "icon",
+                              "id": "Y0ZMtq",
+                              "name": "Icon",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "info",
+                              "library": "lucide",
+                              "fill": "$muted"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "xSeKy",
+          "type": "ref",
+          "ref": "Ydoka",
+          "name": "Sidebar",
+          "descendants": {
+            "gW2Ih/iLzvK": {
+              "enabled": true
+            },
+            "gW2Ih/Z70Cy": {
+              "content": "18"
+            },
+            "TSIzy/vVZ6H": {
+              "enabled": true
+            },
+            "TSIzy/SOEXN": {
+              "content": "5"
+            },
+            "X4Lvx": {
+              "fill": "$sidebar"
+            },
+            "X4Lvx/vVZ6H": {
+              "enabled": true
+            },
+            "X4Lvx/SOEXN": {
+              "content": "12"
+            },
+            "X4Lvx/cyL6U": {
+              "fill": "$sidebar-text",
+              "fontWeight": "500"
+            },
+            "X4Lvx/XxcvK": {
+              "fill": "$sidebar-text"
+            },
+            "IcWyW/vVZ6H": {
+              "enabled": true
+            },
+            "IcWyW/SOEXN": {
+              "content": "3"
+            },
+            "Y1Fgf9/vVZ6H": {
+              "enabled": true
+            },
+            "Y1Fgf9/SOEXN": {
+              "content": "2"
+            }
+          }
         }
       ]
     }
