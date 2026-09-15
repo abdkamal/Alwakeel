@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.21.0</Version>
+    <Authors>الوكيل</Authors>
+    <Product>الوكيل</Product>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS1591</WarningsNotAsErrors>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <SatelliteResourceLanguages>ar</SatelliteResourceLanguages>
+    <NeutralLanguage>ar</NeutralLanguage>
+  </PropertyGroup>
+</Project>
