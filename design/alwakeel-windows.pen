@@ -8727,16 +8727,6 @@
                   "children": [
                     {
                       "type": "text",
-                      "id": "NoRHR",
-                      "name": "BrowseLink",
-                      "fill": "$primary",
-                      "content": "اختر ملفًا من الجهاز",
-                      "fontFamily": "$font",
-                      "fontSize": "$fs-body",
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "text",
                       "id": "X8aBke",
                       "name": "DropText",
                       "fill": "$text",
@@ -8744,6 +8734,16 @@
                       "fontFamily": "$font",
                       "fontSize": "$fs-body",
                       "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "v7mTk",
+                      "name": "BrowseLink",
+                      "fill": "$primary",
+                      "content": "اختر ملفًا من الجهاز",
+                      "fontFamily": "$font",
+                      "fontSize": "$fs-body",
+                      "fontWeight": "600"
                     }
                   ]
                 },
@@ -8844,7 +8844,7 @@
                       "fill": "$muted",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "الحجم 1.8 ميغابايت — صُدّر 10/09/2026 14:32 — م. سامر عودة",
+                      "content": "صُدّر 10/09/2026 — 1.8 ميغابايت — م. سامر عودة",
                       "textAlign": "right",
                       "fontFamily": "$font",
                       "fontSize": "$fs-meta",
@@ -183600,784 +183600,6 @@
     },
     {
       "type": "frame",
-      "id": "tL0yE",
-      "x": 12000,
-      "y": 3900,
-      "name": "W02 — التشغيل الأول — ملف الإعداد",
-      "theme": {
-        "mode": "dark"
-      },
-      "clip": true,
-      "width": 1366,
-      "height": 768,
-      "fill": "$bg",
-      "gap": 64,
-      "justifyContent": "center",
-      "alignItems": "center",
-      "children": [
-        {
-          "type": "frame",
-          "id": "KN0Hi",
-          "name": "FormCard",
-          "width": 520,
-          "fill": "$surface",
-          "cornerRadius": "$radius-lg",
-          "stroke": "$border",
-          "strokeWidth": 1,
-          "strokeAlignment": "inner",
-          "layout": "vertical",
-          "gap": 18,
-          "padding": 28,
-          "alignItems": "end",
-          "children": [
-            {
-              "type": "frame",
-              "id": "H6rXt7",
-              "name": "CardHead",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 4,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "xkNbg",
-                  "name": "CardTitle",
-                  "fill": "$text",
-                  "textGrowth": "fixed-width",
-                  "width": "fill_container",
-                  "content": "ملف الإعداد",
-                  "textAlign": "right",
-                  "fontFamily": "$font",
-                  "fontSize": "$fs-title",
-                  "fontWeight": "700"
-                },
-                {
-                  "type": "text",
-                  "id": "Tr7Br",
-                  "name": "CardDesc",
-                  "fill": "$muted",
-                  "textGrowth": "fixed-width",
-                  "width": "fill_container",
-                  "content": "اختر الملف الذي سلّمه لك مدير النظام ثم أدخل كلمة مرور الحزمة لفحصها.",
-                  "textAlign": "right",
-                  "fontFamily": "$font",
-                  "fontSize": "$fs-body",
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "i9sr2",
-              "name": "DropZone",
-              "width": "fill_container",
-              "height": 128,
-              "fill": "$primary-soft",
-              "cornerRadius": "$radius-lg",
-              "stroke": "$primary-border",
-              "strokeWidth": 1,
-              "strokeAlignment": "inner",
-              "layout": "vertical",
-              "gap": 6,
-              "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon",
-                  "id": "eIoiI",
-                  "name": "UploadIcon",
-                  "width": 28,
-                  "height": 28,
-                  "icon": "cloud-upload",
-                  "library": "lucide",
-                  "fill": "$primary"
-                },
-                {
-                  "type": "frame",
-                  "id": "U9wPvS",
-                  "name": "DropLine",
-                  "gap": 5,
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "iXG4a",
-                      "name": "BrowseLink",
-                      "fill": "$primary",
-                      "content": "اختر ملفًا من الجهاز",
-                      "fontFamily": "$font",
-                      "fontSize": "$fs-body",
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "text",
-                      "id": "bKmtb",
-                      "name": "DropText",
-                      "fill": "$text",
-                      "content": "اسحب إلى هنا ملف .wakeel-setup أو",
-                      "fontFamily": "$font",
-                      "fontSize": "$fs-body",
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "text",
-                  "id": "jjjxB",
-                  "name": "DropMeta",
-                  "fill": "$muted",
-                  "content": "الحجم الأقصى 20 ميغابايت — الامتداد المقبول فقط .wakeel-setup",
-                  "fontFamily": "$font",
-                  "fontSize": "$fs-meta",
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "iBVID",
-              "name": "SelectedFile",
-              "width": "fill_container",
-              "height": 60,
-              "fill": "$success-soft",
-              "cornerRadius": "$radius",
-              "stroke": "$success-border",
-              "strokeWidth": 1,
-              "strokeAlignment": "inner",
-              "gap": 10,
-              "padding": [
-                0,
-                12
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "AtrI4",
-                  "name": "RemoveFile",
-                  "width": 28,
-                  "height": 28,
-                  "cornerRadius": "$radius",
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon",
-                      "id": "xUxYM",
-                      "name": "RemoveIcon",
-                      "width": 14,
-                      "height": 14,
-                      "icon": "x",
-                      "library": "lucide",
-                      "fill": "$muted"
-                    }
-                  ]
-                },
-                {
-                  "id": "oSZeN",
-                  "type": "ref",
-                  "ref": "HKz4z",
-                  "name": "FileChip",
-                  "fill": "$surface",
-                  "descendants": {
-                    "IkHOY": {
-                      "content": "جاهز للفحص",
-                      "fill": "$success"
-                    },
-                    "N2P3d": {
-                      "fill": "$success"
-                    }
-                  }
-                },
-                {
-                  "type": "frame",
-                  "id": "l4gzt",
-                  "name": "FileTexts",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 1,
-                  "alignItems": "end",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "g4hfXV",
-                      "name": "FileName",
-                      "fill": "$text",
-                      "textGrowth": "fixed-width",
-                      "width": "fill_container",
-                      "content": "rda-office12-20260910.wakeel-setup",
-                      "textAlign": "right",
-                      "fontFamily": "$font",
-                      "fontSize": "$fs-body",
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "text",
-                      "id": "OgE4A",
-                      "name": "FileMeta",
-                      "fill": "$muted",
-                      "textGrowth": "fixed-width",
-                      "width": "fill_container",
-                      "content": "الحجم 1.8 ميغابايت — صُدّر 10/09/2026 14:32 — م. سامر عودة",
-                      "textAlign": "right",
-                      "fontFamily": "$font",
-                      "fontSize": "$fs-meta",
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "icon",
-                  "id": "X2k4s8",
-                  "name": "FileIcon",
-                  "width": 22,
-                  "height": 22,
-                  "icon": "file-check",
-                  "library": "lucide",
-                  "fill": "$success"
-                }
-              ]
-            },
-            {
-              "id": "IOuvn",
-              "type": "ref",
-              "ref": "b88Gl",
-              "name": "PackagePassword",
-              "width": "fill_container",
-              "descendants": {
-                "kJnIz": {
-                  "content": "كلمة مرور الحزمة"
-                },
-                "X73KK": {
-                  "type": "frame",
-                  "id": "J1ClnU",
-                  "name": "Box",
-                  "width": "fill_container",
-                  "height": 38,
-                  "fill": "$surface",
-                  "cornerRadius": "$radius",
-                  "stroke": "$border",
-                  "strokeWidth": 1,
-                  "strokeAlignment": "inner",
-                  "gap": 8,
-                  "padding": [
-                    0,
-                    12
-                  ],
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon",
-                      "id": "IUkF4",
-                      "name": "ToggleEye",
-                      "width": 16,
-                      "height": 16,
-                      "icon": "eye-off",
-                      "library": "lucide",
-                      "fill": "$muted"
-                    },
-                    {
-                      "type": "text",
-                      "id": "ntvLs",
-                      "name": "Value",
-                      "fill": "$text",
-                      "textGrowth": "fixed-width",
-                      "width": "fill_container",
-                      "content": "••••••••••••",
-                      "textAlign": "right",
-                      "fontFamily": "$font",
-                      "fontSize": 16,
-                      "fontWeight": "normal",
-                      "letterSpacing": 2
-                    }
-                  ]
-                },
-                "x2o34Q": {
-                  "content": "تظهر مرة واحدة فقط لمدير النظام لحظة التصدير ولا يمكن استعادتها؛ اطلبها منه إن لم تُسلَّم إليك مع الملف."
-                }
-              }
-            },
-            {
-              "type": "frame",
-              "id": "p28C2a",
-              "name": "Actions",
-              "width": "fill_container",
-              "justifyContent": "space_between",
-              "alignItems": "end",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "agxgF",
-                  "name": "HelpGroup",
-                  "layout": "vertical",
-                  "gap": 6,
-                  "children": [
-                    {
-                      "id": "y7kYF",
-                      "type": "ref",
-                      "ref": "vkZPZ",
-                      "name": "HelpTooltip",
-                      "descendants": {
-                        "X9BOQJ": {
-                          "content": "يصدّره مدير النظام من أداة المدير ← «تصدير الإعداد»، ويُسلَّم إليك على وسيط USB أو عبر البريد الداخلي مع كلمة المرور.",
-                          "textGrowth": "fixed-width",
-                          "width": 250,
-                          "textAlign": "right"
-                        }
-                      }
-                    },
-                    {
-                      "id": "HBstx",
-                      "type": "ref",
-                      "ref": "jhm7L",
-                      "name": "WhereLink",
-                      "descendants": {
-                        "g4RbI5": {
-                          "content": "أين أجد الملف؟"
-                        },
-                        "OhLBU": {
-                          "icon": "circle-help"
-                        }
-                      }
-                    }
-                  ]
-                },
-                {
-                  "id": "EDoyC",
-                  "type": "ref",
-                  "ref": "voVsM",
-                  "name": "CheckButton",
-                  "descendants": {
-                    "Ds0MU": {
-                      "content": "فحص الحزمة"
-                    },
-                    "N2zNb": {
-                      "icon": "shield-check"
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "mEQ8j",
-          "name": "IntroPanel",
-          "width": 400,
-          "layout": "vertical",
-          "gap": 22,
-          "alignItems": "end",
-          "children": [
-            {
-              "type": "frame",
-              "id": "NFeL2",
-              "name": "BrandRow",
-              "width": "fill_container",
-              "gap": 14,
-              "justifyContent": "end",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "v0mx1",
-                  "name": "BrandTexts",
-                  "layout": "vertical",
-                  "gap": 2,
-                  "alignItems": "end",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "Happu",
-                      "name": "AppName",
-                      "fill": "$text",
-                      "content": "الوكيل",
-                      "fontFamily": "$font",
-                      "fontSize": "$fs-display",
-                      "fontWeight": "700"
-                    },
-                    {
-                      "type": "text",
-                      "id": "lEMIK",
-                      "name": "Tagline",
-                      "fill": "$muted",
-                      "content": "نظام إدارة أعمال المكاتب — الإصدار 0.21",
-                      "fontFamily": "$font",
-                      "fontSize": "$fs-meta",
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "NuRXi",
-                  "name": "LogoTile",
-                  "width": 56,
-                  "height": 56,
-                  "fill": "$primary-fill",
-                  "cornerRadius": 12,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "L7wFaA",
-                      "name": "شعار الوكيل — الختم الرسمي",
-                      "clip": true,
-                      "width": 40,
-                      "height": 40,
-                      "layout": "none",
-                      "children": [
-                        {
-                          "type": "path",
-                          "id": "B0Yii",
-                          "x": -0.0070571428571428564,
-                          "y": 0,
-                          "geometry": "M279.48938 162.77333l-15.12-0.56c-1.11999 6.90667-2.61334 13.25334-5.22665 20.15999l12.87998 6.90668c-5.03998 13.62666-12.50666 26.50667-21.28 39.57333l-13.81334-7.46667c-4.29334 5.41334-8.96001 9.89334-14.74668 14.56001l8.58667 12.69333c-10.82666 8.77333-23.14666 16.42668-39.38667 22.77333l-6.90666-13.44c-7.09334 2.23999-14.56 4.48001-22.77333 5.6l0.93333 16.42667-44.98666 0 1.12-16.05334c-7.46667-1.12-14.56-2.98664-22.96-5.78666l-7.09334 13.25333c-13.62666-4.85333-27.06667-13.06668-39.75999-22.95999l8.58666-12.69333c-4.85333-4.10667-9.70667-8.96001-14.37333-14.18668l-13.44 7.46666c-9.52-12.87999-16.42667-25.19999-21.46667-39.75999l12.69333-6.71999c-2.61333-7.09334-4.29333-14-5.22666-20.53334l-14.74667 0.74666c-1.30667-10.26666-0.93333-17.54666-0.93333-24.26666l0-12.13334 0.74666-8.58666 14.93334 0.56c1.12-6.90667 2.8-13.62667 5.22666-22.02667l-12.69333-7.28c4.85333-13.25333 12.69333-26.32 21.46667-37.70667l13.44 7.46667c4.29333-5.41333 8.95999-9.89333 14.37333-14.56l-8.58666-12.32c11.2-9.14667 23.89334-17.17333 39.57333-23.33333l7.28 13.44c6.90666-2.61333 14.93333-4.85334 22.96-5.78667l-1.12-15.86667 4.66667-0.37333 39.01332 0 1.12 0.18667-0.93332 16.24c7.46666 0.93333 14.55999 2.61333 22.95999 5.6l7.09334-13.25334c11.94667 4.48 26.31999 12.32 39.19999 22.96l-8.58667 12.50667c4.85334 4.29333 9.70667 8.96 14.74668 14.56l13.81334-7.46667c8.40002 10.82667 15.67999 23.70667 21.28 37.52l-13.25333 7.28c2.24002 6.34667 4.48001 14.37334 5.41333 22.21334l14.93335-0.74667 0.93332 6.34667 0 32.66667-0.56 6.15999z m-139.44002-129.73333c-57.49332 0-106.95999 47.22667-106.95999 106.96 0 40.31999 28.18666 99.30666 93.52001 106.58669 3.91999 0.37332 8.77331 0.55996 14 0.55996 54.50665 0 106.77331-41.81332 106.77331-106.95999 0-51.70666-42-107.14666-107.33333-107.14666z",
-                          "fill": "$white",
-                          "width": 40.00705714285714,
-                          "height": 40
-                        },
-                        {
-                          "type": "path",
-                          "id": "L7XbPF",
-                          "x": 10.05332857142857,
-                          "y": 13.733328571428572,
-                          "geometry": "M0 0l0 86.61334 139.44 0 0-86.61334-139.44 0z m124.50667 77.28l-37.52001-30.24001-13.62666 12.69335-7.28 0-13.81335-12.69335-38.07999 31.54668-6.71999 0 40.69333-35.28-39.01334-34.90667 120.58666 0-38.45332 34.72 40.13333 35.46667-6.90666 0.18666 0-1.49333z",
-                          "fill": "$white",
-                          "width": 19.919999999999998,
-                          "height": 12.37332857142857
-                        },
-                        {
-                          "type": "path",
-                          "id": "NGvbz",
-                          "x": 17.626671428571427,
-                          "y": 16.08,
-                          "geometry": "M49.84 6.90667l-33.04001 32.10667-16.79999-16.42667 5.04-5.41333 11.75999 11.76001 27.81334-27.06668c2.61334-0.18666 4.85333-0.74667 7.09334-1.86667-1.12001 2.24001-1.86667 3.73334-1.86667 6.90667z",
-                          "fill": "$white",
-                          "width": 7.386671428571428,
-                          "height": 5.573328571428571
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "id": "KYGfS",
-              "name": "Heading",
-              "fill": "$text",
-              "textGrowth": "fixed-width",
-              "width": "fill_container",
-              "content": "مرحبًا بك في التشغيل الأول",
-              "textAlign": "right",
-              "fontFamily": "$font",
-              "fontSize": "$fs-title",
-              "fontWeight": "700"
-            },
-            {
-              "type": "text",
-              "id": "p5rKc6",
-              "name": "IntroDesc",
-              "fill": "$muted",
-              "textGrowth": "fixed-width",
-              "width": "fill_container",
-              "content": "هذه النسخة لم تُفعَّل بعد. أحضر ملف الإعداد من مدير النظام في الهيئة؛ فهو يحمل بيانات الهيئة والمكتب وهذا الجهاز والموظف المخوّل باستخدامه، بامتداد .wakeel-setup",
-              "lineHeight": 1.6,
-              "textAlign": "right",
-              "fontFamily": "$font",
-              "fontSize": "$fs-body",
-              "fontWeight": "normal"
-            },
-            {
-              "type": "frame",
-              "id": "UtxL4",
-              "name": "Steps",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 12,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "g5mKNe",
-                  "name": "Step1",
-                  "width": "fill_container",
-                  "gap": 12,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "M9HckZ",
-                      "name": "Step1Texts",
-                      "width": "fill_container",
-                      "layout": "vertical",
-                      "gap": 2,
-                      "alignItems": "end",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "BNkeW",
-                          "name": "Title",
-                          "fill": "$text",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "تصدير الحزمة",
-                          "textAlign": "right",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-body",
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "text",
-                          "id": "w2iY4",
-                          "name": "Desc",
-                          "fill": "$muted",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "أنجزه مدير النظام م. سامر عودة في 10/09/2026",
-                          "textAlign": "right",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-meta",
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "HajAW",
-                      "name": "Step1Circle",
-                      "width": 28,
-                      "height": 28,
-                      "fill": "$success-fill",
-                      "cornerRadius": "$radius-pill",
-                      "justifyContent": "center",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "icon",
-                          "id": "PztX5",
-                          "name": "Check",
-                          "width": 16,
-                          "height": 16,
-                          "icon": "check",
-                          "library": "lucide",
-                          "fill": "$white"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "P4hM17",
-                  "name": "Step2",
-                  "width": "fill_container",
-                  "gap": 12,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "yOJdA",
-                      "name": "Step2Texts",
-                      "width": "fill_container",
-                      "layout": "vertical",
-                      "gap": 2,
-                      "alignItems": "end",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "iMrhP",
-                          "name": "Title",
-                          "fill": "$text",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "اختيار الملف وكلمة المرور",
-                          "textAlign": "right",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-body",
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "text",
-                          "id": "mwPAf",
-                          "name": "Desc",
-                          "fill": "$primary",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "أنت هنا — الخطوة الحالية",
-                          "textAlign": "right",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-meta",
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "e9H72y",
-                      "name": "Step2Circle",
-                      "width": 28,
-                      "height": 28,
-                      "fill": "$primary-fill",
-                      "cornerRadius": "$radius-pill",
-                      "justifyContent": "center",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "hK4ks",
-                          "name": "Num",
-                          "fill": "$white",
-                          "content": "2",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-meta",
-                          "fontWeight": "700"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "MApBa",
-                  "name": "Step3",
-                  "width": "fill_container",
-                  "gap": 12,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "AEQak",
-                      "name": "Step3Texts",
-                      "width": "fill_container",
-                      "layout": "vertical",
-                      "gap": 2,
-                      "alignItems": "end",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "oB6Y6",
-                          "name": "Title",
-                          "fill": "$muted",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "فحص الحزمة وتفعيل النسخة",
-                          "textAlign": "right",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-body",
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "text",
-                          "id": "BmAx3",
-                          "name": "Desc",
-                          "fill": "$muted",
-                          "textGrowth": "fixed-width",
-                          "width": "fill_container",
-                          "content": "يتحقق التطبيق من التوقيع والهيئة والمكتب والجهاز",
-                          "textAlign": "right",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-meta",
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "n1k8s",
-                      "name": "Step3Circle",
-                      "width": 28,
-                      "height": 28,
-                      "fill": "$neutral-soft",
-                      "cornerRadius": "$radius-pill",
-                      "stroke": "$border",
-                      "strokeWidth": 1,
-                      "strokeAlignment": "inner",
-                      "justifyContent": "center",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "fjIxF",
-                          "name": "Num",
-                          "fill": "$muted",
-                          "content": "3",
-                          "fontFamily": "$font",
-                          "fontSize": "$fs-meta",
-                          "fontWeight": "700"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "KLdNS",
-              "type": "ref",
-              "ref": "uiYQZ",
-              "name": "InfoCard",
-              "width": "fill_container",
-              "descendants": {
-                "KncSJ": {
-                  "content": "حزمة موقّعة ومشفّرة لجهاز واحد"
-                },
-                "Gyli0": {
-                  "content": "يعمل الوكيل دون إنترنت. تصلح الحزمة لهذا الجهاز فقط وتنتهي صلاحيتها بعد 7 أيام من تصديرها (حتى 17/09/2026)."
-                }
-              }
-            },
-            {
-              "type": "frame",
-              "id": "fF8Pi",
-              "name": "HelpRow",
-              "gap": 8,
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "NDpCX",
-                  "name": "HelpText",
-                  "fill": "$muted",
-                  "content": "تحتاج مساعدة؟ مدير النظام: م. سامر عودة — داخلي 2046",
-                  "fontFamily": "$font",
-                  "fontSize": "$fs-meta",
-                  "fontWeight": "normal"
-                },
-                {
-                  "type": "icon",
-                  "id": "S1lyfL",
-                  "name": "HelpIcon",
-                  "width": 16,
-                  "height": 16,
-                  "icon": "headset",
-                  "library": "lucide",
-                  "fill": "$muted"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "id": "y7wkb7",
-          "layoutPosition": "absolute",
-          "x": 0,
-          "y": 728,
-          "name": "Footer",
-          "fill": "$placeholder",
-          "textGrowth": "fixed-width",
-          "width": 1366,
-          "content": "بتاريخ 12/09/2026 الساعة 10:24 — الجهاز PLN-PC-01 — الوكيل v0.21",
-          "textAlign": "center",
-          "fontFamily": "$font",
-          "fontSize": "$fs-meta",
-          "fontWeight": "normal"
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "flMyC",
       "x": 16350,
       "y": 3900,
@@ -354192,6 +353414,784 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "w2r2Eq",
+      "x": 12000,
+      "y": 3900,
+      "name": "W02 — التشغيل الأول — ملف الإعداد",
+      "theme": {
+        "mode": "dark"
+      },
+      "clip": true,
+      "width": 1366,
+      "height": 768,
+      "fill": "$bg",
+      "gap": 64,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "aWJCP",
+          "name": "FormCard",
+          "width": 520,
+          "fill": "$surface",
+          "cornerRadius": "$radius-lg",
+          "stroke": "$border",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": 28,
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Gk17S",
+              "name": "CardHead",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "GiJEP",
+                  "name": "CardTitle",
+                  "fill": "$text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "ملف الإعداد",
+                  "textAlign": "right",
+                  "fontFamily": "$font",
+                  "fontSize": "$fs-title",
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "DcruX",
+                  "name": "CardDesc",
+                  "fill": "$muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "اختر الملف الذي سلّمه لك مدير النظام ثم أدخل كلمة مرور الحزمة لفحصها.",
+                  "textAlign": "right",
+                  "fontFamily": "$font",
+                  "fontSize": "$fs-body",
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "EjLni",
+              "name": "DropZone",
+              "width": "fill_container",
+              "height": 128,
+              "fill": "$primary-soft",
+              "cornerRadius": "$radius-lg",
+              "stroke": "$primary-border",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "uRKj1",
+                  "name": "UploadIcon",
+                  "width": 28,
+                  "height": 28,
+                  "icon": "cloud-upload",
+                  "library": "lucide",
+                  "fill": "$primary"
+                },
+                {
+                  "type": "frame",
+                  "id": "u4tKpR",
+                  "name": "DropLine",
+                  "gap": 5,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "raxVV",
+                      "name": "DropText",
+                      "fill": "$text",
+                      "content": "اسحب إلى هنا ملف .wakeel-setup أو",
+                      "fontFamily": "$font",
+                      "fontSize": "$fs-body",
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "bBKKo",
+                      "name": "BrowseLink",
+                      "fill": "$primary",
+                      "content": "اختر ملفًا من الجهاز",
+                      "fontFamily": "$font",
+                      "fontSize": "$fs-body",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "gfg9e",
+                  "name": "DropMeta",
+                  "fill": "$muted",
+                  "content": "الحجم الأقصى 20 ميغابايت — الامتداد المقبول فقط .wakeel-setup",
+                  "fontFamily": "$font",
+                  "fontSize": "$fs-meta",
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qHInT",
+              "name": "SelectedFile",
+              "width": "fill_container",
+              "height": 60,
+              "fill": "$success-soft",
+              "cornerRadius": "$radius",
+              "stroke": "$success-border",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 10,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "NluPb",
+                  "name": "RemoveFile",
+                  "width": 28,
+                  "height": 28,
+                  "cornerRadius": "$radius",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "S0QlA",
+                      "name": "RemoveIcon",
+                      "width": 14,
+                      "height": 14,
+                      "icon": "x",
+                      "library": "lucide",
+                      "fill": "$muted"
+                    }
+                  ]
+                },
+                {
+                  "id": "jZGy1",
+                  "type": "ref",
+                  "ref": "HKz4z",
+                  "name": "FileChip",
+                  "fill": "$surface",
+                  "descendants": {
+                    "IkHOY": {
+                      "content": "جاهز للفحص",
+                      "fill": "$success"
+                    },
+                    "N2P3d": {
+                      "fill": "$success"
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "Ny8H0",
+                  "name": "FileTexts",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 1,
+                  "alignItems": "end",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "epk88",
+                      "name": "FileName",
+                      "fill": "$text",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "rda-office12-20260910.wakeel-setup",
+                      "textAlign": "right",
+                      "fontFamily": "$font",
+                      "fontSize": "$fs-body",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ZB7gJ",
+                      "name": "FileMeta",
+                      "fill": "$muted",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "صُدّر 10/09/2026 — 1.8 ميغابايت — م. سامر عودة",
+                      "textAlign": "right",
+                      "fontFamily": "$font",
+                      "fontSize": "$fs-meta",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "icon",
+                  "id": "gXZHk",
+                  "name": "FileIcon",
+                  "width": 22,
+                  "height": 22,
+                  "icon": "file-check",
+                  "library": "lucide",
+                  "fill": "$success"
+                }
+              ]
+            },
+            {
+              "id": "pPR62",
+              "type": "ref",
+              "ref": "b88Gl",
+              "name": "PackagePassword",
+              "width": "fill_container",
+              "descendants": {
+                "kJnIz": {
+                  "content": "كلمة مرور الحزمة"
+                },
+                "X73KK": {
+                  "type": "frame",
+                  "id": "Ua8Qx",
+                  "name": "Box",
+                  "width": "fill_container",
+                  "height": 38,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius",
+                  "stroke": "$border",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "DPH2r",
+                      "name": "ToggleEye",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "eye-off",
+                      "library": "lucide",
+                      "fill": "$muted"
+                    },
+                    {
+                      "type": "text",
+                      "id": "S6mLqK",
+                      "name": "Value",
+                      "fill": "$text",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "••••••••••••",
+                      "textAlign": "right",
+                      "fontFamily": "$font",
+                      "fontSize": 16,
+                      "fontWeight": "normal",
+                      "letterSpacing": 2
+                    }
+                  ]
+                },
+                "x2o34Q": {
+                  "content": "تظهر مرة واحدة فقط لمدير النظام لحظة التصدير ولا يمكن استعادتها؛ اطلبها منه إن لم تُسلَّم إليك مع الملف."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "TFkRG",
+              "name": "Actions",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "end",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "L0plj",
+                  "name": "HelpGroup",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "id": "rnuda",
+                      "type": "ref",
+                      "ref": "vkZPZ",
+                      "name": "HelpTooltip",
+                      "descendants": {
+                        "X9BOQJ": {
+                          "content": "يصدّره مدير النظام من أداة المدير ← «تصدير الإعداد»، ويُسلَّم إليك على وسيط USB أو عبر البريد الداخلي مع كلمة المرور.",
+                          "textGrowth": "fixed-width",
+                          "width": 250,
+                          "textAlign": "right"
+                        }
+                      }
+                    },
+                    {
+                      "id": "tTFLl",
+                      "type": "ref",
+                      "ref": "jhm7L",
+                      "name": "WhereLink",
+                      "descendants": {
+                        "g4RbI5": {
+                          "content": "أين أجد الملف؟"
+                        },
+                        "OhLBU": {
+                          "icon": "circle-help"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "fTza1",
+                  "type": "ref",
+                  "ref": "voVsM",
+                  "name": "CheckButton",
+                  "descendants": {
+                    "Ds0MU": {
+                      "content": "فحص الحزمة"
+                    },
+                    "N2zNb": {
+                      "icon": "shield-check"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "m6plfR",
+          "name": "IntroPanel",
+          "width": 400,
+          "layout": "vertical",
+          "gap": 22,
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "frame",
+              "id": "nOZhA",
+              "name": "BrandRow",
+              "width": "fill_container",
+              "gap": 14,
+              "justifyContent": "end",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "h5vHPS",
+                  "name": "BrandTexts",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "alignItems": "end",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VPVxu",
+                      "name": "AppName",
+                      "fill": "$text",
+                      "content": "الوكيل",
+                      "fontFamily": "$font",
+                      "fontSize": "$fs-display",
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "wzqkQ",
+                      "name": "Tagline",
+                      "fill": "$muted",
+                      "content": "نظام إدارة أعمال المكاتب — الإصدار 0.21",
+                      "fontFamily": "$font",
+                      "fontSize": "$fs-meta",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "C6sAOP",
+                  "name": "LogoTile",
+                  "width": 56,
+                  "height": 56,
+                  "fill": "$primary-fill",
+                  "cornerRadius": 12,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "h9PkWN",
+                      "name": "شعار الوكيل — الختم الرسمي",
+                      "clip": true,
+                      "width": 40,
+                      "height": 40,
+                      "layout": "none",
+                      "children": [
+                        {
+                          "type": "path",
+                          "id": "XxzxT",
+                          "x": -0.0070571428571428564,
+                          "y": 0,
+                          "geometry": "M279.48938 162.77333l-15.12-0.56c-1.11999 6.90667-2.61334 13.25334-5.22665 20.15999l12.87998 6.90668c-5.03998 13.62666-12.50666 26.50667-21.28 39.57333l-13.81334-7.46667c-4.29334 5.41334-8.96001 9.89334-14.74668 14.56001l8.58667 12.69333c-10.82666 8.77333-23.14666 16.42668-39.38667 22.77333l-6.90666-13.44c-7.09334 2.23999-14.56 4.48001-22.77333 5.6l0.93333 16.42667-44.98666 0 1.12-16.05334c-7.46667-1.12-14.56-2.98664-22.96-5.78666l-7.09334 13.25333c-13.62666-4.85333-27.06667-13.06668-39.75999-22.95999l8.58666-12.69333c-4.85333-4.10667-9.70667-8.96001-14.37333-14.18668l-13.44 7.46666c-9.52-12.87999-16.42667-25.19999-21.46667-39.75999l12.69333-6.71999c-2.61333-7.09334-4.29333-14-5.22666-20.53334l-14.74667 0.74666c-1.30667-10.26666-0.93333-17.54666-0.93333-24.26666l0-12.13334 0.74666-8.58666 14.93334 0.56c1.12-6.90667 2.8-13.62667 5.22666-22.02667l-12.69333-7.28c4.85333-13.25333 12.69333-26.32 21.46667-37.70667l13.44 7.46667c4.29333-5.41333 8.95999-9.89333 14.37333-14.56l-8.58666-12.32c11.2-9.14667 23.89334-17.17333 39.57333-23.33333l7.28 13.44c6.90666-2.61333 14.93333-4.85334 22.96-5.78667l-1.12-15.86667 4.66667-0.37333 39.01332 0 1.12 0.18667-0.93332 16.24c7.46666 0.93333 14.55999 2.61333 22.95999 5.6l7.09334-13.25334c11.94667 4.48 26.31999 12.32 39.19999 22.96l-8.58667 12.50667c4.85334 4.29333 9.70667 8.96 14.74668 14.56l13.81334-7.46667c8.40002 10.82667 15.67999 23.70667 21.28 37.52l-13.25333 7.28c2.24002 6.34667 4.48001 14.37334 5.41333 22.21334l14.93335-0.74667 0.93332 6.34667 0 32.66667-0.56 6.15999z m-139.44002-129.73333c-57.49332 0-106.95999 47.22667-106.95999 106.96 0 40.31999 28.18666 99.30666 93.52001 106.58669 3.91999 0.37332 8.77331 0.55996 14 0.55996 54.50665 0 106.77331-41.81332 106.77331-106.95999 0-51.70666-42-107.14666-107.33333-107.14666z",
+                          "fill": "$white",
+                          "width": 40.00705714285714,
+                          "height": 40
+                        },
+                        {
+                          "type": "path",
+                          "id": "hD3VP",
+                          "x": 10.05332857142857,
+                          "y": 13.733328571428572,
+                          "geometry": "M0 0l0 86.61334 139.44 0 0-86.61334-139.44 0z m124.50667 77.28l-37.52001-30.24001-13.62666 12.69335-7.28 0-13.81335-12.69335-38.07999 31.54668-6.71999 0 40.69333-35.28-39.01334-34.90667 120.58666 0-38.45332 34.72 40.13333 35.46667-6.90666 0.18666 0-1.49333z",
+                          "fill": "$white",
+                          "width": 19.919999999999998,
+                          "height": 12.37332857142857
+                        },
+                        {
+                          "type": "path",
+                          "id": "hSW4m",
+                          "x": 17.626671428571427,
+                          "y": 16.08,
+                          "geometry": "M49.84 6.90667l-33.04001 32.10667-16.79999-16.42667 5.04-5.41333 11.75999 11.76001 27.81334-27.06668c2.61334-0.18666 4.85333-0.74667 7.09334-1.86667-1.12001 2.24001-1.86667 3.73334-1.86667 6.90667z",
+                          "fill": "$white",
+                          "width": 7.386671428571428,
+                          "height": 5.573328571428571
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "Q6dVPW",
+              "name": "Heading",
+              "fill": "$text",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "مرحبًا بك في التشغيل الأول",
+              "textAlign": "right",
+              "fontFamily": "$font",
+              "fontSize": "$fs-title",
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "gyfAK",
+              "name": "IntroDesc",
+              "fill": "$muted",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "هذه النسخة لم تُفعَّل بعد. أحضر ملف الإعداد من مدير النظام في الهيئة؛ فهو يحمل بيانات الهيئة والمكتب وهذا الجهاز والموظف المخوّل باستخدامه، بامتداد .wakeel-setup",
+              "lineHeight": 1.6,
+              "textAlign": "right",
+              "fontFamily": "$font",
+              "fontSize": "$fs-body",
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "RUynL",
+              "name": "Steps",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "QWSI7",
+                  "name": "Step1",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gkZof",
+                      "name": "Step1Texts",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "r6aENp",
+                          "name": "Title",
+                          "fill": "$text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "تصدير الحزمة",
+                          "textAlign": "right",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-body",
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "FykaE",
+                          "name": "Desc",
+                          "fill": "$muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "أنجزه مدير النظام م. سامر عودة في 10/09/2026",
+                          "textAlign": "right",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-meta",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gjnQs",
+                      "name": "Step1Circle",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$success-fill",
+                      "cornerRadius": "$radius-pill",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "dhM6k",
+                          "name": "Check",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "check",
+                          "library": "lucide",
+                          "fill": "$white"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "sdRTi",
+                  "name": "Step2",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "kRC3X",
+                      "name": "Step2Texts",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "MSaZR",
+                          "name": "Title",
+                          "fill": "$text",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "اختيار الملف وكلمة المرور",
+                          "textAlign": "right",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-body",
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "tNW96",
+                          "name": "Desc",
+                          "fill": "$primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "أنت هنا — الخطوة الحالية",
+                          "textAlign": "right",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-meta",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "M4Iri",
+                      "name": "Step2Circle",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$primary-fill",
+                      "cornerRadius": "$radius-pill",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "CIGBg",
+                          "name": "Num",
+                          "fill": "$white",
+                          "content": "2",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-meta",
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "l50X1J",
+                  "name": "Step3",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "YXEmp",
+                      "name": "Step3Texts",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "X3tQw5",
+                          "name": "Title",
+                          "fill": "$muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "فحص الحزمة وتفعيل النسخة",
+                          "textAlign": "right",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-body",
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "QH5nk",
+                          "name": "Desc",
+                          "fill": "$muted",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "يتحقق التطبيق من التوقيع والهيئة والمكتب والجهاز",
+                          "textAlign": "right",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-meta",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zSyqo",
+                      "name": "Step3Circle",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "$neutral-soft",
+                      "cornerRadius": "$radius-pill",
+                      "stroke": "$border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qWK21",
+                          "name": "Num",
+                          "fill": "$muted",
+                          "content": "3",
+                          "fontFamily": "$font",
+                          "fontSize": "$fs-meta",
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "dSDHL",
+              "type": "ref",
+              "ref": "uiYQZ",
+              "name": "InfoCard",
+              "width": "fill_container",
+              "descendants": {
+                "KncSJ": {
+                  "content": "حزمة موقّعة ومشفّرة لجهاز واحد"
+                },
+                "Gyli0": {
+                  "content": "يعمل الوكيل دون إنترنت. تصلح الحزمة لهذا الجهاز فقط وتنتهي صلاحيتها بعد 7 أيام من تصديرها (حتى 17/09/2026)."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "a0mDi",
+              "name": "HelpRow",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Z6hZL5",
+                  "name": "HelpText",
+                  "fill": "$muted",
+                  "content": "تحتاج مساعدة؟ مدير النظام: م. سامر عودة — داخلي 2046",
+                  "fontFamily": "$font",
+                  "fontSize": "$fs-meta",
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon",
+                  "id": "r3Vd9",
+                  "name": "HelpIcon",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "headset",
+                  "library": "lucide",
+                  "fill": "$muted"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "wsxUR",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 728,
+          "name": "Footer",
+          "fill": "$placeholder",
+          "textGrowth": "fixed-width",
+          "width": 1366,
+          "content": "بتاريخ 12/09/2026 الساعة 10:24 — الجهاز PLN-PC-01 — الوكيل v0.21",
+          "textAlign": "center",
+          "fontFamily": "$font",
+          "fontSize": "$fs-meta",
+          "fontWeight": "normal"
         }
       ]
     }
