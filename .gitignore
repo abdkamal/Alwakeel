@@ -8,12 +8,12 @@
 *.jks
 *.keystore
 secrets/
-keys/
+/keys/
 
 # Runtime data / artifacts of real installations
-data/
-vault/
-backups/
+/data/
+/vault/
+/backups/
 *.wakeel-backup
 *.wakeel-sync
 *.wakeel-setup
@@ -38,7 +38,7 @@ TestResults/
 
 # Android / Gradle
 **/.gradle/
-**/build/
+android/**/build/
 local.properties
 .idea/
 *.iml
