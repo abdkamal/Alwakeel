@@ -11,4 +11,9 @@
     <PackageReference Include="NSec.Cryptography" />
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" />
   </ItemGroup>
+
+  <!-- The test suite checks the signed formats themselves, so it sees the format helpers. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Wakeel.Crypto.Tests" />
+  </ItemGroup>
 </Project>
