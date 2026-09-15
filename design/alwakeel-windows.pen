@@ -8740,7 +8740,7 @@
                       "id": "X8aBke",
                       "name": "DropText",
                       "fill": "$text",
-                      "content": "اسحب ملف ‎.wakeel-setup‎ إلى هنا أو",
+                      "content": "اسحب إلى هنا ملف .wakeel-setup أو",
                       "fontFamily": "$font",
                       "fontSize": "$fs-body",
                       "fontWeight": "normal"
@@ -8752,7 +8752,7 @@
                   "id": "ymMwR",
                   "name": "DropMeta",
                   "fill": "$muted",
-                  "content": "الامتداد المقبول ‎.wakeel-setup‎ فقط — الحجم الأقصى 20 م.ب",
+                  "content": "الحجم الأقصى 20 م.ب — الامتداد المقبول فقط .wakeel-setup",
                   "fontFamily": "$font",
                   "fontSize": "$fs-meta",
                   "fontWeight": "normal"
@@ -9111,7 +9111,7 @@
               "fill": "$muted",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "هذه النسخة لم تُفعَّل بعد. أحضر ملف الإعداد ‎.wakeel-setup‎ من مدير النظام في الهيئة؛ فهو يحمل بيانات الهيئة والمكتب وهذا الجهاز والموظف المخوّل باستخدامه.",
+              "content": "هذه النسخة لم تُفعَّل بعد. أحضر ملف الإعداد من مدير النظام في الهيئة؛ فهو يحمل بيانات الهيئة والمكتب وهذا الجهاز والموظف المخوّل باستخدامه، بامتداد .wakeel-setup",
               "lineHeight": 1.6,
               "textAlign": "right",
               "fontFamily": "$font",
@@ -9394,7 +9394,7 @@
           "fill": "$placeholder",
           "textGrowth": "fixed-width",
           "width": 1366,
-          "content": "الوكيل v0.21 — الجهاز PLN-PC-01 — بتاريخ 12/09/2026 الساعة 10:24",
+          "content": "بتاريخ 12/09/2026 الساعة 10:24 — الجهاز PLN-PC-01 — الوكيل v0.21",
           "textAlign": "center",
           "fontFamily": "$font",
           "fontSize": "$fs-meta",
@@ -9774,7 +9774,7 @@
                   "id": "sOy1I",
                   "name": "معلومات الجهاز",
                   "fill": "$muted",
-                  "content": "الجهاز PLN-PC-01 • آخر مزامنة منذ 8 دقائق • الوكيل الإصدار v0.21",
+                  "content": "آخر مزامنة منذ 8 دقائق — الجهاز PLN-PC-01 · إصدار الوكيل v0.21",
                   "fontFamily": "$font",
                   "fontSize": "$fs-meta",
                   "fontWeight": "normal"
@@ -10252,7 +10252,7 @@
                       "id": "auITu",
                       "name": "تلميح الحقل",
                       "fill": "$muted",
-                      "content": "اضغط Enter للمتابعة مباشرة",
+                      "content": "للمتابعة مباشرة، اضغط Enter",
                       "fontFamily": "$font",
                       "fontSize": "$fs-meta",
                       "fontWeight": "normal"
@@ -11521,7 +11521,7 @@
                                       "id": "B60Jj",
                                       "name": "CodeMeta1",
                                       "fill": "$muted",
-                                      "content": "الحساب a.khatib · الموظف أحمد الخطيب",
+                                      "content": "الموظف أحمد الخطيب · الحساب a.khatib",
                                       "fontFamily": "$font",
                                       "fontSize": 11,
                                       "fontWeight": "normal"
@@ -11747,7 +11747,7 @@
                               "id": "jBOfD",
                               "name": "EmployeeMeta",
                               "fill": "$muted",
-                              "content": "الحساب a.khatib · مدير المكتب · الموظف رقم 2",
+                              "content": "مدير المكتب · الموظف رقم 2 · الحساب a.khatib",
                               "fontFamily": "$font",
                               "fontSize": "$fs-meta",
                               "fontWeight": "normal"
@@ -17242,7 +17242,7 @@
                                           "id": "aR6sA",
                                           "name": "القيمة",
                                           "fill": "$text",
-                                          "content": "القرص E: • 1.8 غيغابايت • التالية 23:00",
+                                          "content": "1.8 غيغابايت • التالية 23:00 — القرص E:",
                                           "lineHeight": 1.4,
                                           "fontFamily": "$font",
                                           "fontSize": 12,
@@ -19084,7 +19084,7 @@
                                           "id": "FNDDM",
                                           "name": "Run3",
                                           "fill": "$muted",
-                                          "content": "من القوالب يحتاج الوظيفة الإضافية",
+                                          "content": "يحتاج الوظيفة الإضافية",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -19646,7 +19646,7 @@
                                           "id": "Ddija",
                                           "name": "Run4",
                                           "fill": "$muted",
-                                          "content": "المنطقة الزمنية آسيا/غزة",
+                                          "content": "المنطقة آسيا/غزة",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -19861,7 +19861,7 @@
                                       "fill": "$text",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "محرّك التعرّف الضوئي على العربية (OCR) — الإصدار v3.2 · الفهرس محدّث",
+                                      "content": "الفهرس محدّث — محرّك التعرّف الضوئي على العربية (OCR) · الإصدار v3.2",
                                       "textAlign": "right",
                                       "fontFamily": "$font",
                                       "fontSize": 13,
@@ -20035,7 +20035,7 @@
                                       "fill": "$text",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "الماسح Canon DR-C240 — غير متصل منذ 09:12",
+                                      "content": "الماسح غير متصل منذ 09:12 — Canon DR-C240",
                                       "textAlign": "right",
                                       "fontFamily": "$font",
                                       "fontSize": 13,
@@ -20065,7 +20065,7 @@
                                           "id": "zK5SV",
                                           "name": "Run3",
                                           "fill": "$muted",
-                                          "content": "صفحة · تحقق من كابل",
+                                          "content": "صفحة · افحص كابل",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -20477,7 +20477,7 @@
                                           "id": "Qui07",
                                           "name": "Run4",
                                           "fill": "$muted",
-                                          "content": "النسخة التالية الليلة",
+                                          "content": "التالية الليلة",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -30480,7 +30480,7 @@
                                           "fill": "$muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "فُتح في Microsoft Word 365 (النافذة نشطة) — 10:24",
+                                          "content": "فُتح (النافذة نشطة) الساعة 10:24 — في Microsoft Word 365",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 13,
@@ -40733,7 +40733,7 @@
                                           "content": "خطة_الصيانة_الدورية_2026.pdf"
                                         },
                                         "rhmRP": {
-                                          "content": "PDF • 1.8 MB • المستند الرئيسي"
+                                          "content": "المستند الرئيسي • 1.8 م.ب • PDF"
                                         },
                                         "ReyQP": {
                                           "icon": "file-text"
@@ -40751,7 +40751,7 @@
                                           "content": "كشف_التكاليف_التقديرية.pdf"
                                         },
                                         "rhmRP": {
-                                          "content": "PDF • 640 KB • مرفق"
+                                          "content": "مرفق • 640 ك.ب • PDF"
                                         },
                                         "ReyQP": {
                                           "icon": "file-text"
@@ -40769,7 +40769,7 @@
                                           "content": "محضر_اللجنة_الفنية.docx"
                                         },
                                         "rhmRP": {
-                                          "content": "Word • 320 KB • مرفق"
+                                          "content": "مرفق • 320 ك.ب • Word"
                                         },
                                         "ReyQP": {
                                           "icon": "file-type"
@@ -40787,7 +40787,7 @@
                                           "content": "صور_مواقع_الري.pdf"
                                         },
                                         "rhmRP": {
-                                          "content": "PDF • 4.2 MB • مرفق"
+                                          "content": "مرفق • 4.2 م.ب • PDF"
                                         },
                                         "ReyQP": {
                                           "icon": "image"
@@ -41165,7 +41165,7 @@
                               "fill": "$text"
                             },
                             "Z7OeTV": {
-                              "content": "جاهزة · ورق A4 متوفر",
+                              "content": "جاهزة · الورق متوفر — A4",
                               "width": "fill_container"
                             }
                           }
@@ -41260,7 +41260,7 @@
                           "name": "خيار طباعة رمز QR للتحقق",
                           "descendants": {
                             "pOSE0": {
-                              "content": "طباعة رمز QR للتحقق"
+                              "content": "طباعة رمز التحقق (QR)"
                             }
                           }
                         },
@@ -41271,7 +41271,7 @@
                           "name": "تلميح رمز التحقق",
                           "descendants": {
                             "X9BOQJ": {
-                              "content": "رمز QR يتيح التأكد من مطابقة الورقة للنسخة المحفوظة"
+                              "content": "التأكد من مطابقة الورقة للنسخة المحفوظة عبر رمز التحقق (QR)"
                             }
                           }
                         },
@@ -64934,7 +64934,7 @@
                           "id": "NG47I",
                           "name": "Subtitle",
                           "fill": "$muted",
-                          "content": "كتاب صادر إلى وزارة التخطيط بشأن الطريق الزراعي — ملف PDF برقم 20260912/12046 من 6 صفحات، وتم استخراج النص منه",
+                          "content": "كتاب صادر إلى وزارة التخطيط بشأن الطريق الزراعي برقم 20260912/12046، من 6 صفحات وتم استخراج النص منه — ملف PDF",
                           "fontFamily": "$font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -66597,7 +66597,7 @@
                           "id": "zqHIo",
                           "name": "Subtitle",
                           "fill": "$muted",
-                          "content": "استوردوا المستندات عبر الماسح الضوئي أو الملفات أو تطبيق الهاتف، وتابعوا حالة الفهرسة الضوئية (OCR) قبل الربط بالمراسلات والملفات.",
+                          "content": "قبل الربط بالمراسلات والملفات، استوردوا المستندات عبر الماسح الضوئي أو الملفات أو تطبيق الهاتف، وتابعوا حالة الفهرسة الضوئية (OCR).",
                           "fontFamily": "$font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -68486,7 +68486,7 @@
                           "fill": "$muted",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
-                          "content": "الصيغ المدعومة: PDF، JPG، PNG — الحجم الأقصى 20 ميغابايت للملف الواحد.",
+                          "content": "الحجم الأقصى للملف الواحد 20 ميغابايت — الصيغ المدعومة: PDF، JPG، PNG.",
                           "textAlign": "right",
                           "fontFamily": "$font",
                           "fontSize": 12,
@@ -68507,7 +68507,7 @@
                               "fill": "$info",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "الفهرسة الضوئية (OCR) تعمل تلقائيًا بعد الاستيراد",
+                              "content": "بعد الاستيراد تعمل الفهرسة الضوئية تلقائيًا (OCR).",
                               "textAlign": "right",
                               "fontFamily": "$font",
                               "fontSize": 12,
@@ -70615,7 +70615,7 @@
                                           "id": "K92Ow",
                                           "name": "Meta",
                                           "fill": "$muted",
-                                          "content": "ملف PDF بتاريخ 09/09/2026 · بحجم 4.2 م.ب",
+                                          "content": "بتاريخ 09/09/2026 · بحجم 4.2 م.ب — ملف PDF",
                                           "lineHeight": 1.3,
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -71680,7 +71680,7 @@
                                   "id": "nLBbu",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF بحجم 1.2 ميغابايت",
+                                  "content": "بحجم 1.2 ميغابايت — ملف PDF",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -71887,7 +71887,7 @@
                                   "id": "L5CnmX",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف Word بحجم 340 كيلوبايت",
+                                  "content": "بحجم 340 كيلوبايت — ملف Word",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72094,7 +72094,7 @@
                                   "id": "MC2rr",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF بحجم 890 كيلوبايت",
+                                  "content": "بحجم 890 كيلوبايت — ملف PDF",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72301,7 +72301,7 @@
                                   "id": "r2fiVL",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف JPG بحجم 2.1 ميغابايت",
+                                  "content": "بحجم 2.1 ميغابايت — ملف JPG",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72508,7 +72508,7 @@
                                   "id": "SYhv2",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF بحجم 4.6 ميغابايت",
+                                  "content": "بحجم 4.6 ميغابايت — ملف PDF",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72715,7 +72715,7 @@
                                   "id": "Lx1nr",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF بحجم 610 كيلوبايت",
+                                  "content": "بحجم 610 كيلوبايت — ملف PDF",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -72922,7 +72922,7 @@
                                   "id": "I05rDS",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف Word بحجم 210 كيلوبايت",
+                                  "content": "بحجم 210 كيلوبايت — ملف Word",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -73129,7 +73129,7 @@
                                   "id": "FBKW3",
                                   "name": "TypeSizeText",
                                   "fill": "$text",
-                                  "content": "ملف PDF بحجم 3.3 ميغابايت",
+                                  "content": "بحجم 3.3 ميغابايت — ملف PDF",
                                   "fontFamily": "$font",
                                   "fontSize": 13,
                                   "fontWeight": "normal"
@@ -82295,7 +82295,7 @@
                               "id": "q7L2X",
                               "name": "DropHint",
                               "fill": "$muted",
-                              "content": "صورة الكشف أو PDF، حتى 10 م.ب",
+                              "content": "صورة الكشف أو ملف PDF بحد أقصى 10 ميغابايت",
                               "textAlign": "center",
                               "fontFamily": "$font",
                               "fontSize": "$fs-meta",
@@ -92389,7 +92389,7 @@
                                   "content": "كيف تصل الحزم؟"
                                 },
                                 "Gyli0": {
-                                  "content": "تُقرأ الحزم من ذاكرة USB بعد التحقق من توقيع المكتب المرسل."
+                                  "content": "بعد التحقق من توقيع المكتب المرسل، تُقرأ الحزم من ذاكرة USB."
                                 },
                                 "BULvg": {
                                   "icon": "usb"
@@ -92728,7 +92728,7 @@
                                       "fill": "$text",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "حاسوب مكتبي — HP ProDesk 400",
+                                      "content": "حاسوب مكتبي HP ProDesk 400",
                                       "textAlign": "right",
                                       "fontFamily": "$font",
                                       "fontSize": 13,
@@ -93831,7 +93831,7 @@
                           "name": "ScanQR",
                           "descendants": {
                             "LL17I": {
-                              "content": "مسح QR من الهاتف"
+                              "content": "مسح الرمز من الهاتف — QR"
                             },
                             "v5XRL": {
                               "icon": "qr-code"
@@ -112642,7 +112642,7 @@
                                       "id": "hD1R2",
                                       "name": "عدّاد",
                                       "fill": "$muted",
-                                      "content": "412 / 800 حرف",
+                                      "content": "الحروف 412 من 800",
                                       "fontFamily": "$font",
                                       "fontSize": 11,
                                       "fontWeight": "normal"
@@ -112796,7 +112796,7 @@
                                           "id": "hbIP6",
                                           "name": "اسم القسم",
                                           "fill": "$text",
-                                          "content": "3. المهام والالتزامات",
+                                          "content": "ثالثًا: المهام والالتزامات",
                                           "lineHeight": 1.4,
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-section",
@@ -113036,7 +113036,7 @@
                                           "id": "j0gqny",
                                           "name": "العدد",
                                           "fill": "$muted",
-                                          "content": "3 من 24 معروضة",
+                                          "content": "المعروض 3 من 24",
                                           "fontFamily": "$font",
                                           "fontSize": 11,
                                           "fontWeight": "normal"
@@ -113558,7 +113558,7 @@
                                       "id": "BIMDo",
                                       "name": "عدد",
                                       "fill": "$muted",
-                                      "content": "8 أقسام",
+                                      "content": "الأقسام 8",
                                       "fontFamily": "$font",
                                       "fontSize": 11,
                                       "fontWeight": "normal"
@@ -113635,7 +113635,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "1. الملخص التنفيذي",
+                                          "content": "أولًا: الملخص التنفيذي",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -113694,7 +113694,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "2. المراسلات",
+                                          "content": "ثانيًا: المراسلات",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -113753,7 +113753,7 @@
                                           "fill": "$primary",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "3. المهام والالتزامات",
+                                          "content": "ثالثًا: المهام والالتزامات",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -113812,7 +113812,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "4. الاجتماعات والقرارات",
+                                          "content": "رابعًا: الاجتماعات والقرارات",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -113871,7 +113871,7 @@
                                           "fill": "$placeholder",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "5. القضايا",
+                                          "content": "خامسًا: القضايا",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -113930,7 +113930,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "6. الوثائق",
+                                          "content": "سادسًا: الوثائق",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -113989,7 +113989,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "7. المالية والمصروفات",
+                                          "content": "سابعًا: المالية والمصروفات",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -114048,7 +114048,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "8. الخلاصة والتوصيات",
+                                          "content": "ثامنًا: الخلاصة والتوصيات",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12.5,
@@ -114599,7 +114599,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "2 مصروفات هاتف بانتظار التأكيد",
+                                          "content": "مصروفان من الهاتف بانتظار التأكيد",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12,
@@ -114725,7 +114725,7 @@
                                           "fill": "$text",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "3 مهام بلا تحديث منذ 7 أيام",
+                                          "content": "بقيت 3 مهام بلا تحديث منذ 7 أيام",
                                           "textAlign": "right",
                                           "fontFamily": "$font",
                                           "fontSize": 12,
@@ -115479,7 +115479,7 @@
                                       "id": "U1Kvl",
                                       "name": "العدد",
                                       "fill": "$muted",
-                                      "content": "8 أقسام",
+                                      "content": "الأقسام 8",
                                       "fontFamily": "$font",
                                       "fontSize": "$fs-meta",
                                       "fontWeight": "normal"
@@ -115528,7 +115528,7 @@
                                   "id": "TXNzi",
                                   "name": "العدد",
                                   "fill": "$muted",
-                                  "content": "6 مؤشرات",
+                                  "content": "المؤشرات 6",
                                   "fontFamily": "$font",
                                   "fontSize": "$fs-meta",
                                   "fontWeight": "600"
@@ -116954,7 +116954,7 @@
                                   "id": "K53p5",
                                   "name": "PillText",
                                   "fill": "$text",
-                                  "content": "1.8 ميغابايت",
+                                  "content": "الحجم 1.8 ميغابايت",
                                   "lineHeight": 1.35,
                                   "fontFamily": "$font",
                                   "fontSize": "$fs-meta",
@@ -116980,7 +116980,7 @@
                                   "id": "itaK7",
                                   "name": "PillText",
                                   "fill": "$text",
-                                  "content": "12 صفحة",
+                                  "content": "الصفحات 12",
                                   "lineHeight": 1.35,
                                   "fontFamily": "$font",
                                   "fontSize": "$fs-meta",
@@ -117556,7 +117556,7 @@
                                       "fill": "$muted",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "24/10/2026 · أحمد الخطيب · صفحة 7، البند 4 · 184,500 ₪ بدل 148,500 ₪",
+                                      "content": "أحمد الخطيب · 24/10/2026 · صفحة 7، البند 4 · 184,500 شيكلًا بدل 148,500",
                                       "lineHeight": 1.4,
                                       "textAlign": "right",
                                       "fontFamily": "$font",
@@ -118459,7 +118459,7 @@
                                       "id": "PGrhh",
                                       "name": "ThumbsMore",
                                       "fill": "$muted",
-                                      "content": "… 12 صفحة",
+                                      "content": "حتى الصفحة 12",
                                       "lineHeight": 1.35,
                                       "fontFamily": "$font",
                                       "fontSize": 10,
@@ -118997,7 +118997,7 @@
                                       "id": "sclSD",
                                       "name": "GaugeNote",
                                       "fill": "$muted",
-                                      "content": "12 من 15 متطلبًا مكتملًا",
+                                      "content": "اكتمل 12 من 15 متطلبًا",
                                       "lineHeight": 1.35,
                                       "fontFamily": "$font",
                                       "fontSize": "$fs-meta",
@@ -119163,7 +119163,7 @@
                                           "fill": "$muted",
                                           "textGrowth": "fixed-width",
                                           "width": 176,
-                                          "content": "320 ₪ و145 ₪ — المالية والمصروفات",
+                                          "content": "المالية والمصروفات — 320 و145 شيكلًا",
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
@@ -119231,7 +119231,7 @@
                                           "fill": "$muted",
                                           "textGrowth": "fixed-width",
                                           "width": 176,
-                                          "content": "الرصيد الدفتري 1,150 ₪",
+                                          "content": "الرصيد الدفتري 1,150 شيكلًا",
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
@@ -119285,7 +119285,7 @@
                                           "fill": "$primary",
                                           "textGrowth": "fixed-width",
                                           "width": 176,
-                                          "content": "3 مهام بلا تحديث منذ 7 أيام",
+                                          "content": "بقيت 3 مهام بلا تحديث منذ 7 أيام",
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
@@ -119924,7 +119924,7 @@
                                       "fill": "$placeholder",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "نسبة الإنجاز 79%",
+                                      "content": "نسبة الإنجاز 79 بالمئة",
                                       "lineHeight": 1.35,
                                       "textAlign": "right",
                                       "fontFamily": "$font",
@@ -119977,7 +119977,7 @@
                                           "id": "l7Pggq",
                                           "name": "TrendText",
                                           "fill": "$success",
-                                          "content": "+12% عن الشهر السابق",
+                                          "content": "ارتفاع 12% عن الشهر السابق",
                                           "lineHeight": 1.35,
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -120383,7 +120383,7 @@
                                   "id": "cXJKe",
                                   "name": "SectionsCount",
                                   "fill": "$muted",
-                                  "content": "8 أقسام",
+                                  "content": "الأقسام 8",
                                   "lineHeight": 1.35,
                                   "fontFamily": "$font",
                                   "fontSize": "$fs-meta",
@@ -120482,7 +120482,7 @@
                                           "id": "G8T5K",
                                           "name": "Count",
                                           "fill": "$muted",
-                                          "content": "6 مؤشرات",
+                                          "content": "المؤشرات 6",
                                           "lineHeight": 1.35,
                                           "fontFamily": "$font",
                                           "fontSize": "$fs-meta",
@@ -127832,7 +127832,7 @@
                           "id": "f79txs",
                           "name": "Title",
                           "fill": "$text",
-                          "content": "الإعدادات — البحث والتعرّف الضوئي (OCR) والنماذج",
+                          "content": "الإعدادات — البحث والنماذج والتعرّف الضوئي (OCR)",
                           "fontFamily": "$font",
                           "fontSize": "$fs-title",
                           "fontWeight": "700"
@@ -127842,7 +127842,7 @@
                           "id": "oeIup",
                           "name": "Subtitle",
                           "fill": "$muted",
-                          "content": "البحث داخل المستندات واستخراج النص (OCR) ونماذج التعرّف",
+                          "content": "البحث داخل المستندات ونماذج التعرّف واستخراج النص (OCR)",
                           "fontFamily": "$font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -134435,7 +134435,7 @@
                                           "fill": "$muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "20260912/12046 · وثيقة PDF",
+                                          "content": "وثيقة بصيغة PDF محفوظة بالمرجع 20260912/12046",
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
@@ -134526,7 +134526,7 @@
                                           "fill": "$muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "20260910/11987 · وثيقة Word",
+                                          "content": "وثيقة بصيغة Word محفوظة بالمرجع 20260910/11987",
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
@@ -135054,7 +135054,7 @@
                                           "fill": "$muted",
                                           "textGrowth": "fixed-width",
                                           "width": "fill_container",
-                                          "content": "هاتف مقترن · موصول بالحاسوب PLN-PC-01 · آخر مزامنة 12/09/2026 10:24",
+                                          "content": "12/09/2026 10:24 آخر مزامنة لهاتف مقترن وموصول بالحاسوب PLN-PC-01",
                                           "lineHeight": 1.35,
                                           "textAlign": "right",
                                           "fontFamily": "$font",
@@ -139325,7 +139325,7 @@
                               "fill": "$text",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "فُصل كبل USB الساعة 11:05 أثناء نقل صور الوثائق. لا شيء ضاع: ما اكتمل مُثبت في قاعدة البيانات المحلية، وما بقي يُستكمل من نقطة التوقف عند إعادة التوصيل.",
+                              "content": "11:05 — انقطع كبل USB أثناء نقل صور الوثائق، ولم يضع شيء منها: ما اكتمل مُثبت في قاعدة البيانات المحلية، والباقي يُستكمل من نقطة التوقف عند إعادة التوصيل",
                               "lineHeight": 1.6,
                               "textAlign": "right",
                               "fontFamily": "$font",
@@ -143598,7 +143598,7 @@
                           "id": "UKVls",
                           "name": "Subtitle",
                           "fill": "$muted",
-                          "content": "تصدير المراسلات المعتمدة كملفات موقّعة واستيراد الوارد من المؤسسات الأخرى عبر وسيط USB",
+                          "content": "تصدير المراسلات المعتمدة كملفات موقّعة عبر وسيط USB، واستيراد الوارد من المؤسسات الأخرى بالطريقة نفسها.",
                           "fontFamily": "$font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -143711,7 +143711,7 @@
                                       "fill": "$muted",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "1.8 ميغابايت · مرفقان · وسيط USB · 12/09/2026",
+                                      "content": "مرفقان · 1.8 ميغابايت · وسيط USB · 12/09/2026",
                                       "textAlign": "right",
                                       "fontFamily": "$font",
                                       "fontSize": "$fs-meta",
@@ -155236,7 +155236,7 @@
           "id": "GeBa7",
           "name": "Footer",
           "fill": "$muted",
-          "content": "الجهاز PLN-PC-01  ·  وضع مدير النظام",
+          "content": "وضع مدير النظام  ·  الجهاز PLN-PC-01",
           "fontFamily": "$font",
           "fontSize": "$fs-meta",
           "fontWeight": "normal"
@@ -302448,7 +302448,7 @@
                           "id": "AsOaf",
                           "name": "Subtitle",
                           "fill": "$muted",
-                          "content": "حزمة إعداد موقّعة لجهاز واحد — تُنقل بذاكرة USB وتُفتح مرة واحدة عند أول تشغيل",
+                          "content": "حزمة إعداد موقّعة لجهاز واحد — تُفتح مرة واحدة عند أول تشغيل وتُنقل بذاكرة USB",
                           "fontFamily": "$font",
                           "fontSize": 13,
                           "fontWeight": "normal"
@@ -302854,7 +302854,7 @@
                                   "fill": "$muted",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "تُنقل الحزمة بذاكرة USB وتُفتح مرة واحدة عند أول تشغيل للبرنامج على الجهاز.",
+                                  "content": "تُفتح الحزمة مرة واحدة عند أول تشغيل للبرنامج على الجهاز، وتُنقل بذاكرة USB.",
                                   "lineHeight": 1.6,
                                   "textAlign": "right",
                                   "fontFamily": "$font",
@@ -303875,7 +303875,7 @@
                   "fill": "$muted",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "صالحة لجهاز واحد: PLN-PC-01 · رقم الحزمة 20260912/12046 · صادرة 12/09/2026",
+                  "content": "رقم الحزمة 20260912/12046 · صادرة 12/09/2026 · صالحة لجهاز واحد: PLN-PC-01",
                   "textAlign": "right",
                   "fontFamily": "$font",
                   "fontSize": 12,
@@ -309932,7 +309932,7 @@
                   "fill": "$muted",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "اطلب رمز الاقتران من مدير النظام في المكتب، ثم وصّل الجهاز بكابل USB عند أول مزامنة.",
+                  "content": "اطلب رمز الاقتران من مدير النظام في المكتب، ثم وصّل الجهاز عند أول مزامنة بكابل USB.",
                   "lineHeight": 1.5,
                   "textAlign": "center",
                   "fontFamily": "$font",
@@ -311809,7 +311809,7 @@
                       "id": "Z24DG3",
                       "name": "Sub",
                       "fill": "$white",
-                      "content": "الإصدار v0.21 • تثبيت محلي كامل على هذا الجهاز",
+                      "content": "تثبيت محلي كامل على هذا الجهاز (v0.21)",
                       "fontFamily": "$font",
                       "fontSize": 12,
                       "fontWeight": "normal"
@@ -312270,7 +312270,7 @@
                       "id": "arrpZ",
                       "name": "Sub",
                       "fill": "$white",
-                      "content": "الإصدار v0.21 • تثبيت محلي كامل على هذا الجهاز",
+                      "content": "تثبيت محلي كامل على هذا الجهاز (v0.21)",
                       "fontFamily": "$font",
                       "fontSize": 12,
                       "fontWeight": "normal"
@@ -313108,7 +313108,7 @@
                       "id": "T4H1X",
                       "name": "Sub",
                       "fill": "$white",
-                      "content": "الإصدار v0.21 • ترقية محلية تحافظ على بياناتك",
+                      "content": "ترقية محلية تحافظ على بياناتك (v0.21)",
                       "fontFamily": "$font",
                       "fontSize": 12,
                       "fontWeight": "normal"
@@ -313532,7 +313532,7 @@
                       "id": "nVK3f",
                       "name": "Sub",
                       "fill": "$white",
-                      "content": "الإصدار v0.21 • تثبيت محلي كامل على هذا الجهاز",
+                      "content": "تثبيت محلي كامل على هذا الجهاز (v0.21)",
                       "fontFamily": "$font",
                       "fontSize": 12,
                       "fontWeight": "normal"
@@ -314019,7 +314019,7 @@
                       "id": "ihK8l",
                       "name": "Sub",
                       "fill": "$white",
-                      "content": "الإصدار v0.21 • تثبيت محلي كامل على هذا الجهاز",
+                      "content": "تثبيت محلي كامل على هذا الجهاز (v0.21)",
                       "fontFamily": "$font",
                       "fontSize": 12,
                       "fontWeight": "normal"
@@ -314494,7 +314494,7 @@
               "fill": "$muted",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "الحد الأقصى لحجم الملف 5 ميغابايت، بصيغة JPG أو PNG.",
+              "content": "الحد الأقصى لحجم الملف 5 ميغابايت، بصيغة JPG/PNG.",
               "textAlign": "right",
               "fontFamily": "$font",
               "fontSize": 12,
@@ -317005,7 +317005,7 @@
                       "fill": "$muted",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
-                      "content": "الحزم موقّعة ومشفّرة وتُنقل عبر USB فقط",
+                      "content": "الحزم موقّعة ومشفّرة، ولا تُنقل إلا عبر USB.",
                       "textAlign": "right",
                       "fontFamily": "$font",
                       "fontSize": 12,
