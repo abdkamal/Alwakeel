@@ -25,7 +25,7 @@
         <WButton Variant="WButtonVariant.Icon" Icon="calendar" Tooltip="@Ar.TopBar.CalendarTooltip" OnClick="HandleCalendarAsync" />
     </div>
     <div class="w-topbar-search">
-        <WSearch Value="SearchValue" ValueChanged="SearchValueChanged" Placeholder="@Ar.TopBar.GlobalSearchPlaceholder"
+        <WSearch Value="@SearchValue" ValueChanged="SearchValueChanged" Placeholder="@Ar.TopBar.GlobalSearchPlaceholder"
                  ShowShortcutHint="false" BindGlobalShortcut="false" />
     </div>
 </header>
