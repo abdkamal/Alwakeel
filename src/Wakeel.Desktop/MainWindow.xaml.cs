@@ -1,6 +1,5 @@
 using System.Windows;
 using Microsoft.AspNetCore.Components.WebView.Wpf;
-using Microsoft.Web.WebView2.Wpf;
 using Wakeel.Desktop.Services;
 using Wakeel.UI;
 
@@ -15,11 +14,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // Must be set before the control creates its CoreWebView2 environment (first navigation).
-        BlazorView.WebView.CreationProperties = new CoreWebView2CreationProperties
-        {
-            UserDataFolder = WakeelPaths.WebView2UserDataFolder,
-        };
+        // The inner WebView2 control does not exist yet at construction time (BlazorWebView creates
+        // it lazily), so the user-data folder is supplied through the initializing event, which the
+        // control raises just before it creates its CoreWebView2 environment.
+        BlazorView.BlazorWebViewInitializing += (_, e) => e.UserDataFolder = WakeelPaths.WebView2UserDataFolder;
         BlazorView.Services = services;
 
         // Set here rather than declaratively in XAML: the WPF markup compiler's first pass runs
