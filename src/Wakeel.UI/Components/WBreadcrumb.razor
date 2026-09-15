@@ -1,0 +1,29 @@
+@namespace Wakeel.UI.Components
+@using Wakeel.UI.Text
+
+<nav class="w-breadcrumb" aria-label="@Ar.Breadcrumb.Label">
+    @for (var i = 0; i < Items.Count; i++)
+    {
+        var index = i;
+        var isLast = index == Items.Count - 1;
+        <span class="w-breadcrumb-item">
+            @if (isLast)
+            {
+                <span class="@(isLast ? "w-breadcrumb-current" : null)" aria-current="@(isLast ? "page" : null)">@Items[index].Label</span>
+            }
+            else
+            {
+                <button type="button" class="w-breadcrumb-link" @onclick="() => Items[index].OnClick.InvokeAsync()">@Items[index].Label</button>
+            }
+            @if (!isLast)
+            {
+                <WIcon Name="chevron-right" Size="14" Class="w-breadcrumb-sep" />
+            }
+        </span>
+    }
+</nav>
+
+@code {
+    /// <summary>Ordered crumbs from root to current page. The last item renders as plain (non-clickable) current-page text.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<WBreadcrumbItem> Items { get; set; } = Array.Empty<WBreadcrumbItem>();
+}

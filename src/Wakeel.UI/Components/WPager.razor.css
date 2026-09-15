@@ -1,0 +1,37 @@
+.w-pager {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.w-pager-nav,
+.w-pager-page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding-inline: 6px;
+    border: 1px solid transparent;
+    border-radius: var(--w-radius);
+    background: transparent;
+    color: var(--w-text);
+    font-size: var(--w-fs-body);
+    cursor: pointer;
+}
+
+.w-pager-nav:disabled {
+    color: var(--w-disabled);
+    cursor: not-allowed;
+}
+
+.w-pager-page:hover,
+.w-pager-nav:not(:disabled):hover {
+    background: var(--w-surface2);
+}
+
+.w-pager-page--current {
+    background: var(--w-primary-fill);
+    color: var(--w-on-fill);
+    font-weight: 700;
+}

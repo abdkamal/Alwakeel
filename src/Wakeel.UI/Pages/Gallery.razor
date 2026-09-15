@@ -1,0 +1,264 @@
+@page "/gallery"
+@using Wakeel.UI.Text
+@using Wakeel.UI.Services
+@inject ThemeService Theme
+@inject PageHeaderState HeaderState
+@inject IToastService Toasts
+@implements IDisposable
+
+<div class="w-gallery">
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionTheme" Sub="@Ar.Gallery.SectionThemeSub" />
+        <WSegmented Options="_themeOptions" SelectedValue="@_themeValue" SelectedValueChanged="HandleThemeChangeAsync" />
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionButtons" />
+        <div class="w-gallery-row">
+            <WButton Variant="WButtonVariant.Primary" Label="@Ar.Buttons.Save" Icon="save" />
+            <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Buttons.Cancel" />
+            <WButton Variant="WButtonVariant.Danger" Label="@Ar.Menu.Delete" Icon="trash-2" />
+            <WButton Variant="WButtonVariant.Text" Label="@Ar.Buttons.ShowMore" />
+            <WButton Variant="WButtonVariant.Icon" Icon="refresh-cw" Tooltip="@Ar.Buttons.Refresh" />
+            <WButton Variant="WButtonVariant.Primary" Label="@Ar.Gallery.DisabledLabel" Disabled="true" />
+            <WButton Variant="WButtonVariant.Primary" Label="@Ar.Buttons.Save" Loading="true" />
+            <WButton Variant="WButtonVariant.Split" Label="@Ar.Gallery.SplitActionLabel" SplitContent="@_splitMenu" />
+        </div>
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionInputs" />
+        <div class="w-gallery-grid">
+            <WInput Label="@Ar.Gallery.FieldNameLabel" Required="true" @bind-Value="_textValue" Hint="@Ar.Gallery.FieldNameHint" />
+            <WInput Type="WInputType.Password" Label="@Ar.Gallery.FieldPasswordLabel" @bind-Value="_passwordValue" />
+            <WInput Type="WInputType.Number" Label="@Ar.Gallery.FieldNumberLabel" @bind-Value="_numberValue" />
+            <WInput Type="WInputType.Date" Label="@Ar.Gallery.FieldDateLabel" @bind-Value="_dateValue" />
+            <WInput Type="WInputType.Textarea" Label="@Ar.Gallery.FieldNotesLabel" @bind-Value="_textareaValue" />
+            <WInput Label="@Ar.Gallery.FieldErrorLabel" @bind-Value="_errorValue" Error="@Ar.Gallery.FieldErrorMessage" />
+            <WSelect Label="@Ar.Gallery.SelectLabel" Options="_officeOptions" @bind-Value="_selectValue" Placeholder="@Ar.Gallery.SelectPlaceholder" />
+            <WSearch @bind-Value="_searchValue" BindGlobalShortcut="false" />
+        </div>
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionSelection" />
+        <div class="w-gallery-row">
+            <WCheckbox Label="@Ar.Gallery.CheckboxLabel" @bind-Value="_checkboxValue" />
+            <WCheckbox Label="@Ar.Gallery.DisabledLabel" Disabled="true" />
+            <WRadio GroupName="gallery-radio" Value="a" Label="@Ar.Gallery.RadioLabelA" @bind-SelectedValue="_radioValue" />
+            <WRadio GroupName="gallery-radio" Value="b" Label="@Ar.Gallery.RadioLabelB" @bind-SelectedValue="_radioValue" />
+            <WToggle Label="@Ar.Gallery.ToggleLabel" @bind-Value="_toggleValue" />
+            <WSegmented Options="_viewOptions" @bind-SelectedValue="_segmentedValue" />
+        </div>
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionChips" />
+        <div class="w-gallery-row">
+            <WChip Label="@Ar.CorrespondenceStatus.New" Variant="WChipVariant.Info" />
+            <WChip Label="@Ar.CorrespondenceStatus.InProgress" Variant="WChipVariant.Primary" />
+            <WChip Label="@Ar.CorrespondenceStatus.AwaitingReply" Variant="WChipVariant.Warning" />
+            <WChip Label="@Ar.CorrespondenceStatus.Done" Variant="WChipVariant.Success" />
+            <WChip Label="@Ar.CorrespondenceStatus.Closed" Variant="WChipVariant.Neutral" />
+            <WChip Label="@Ar.CorrespondenceStatus.Cancelled" Variant="WChipVariant.Danger" />
+            <WBadge Count="5" />
+            <WBadge Count="3" Kind="WBadgeKind.Tab" />
+            <WBadge Count="12" Kind="WBadgeKind.Group" />
+            <WAvatar Name="@Ar.Sample.UserName" />
+            <Kbd Text="@Ar.LocalSearch.KbdHint" />
+        </div>
+        <div class="w-gallery-row">
+            <WConfidentialityRow Level="WConfidentiality.Public" />
+            <WConfidentialityRow Level="WConfidentiality.Private" />
+            <WConfidentialityRow Level="WConfidentiality.Secret" />
+            <WConfidentialityRow Level="WConfidentiality.TopSecret" />
+        </div>
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionCards" />
+        <div class="w-gallery-grid">
+            <WCard Title="@Ar.Gallery.CardTitle">@Ar.Gallery.CardBody</WCard>
+            <WCard Variant="WSemanticVariant.Info" Icon="info" Title="@Ar.Gallery.CardInfoTitle" Desc="@Ar.Gallery.CardInfoDesc" />
+            <WCard Variant="WSemanticVariant.Warning" Icon="alert-triangle" Title="@Ar.Gallery.CardWarningTitle" Desc="@Ar.Gallery.CardWarningDesc" />
+            <WCard Variant="WSemanticVariant.Danger" Icon="alert-circle" Title="@Ar.Gallery.CardDangerTitle" Desc="@Ar.Gallery.CardDangerDesc" />
+            <WCard Variant="WSemanticVariant.Success" Icon="check-circle" Title="@Ar.Gallery.CardSuccessTitle" Desc="@Ar.Gallery.CardSuccessDesc" />
+            <WKpiCard Label="@Ar.Gallery.KpiLabel" Icon="clock" Value="@Ar.Gallery.KpiValue" Sub="@Ar.Gallery.KpiSub" />
+            <WStateCard Icon="folder-open" Title="@Ar.States.NoDataTitle" Desc="@Ar.States.NoDataDesc" ActionLabel="@Ar.Buttons.AddNew" ActionIcon="plus" />
+        </div>
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionNav" />
+        <WTabs>
+            <WTabItem Label="@Ar.AttentionCenter.TabAll" Count="9" Active="@(_activeTab == 0)" OnClick="() => _activeTab = 0" />
+            <WTabItem Label="@Ar.AttentionCenter.TabCorrespondence" Count="4" Active="@(_activeTab == 1)" OnClick="() => _activeTab = 1" />
+            <WTabItem Label="@Ar.AttentionCenter.TabTasks" Count="3" Active="@(_activeTab == 2)" OnClick="() => _activeTab = 2" />
+        </WTabs>
+        <WStepper Steps="_steps" CurrentStep="3" />
+        <WBreadcrumb Items="_breadcrumbItems" />
+        <WPager @bind-Page="_pagerPage" PageCount="5" />
+        <WProgressBar Percent="80" Label="@Ar.AttentionCenter.MonthlyReportProgressLabel" />
+        <WKvRow Key="@Ar.Gallery.KvKeySample" Value="@Ar.Gallery.KvValueSample" />
+        <div class="w-gallery-row">
+            <WAutosaveIndicator State="WAutosaveState.Saved" />
+            <WAutosaveIndicator State="WAutosaveState.Saving" />
+            <WAutosaveIndicator State="WAutosaveState.Failed" />
+        </div>
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionTable" />
+        <WTable HeaderRow="@_tableHeader" FooterText="@Ar.Table.ShowingRange(1, 3, 3)">
+            <tr>
+                <td><bdi>20260911/12001</bdi></td>
+                <td><bdi>15/09/2026</bdi></td>
+                <td>@Ar.Gallery.TableRowSubject1</td>
+                <td><WChip Label="@Ar.CorrespondenceStatus.AwaitingReply" Variant="WChipVariant.Warning" /></td>
+            </tr>
+            <tr class="w-table-row--attention">
+                <td><bdi>20260911/12002</bdi></td>
+                <td><bdi>14/09/2026</bdi></td>
+                <td>@Ar.Gallery.TableRowSubject2</td>
+                <td><WChip Label="@Ar.AttentionCenter.OverdueLabel" Variant="WChipVariant.Danger" /></td>
+            </tr>
+            <tr>
+                <td><bdi>20260911/12003</bdi></td>
+                <td><bdi>13/09/2026</bdi></td>
+                <td>@Ar.Gallery.TableRowSubject3</td>
+                <td><WChip Label="@Ar.CorrespondenceStatus.InProgress" Variant="WChipVariant.Primary" /></td>
+            </tr>
+        </WTable>
+
+        <div class="w-gallery-grid">
+            <WDocumentRow FileName="@Ar.Gallery.DocumentFileName" Meta="@Ar.Gallery.DocumentMeta" />
+            <div class="w-gallery-timeline">
+                <WTimelineItem Title="@Ar.Gallery.TimelineTitle1" Meta="@Ar.Gallery.TimelineMeta1" />
+                <WTimelineItem Title="@Ar.Gallery.TimelineTitle2" Desc="@Ar.Gallery.TimelineDesc2" Meta="@Ar.Gallery.TimelineMeta2" />
+            </div>
+        </div>
+        <div class="w-gallery-cal-row">
+            <WCalendarDay DayNumber="12" IsToday="true" Events="@(new[] { Ar.Gallery.CalendarEvent1 })" />
+            <WCalendarDay DayNumber="13" Events="@(Array.Empty<string>())" />
+            <WCalendarDay DayNumber="14" IsSelected="true" Events="@(new[] { Ar.Gallery.CalendarEvent2, Ar.Gallery.CalendarEvent3 })" />
+        </div>
+    </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Gallery.SectionOverlays" />
+        <div class="w-gallery-row">
+            <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Gallery.ToastSuccessTriggerLabel" OnClick="ShowSuccessToast" />
+            <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Gallery.ToastWarningTriggerLabel" OnClick="ShowWarningToast" />
+            <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Gallery.ToastDangerTriggerLabel" OnClick="ShowDangerToast" />
+            <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Gallery.DialogNormalTriggerLabel" OnClick="() => _normalDialogOpen = true" />
+            <WButton Variant="WButtonVariant.Danger" Label="@Ar.Gallery.DialogDangerTriggerLabel" OnClick="() => _dangerDialogOpen = true" />
+        </div>
+        <WBannerClock />
+        <WMenu Items="_menuItems" />
+    </section>
+</div>
+
+<WDialog Open="_normalDialogOpen" Title="@Ar.Gallery.DialogNormalTitle" Desc="@Ar.Gallery.DialogSampleDesc"
+         OnConfirm="() => _normalDialogOpen = false" OnCancel="() => _normalDialogOpen = false" />
+<WDialog Open="_dangerDialogOpen" Kind="WDialogKind.Danger" Title="@Ar.Dialog.ConfirmDeleteTitle" Desc="@Ar.Dialog.ConfirmDeleteDesc"
+         OnConfirm="() => _dangerDialogOpen = false" OnCancel="() => _dangerDialogOpen = false" />
+
+@code {
+    private readonly IReadOnlyList<(string Value, string Label)> _themeOptions = new List<(string, string)>
+    {
+        ("light", Ar.Gallery.ThemeLight),
+        ("dark", Ar.Gallery.ThemeDark),
+        ("system", Ar.Gallery.ThemeSystem),
+    };
+
+    private readonly IReadOnlyList<(string Value, string Label)> _officeOptions = new List<(string, string)>
+    {
+        ("planning", Ar.Gallery.SelectOptionPlanning),
+        ("legal", Ar.Gallery.SelectOptionLegal),
+        ("finance", Ar.Gallery.SelectOptionFinance),
+    };
+
+    private readonly IReadOnlyList<(string Value, string Label)> _viewOptions = new List<(string, string)>
+    {
+        ("list", Ar.Gallery.ViewOptionList),
+        ("grid", Ar.Gallery.ViewOptionGrid),
+    };
+
+    private readonly IReadOnlyList<string> _steps = new List<string>
+    {
+        Ar.Gallery.StepperStep1,
+        Ar.Gallery.StepperStep2,
+        Ar.Gallery.StepperStep3,
+        Ar.Gallery.StepperStep4,
+    };
+
+    private readonly IReadOnlyList<WBreadcrumbItem> _breadcrumbItems = new List<WBreadcrumbItem>
+    {
+        new(Ar.Gallery.BreadcrumbHome),
+        new(Ar.Gallery.BreadcrumbSection),
+        new(Ar.Gallery.BreadcrumbCurrent),
+    };
+
+    private IReadOnlyList<WMenuItem> _menuItems = Array.Empty<WMenuItem>();
+
+    private string _themeValue = "system";
+    private string? _textValue = string.Empty;
+    private string? _passwordValue = string.Empty;
+    private string? _numberValue = string.Empty;
+    private string? _dateValue = string.Empty;
+    private string? _textareaValue = string.Empty;
+    private string? _errorValue = string.Empty;
+    private string? _selectValue;
+    private string? _searchValue = string.Empty;
+    private bool _checkboxValue = true;
+    private string _radioValue = "a";
+    private bool _toggleValue = true;
+    private string _segmentedValue = "list";
+    private int _activeTab;
+    private int _pagerPage = 1;
+    private bool _normalDialogOpen;
+    private bool _dangerDialogOpen;
+
+    private readonly RenderFragment _splitMenu = @<div class="w-gallery-split-menu">@Ar.Gallery.SplitMenuText</div>;
+
+    private readonly RenderFragment _tableHeader = @<text>
+        <th>@Ar.Gallery.TableColNumber</th>
+        <th>@Ar.Gallery.TableColDate</th>
+        <th>@Ar.Gallery.TableColSubject</th>
+        <th>@Ar.Gallery.TableColStatus</th>
+    </text>;
+
+    protected override void OnInitialized()
+    {
+        HeaderState.Set(Ar.Gallery.Title, Ar.Gallery.Sub, navKey: null);
+        _themeValue = Theme.Theme switch
+        {
+            UiTheme.Light => "light",
+            UiTheme.Dark => "dark",
+            _ => "system",
+        };
+        _menuItems = new List<WMenuItem>
+        {
+            new(Ar.Menu.View, "eye", EventCallback.Factory.Create(this, () => Toasts.Show(Ar.Menu.View))),
+            new(Ar.Menu.Edit, "pencil", EventCallback.Factory.Create(this, () => Toasts.Show(Ar.Menu.Edit))),
+            new(Ar.Menu.Delete, "trash-2", EventCallback.Factory.Create(this, () => Toasts.Show(Ar.Menu.Delete)), Danger: true),
+        };
+    }
+
+    private void ShowSuccessToast() => Toasts.Show(Ar.Gallery.ToastSampleText, WSemanticVariant.Success);
+    private void ShowWarningToast() => Toasts.Show(Ar.Gallery.ToastWarningText, WSemanticVariant.Warning);
+    private void ShowDangerToast() => Toasts.Show(Ar.Gallery.ToastDangerText, WSemanticVariant.Danger);
+
+    private async Task HandleThemeChangeAsync(string value)
+    {
+        _themeValue = value;
+        await Theme.SetThemeAsync(value switch
+        {
+            "light" => UiTheme.Light,
+            "dark" => UiTheme.Dark,
+            _ => UiTheme.System,
+        });
+    }
+
+    public void Dispose() => HeaderState.Clear();
+}

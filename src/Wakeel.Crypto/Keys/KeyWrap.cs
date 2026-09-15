@@ -114,7 +114,15 @@ public static class KeyWraps
         ArgumentNullException.ThrowIfNull(wrap);
         ArgumentNullException.ThrowIfNull(orgIdentity);
         Expect(wrap, KeyWrapKind.Admin);
-        return orgIdentity.Open(wrap.Ciphertext, AdminLabel(context));
+
+        try
+        {
+            return orgIdentity.Open(wrap.Ciphertext, AdminLabel(context));
+        }
+        catch (CryptoException exception) when (exception.Code == ErrorCode.Tampered)
+        {
+            throw new CryptoException(ErrorCode.WrongPassword, "These administration keys do not open this wrap.", exception);
+        }
     }
 
     private static KeyWrap FromSecret(

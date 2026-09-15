@@ -1,0 +1,27 @@
+.w-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.w-section-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.w-section-header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.w-section-header-title {
+    color: var(--w-text);
+}
+
+.w-section-header-sub {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}

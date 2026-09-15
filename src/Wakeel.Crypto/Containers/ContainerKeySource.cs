@@ -11,6 +11,9 @@ public sealed class ContainerKeySource
     private const string SubKeyLabel = "wakeel.container";
     private const string SealedKeyLabel = "wakeel.container.key";
 
+    /// <summary>Size in bytes of the random salt mixed into the office/session key derivation.</summary>
+    private const int KeySaltSize = 16;
+
     private ContainerKeySource(PayloadMode mode)
     {
         Mode = mode;
@@ -84,16 +87,18 @@ public sealed class ContainerKeySource
         Base64Url.Encode(DeviceIdentity.SealFor(orgAgreementPublicKey, contentKey, AdminKeyLabel));
 
     /// <summary>Produces the content key used to encrypt a new payload.</summary>
-    internal byte[] CreateContentKey(ContainerKind kind, out Argon2Params? kdf, out string? sealedKey)
+    internal byte[] CreateContentKey(ContainerKind kind, out Argon2Params? kdf, out string? sealedKey, out byte[]? keySalt)
     {
         kdf = null;
         sealedKey = null;
+        keySalt = null;
 
         switch (Mode)
         {
             case PayloadMode.OfficeKey:
             case PayloadMode.Session:
-                return SubKey(RawKey!, kind);
+                keySalt = RandomBytes.Next(KeySaltSize);
+                return SubKey(RawKey!, kind, keySalt);
 
             case PayloadMode.Password:
                 kdf = (Kdf ?? Argon2Params.CreateDefault()).WithFreshSalt();
@@ -143,7 +148,12 @@ public sealed class ContainerKeySource
         {
             case PayloadMode.OfficeKey:
             case PayloadMode.Session:
-                return SubKey(RawKey!, manifest.Type);
+                if (manifest.KeySalt is not { Length: KeySaltSize } salt)
+                {
+                    throw new CryptoException(ErrorCode.Corrupt, "The file does not carry its key derivation salt.");
+                }
+
+                return SubKey(RawKey!, manifest.Type, salt);
 
             case PayloadMode.Password:
                 if (manifest.Kdf is null)
@@ -178,13 +188,13 @@ public sealed class ContainerKeySource
         }
     }
 
-    private static byte[] SubKey(byte[] rootKey, ContainerKind kind)
+    private static byte[] SubKey(byte[] rootKey, ContainerKind kind, ReadOnlySpan<byte> salt)
     {
         if (rootKey.Length != Aead.KeySize)
         {
             throw new CryptoException(ErrorCode.Corrupt, "The supplied key must be exactly thirty two bytes.");
         }
 
-        return Hkdf.DeriveKey(rootKey, Aead.KeySize, $"{SubKeyLabel}|{ContainerKinds.Token(kind)}");
+        return Hkdf.DeriveKey(rootKey, Aead.KeySize, salt, $"{SubKeyLabel}|{ContainerKinds.Token(kind)}");
     }
 }

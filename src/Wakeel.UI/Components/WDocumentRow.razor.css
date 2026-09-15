@@ -1,0 +1,45 @@
+.w-doc-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius);
+    background: var(--w-surface);
+    cursor: pointer;
+    text-align: start;
+}
+.w-doc-row:hover { background: var(--w-surface2); }
+
+.w-doc-row-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--w-radius);
+    background: var(--w-primary-soft);
+    color: var(--w-primary);
+    flex-shrink: 0;
+}
+
+.w-doc-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.w-doc-row-name {
+    font-weight: 600;
+    color: var(--w-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.w-doc-row-meta {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}

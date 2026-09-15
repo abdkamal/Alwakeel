@@ -17,6 +17,11 @@
 
 محفّزات `AFTER INSERT/UPDATE` على هذه الجداول تكتب في `change_log`. الجداول المحلية البحتة (إعدادات، سجلات تقنية، فهارس) لا تحمل هذه الأعمدة ولا تُزامَن.
 
+قرارات (2026-09-16، بعد مراجعة B0):
+- `WakeelDb` يختم `created_at/updated_at/row_version/origin_device` تلقائيًا عند الحفظ؛ `Remove()` على كيان مزامَن يتحوّل إلى حذف منطقي (`deleted_at`) ولا يُنفَّذ حذف فعلي أبدًا.
+- مسار الاستيراد في المزامنة يُدرج السجلات الواردة بأختامها الأصلية كما جاءت من الجهاز المصدر عبر نطاق `WakeelDb.SuppressAuditStamps()`.
+- الفهارس الفريدة للمعرّفات الرسمية (`correspondence.official_number`، `assets.inventory_number`، `financial_cycles.start_date`، `monthly_reports.cycle_id`) غير مصفّاة، أي تشمل السجلات المحذوفة منطقيًا؛ الخدمات تبحث بـ`IgnoreDeleted()` وتعالج حالة «سجل مخفي يملك هذا الرقم» صراحةً (استرجاع أو رسالة عربية)، لا تُعاد الأرقام الرسمية أبدًا.
+
 القيم المعدودة (الحالات والأنواع) تُخزَّن نصًا إنجليزيًا ثابتًا (`draft`, `new`…) وتُعرض بالعربية من `Ar.Enums` فقط (مصدر واحد للتسميات).
 
 ## 1. النسخة والهوية
@@ -29,7 +34,7 @@
 | `account` | صف واحد: `employee_id`, `display_name`, `photo_document_id`, `password_changed_at`, `failed_attempts`, `locked_until`, `auto_lock_minutes` (افتراضي 10) | الأغلفة نفسها في `keys\installation.key` لا في القاعدة |
 | `settings` | `key` PK, `value` (JSON), `updated_at` | حدود الانتباه (متأخر/قريب/راكد)، تذكير التقرير (أيام)، وقت تنبيه الاجتماع، إرسال التنبيهات للهاتف، الأصوات، المظهر، الخط والكثافة، الطابعة، الماسح، مجلد الحزم، تذكير النسخ، قواعد الرواتب والمكافآت، قواعد تضمين التقرير |
 | `official_numbers` | `kind` (out/in), `year`, `last_seq`, `last_date` | البند 5 |
-| `audit_log` | `id`, `at`, `actor`, `action`, `entity_type`, `entity_id`, `summary_ar`, `details` (JSON بلا أسرار) | يُزامَن كقراءة فقط |
+| `audit_log` | `id`, `at`, `actor`, `action`, `entity_type`, `entity_id`, `summary_ar`, `details` (JSON بلا أسرار) | إضافة فقط؛ بلا أعمدة §0 ولا محفّز؛ يُصدَّر في حزم المزامنة بمدى `at` كقراءة فقط (إدراج عند الاستيراد إن لم يوجد المعرّف، لا تحديث ولا تعارض) |
 | `notifications` | `id`, `kind`, `title`, `body`, `entity_type`, `entity_id`, `created_at`, `due_at`, `read_at`, `dismissed_at`, `source` | الجرس ولوحة الإشعارات |
 | `clock_checks` | `at`, `verdict` (ok/suspect/bad), `details` | البند 20 |
 | `health_snapshots` | `component`, `status` (ok/warning/error), `message_ar`, `action`, `checked_at` | مركز الصحة (W12) |
@@ -50,8 +55,8 @@
 | `correspondence` | `id`, `direction` (in/out), `official_number`, `number_issued_at`, `external_number`, `external_date`, `subject`, `type`, `confidentiality` (public/private/secret/top_secret), `recipient_only`, `counterparty_kind`, `party_id`, `unit_id`, `party_name_snapshot`, `cc` (JSON), `status` (draft/new/in_progress/awaiting_reply/done/closed/cancelled/archived), `next_step_ar`, `due_at`, `linked_correspondence_id`, `case_id`, `meeting_id`, `template_id`, `body_text`, `approved_at`, `cancel_reason`, `close_note`, `archived_at`, `report_include`, `report_highlight`, `report_comment` | الرقم يُصدر مع الاعتماد فقط |
 | `correspondence_documents` | `id`, `correspondence_id`, `document_id`, `kind` (original/derived_print/attachment), `sort` | |
 | `documents` | `id`, `sha256`, `size`, `mime`, `original_name`, `source` (scan/import/phone/generated/backup), `page_count`, `ocr_status` (pending/running/done/unsupported/failed), `ocr_lang`, `pinned_on_phone`, `derived_from_id` | فهرس الخزنة؛ البايتات في `vault\` بالاسم `sha256` |
-| `document_pages` | `document_id`, `page_no`, `text`, `words` (JSON مربعات), `confidence` | ناتج OCR |
-| `document_links` | `document_id`, `entity_type`, `entity_id` | الوثائق المرتبطة بأي كيان |
+| `document_pages` | `id`, `document_id`, `page_no`, `text`, `words` (JSON مربعات), `confidence` | ناتج OCR؛ جدول رسمي مزامَن (أعمدة §0 ومحفّزات) لأن نص OCR ينتج على الهاتف أو على جهاز واحد ويجب أن يصل للآخر دون إعادة OCR؛ فريد `(document_id, page_no)` |
+| `document_links` | `id`, `document_id`, `entity_type`, `entity_id` | الوثائق المرتبطة بأي كيان؛ جدول رسمي مزامَن (أعمدة §0 ومحفّزات)؛ فريد `(document_id, entity_type, entity_id)` |
 | `referrals` | `id`, `correspondence_id`, `to_unit_id`, `to_name`, `text`, `created_at`, `due_at`, `status` (open/answered/overdue/closed), `derived_document_id`, `extra_page_added` | البند 31 |
 | `followups` | `id`, `correspondence_id`, `kind` (call/visit/reply/note/status), `note`, `next_at`, `reminder_at`, `status_from`, `status_to` | الخط الزمني |
 | `corrections` | `id`, `correspondence_id`, `changes` (JSON: الحقل/القديم/الجديد), `reason`, `at` | البند 19 والسياسات الموروثة |
@@ -133,7 +138,7 @@
 
 | جدول | الأعمدة | ملاحظات |
 |---|---|---|
-| `change_log` | `seq` PK, `table_name`, `row_id`, `op` (I/U), `at`, `device` | محفّزات |
+| `change_log` | `seq` PK, `table_name`, `row_id`, `op` (I/U), `at`, `device` | محفّزات؛ `device` = الجهاز الذي أجرى العملية محليًا (`installation.device_id`) لا `origin_device` للسجل، فالتصدير بمدى تاريخ يختار ما تغيّر على هذا الجهاز |
 | `sync_packages` | `id`, `direction` (export/import), `kind` (sync/phone/msg/transfer/inventory), `from_date`, `to_date`, `target_device_id`, `source_device_id`, `file_name`, `counts` (JSON), `status` (created/verified/previewed/applied/rejected), `created_at`, `applied_at` | |
 | `sync_conflicts` | `id`, `package_id`, `table_name`, `row_id`, `ours` (JSON), `theirs` (JSON), `resolution` (ours/theirs/merged), `resolved_at` | لا كتابة تلقائية |
 | `phone_queue` | `id`, `direction` (to_phone/from_phone), `seq`, `file_name`, `status` (pending/written/applied/failed), `at`, `items` (JSON) | صناديق الصادر والوارد |

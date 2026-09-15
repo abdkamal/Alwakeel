@@ -1,0 +1,63 @@
+.w-table-wrap {
+    background: var(--w-surface);
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+    overflow: hidden;
+}
+
+.w-table-scroll {
+    overflow-x: auto;
+    max-height: 560px;
+    overflow-y: auto;
+}
+
+.w-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.w-table ::deep th {
+    position: sticky;
+    top: 0;
+    background: var(--w-table-header);
+    color: var(--w-muted);
+    font-weight: 700;
+    text-align: start;
+    padding-inline: 14px;
+    height: 40px;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.w-table ::deep td {
+    padding-inline: 14px;
+    height: 44px;
+    border-bottom: 1px solid var(--w-border);
+    color: var(--w-text);
+}
+
+.w-table ::deep tbody tr:last-child td { border-bottom: 0; }
+.w-table ::deep tbody tr:hover { background: var(--w-surface2); }
+
+/* Attention row (DESIGN-GUIDE.md "بنية الشاشة القياسية"): tinted background + a 3px danger edge on
+   the row's leading (start) side, applied via the first cell since border-inline-start on <tr>
+   itself is not rendered under the default table border model. */
+.w-table ::deep tr.w-table-row--attention { background: var(--w-attention-bg); }
+.w-table ::deep tr.w-table-row--attention > td:first-child { border-inline-start: 3px solid var(--w-danger); }
+
+.w-table-empty { padding: 32px; }
+
+.w-table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--w-border);
+}
+
+.w-table-footer-text {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}

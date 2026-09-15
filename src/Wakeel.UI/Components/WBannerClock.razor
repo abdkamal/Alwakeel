@@ -1,0 +1,18 @@
+@namespace Wakeel.UI.Components
+@using Wakeel.UI.Text
+
+<div class="w-clock-banner" role="alert">
+    <WIcon Name="alert-triangle" Size="20" />
+    <div class="w-clock-banner-text">
+        <p class="w-clock-banner-title">@Ar.ClockBanner.Title</p>
+        <p class="w-clock-banner-desc">@Ar.ClockBanner.Desc</p>
+    </div>
+    <WButton Variant="WButtonVariant.Text" Label="@Ar.ClockBanner.Action" OnClick="HandleActionAsync" />
+</div>
+
+@code {
+    /// <summary>Raised when the user asks how to correct the clock.</summary>
+    [Parameter] public EventCallback OnAction { get; set; }
+
+    private Task HandleActionAsync(MouseEventArgs args) => OnAction.InvokeAsync();
+}

@@ -1,0 +1,21 @@
+.w-kpi {
+    background: var(--w-surface);
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 160px;
+}
+
+.w-kpi-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.w-kpi-label { font-size: var(--w-fs-meta); color: var(--w-muted); font-weight: 600; }
+.w-kpi-icon { color: var(--w-muted); }
+.w-kpi-value { font-size: var(--w-fs-title); font-weight: 700; }
+.w-kpi-sub { font-size: var(--w-fs-meta); color: var(--w-muted); }

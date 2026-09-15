@@ -1,0 +1,148 @@
+@namespace Wakeel.UI.Components
+@using Wakeel.UI.Text
+
+@if (Variant == WButtonVariant.Split)
+{
+    <span class="w-btn-split-wrap">
+        <button type="@Type" class="w-btn w-btn--primary w-btn-split-main @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
+            @BodyMarkup
+        </button>
+        <button type="button" class="w-btn w-btn--primary w-btn-split-caret" disabled="@IsDisabled" aria-expanded="@(_splitOpen ? "true" : "false")" @onclick="ToggleSplit">
+            <WIcon Name="chevron-down" Size="16" />
+        </button>
+        @if (_splitOpen && SplitContent is not null)
+        {
+            <div class="w-btn-split-menu">@SplitContent</div>
+        }
+    </span>
+}
+else if (Variant == WButtonVariant.Icon)
+{
+    if (!string.IsNullOrEmpty(Tooltip))
+    {
+        <WTooltip Text="@Tooltip">
+            <button type="@Type" class="w-btn w-btn--icon @Class" disabled="@IsDisabled" aria-label="@Tooltip" @onclick="HandleClickAsync">
+                @BodyMarkup
+            </button>
+        </WTooltip>
+    }
+    else
+    {
+        <button type="@Type" class="w-btn w-btn--icon @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
+            @BodyMarkup
+        </button>
+    }
+}
+else
+{
+    <button type="@Type" class="w-btn @VariantClass @(Loading ? "w-btn--loading" : null) @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
+        @BodyMarkup
+    </button>
+}
+
+@code {
+    /// <summary>Visual style: Primary/Secondary/Danger/Text/Icon/Split.</summary>
+    [Parameter] public WButtonVariant Variant { get; set; } = WButtonVariant.Primary;
+
+    /// <summary>Text label. Ignored (except as the accessible name) when Variant is Icon.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>Custom content instead of Label, for rich labels.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Lucide icon name. Required for the Icon variant; optional decoration for the others.</summary>
+    [Parameter] public string? Icon { get; set; }
+
+    /// <summary>Where the icon sits relative to the label (Leading renders on the right under RTL).</summary>
+    [Parameter] public WIconPosition IconPosition { get; set; } = WIconPosition.Leading;
+
+    /// <summary>Tooltip text. Mandatory in practice for the Icon variant since it has no visible label.</summary>
+    [Parameter] public string? Tooltip { get; set; }
+
+    /// <summary>Disables the button and blocks clicks.</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Shows a spinner and disables the button while an operation set by the caller is in flight.</summary>
+    [Parameter] public bool Loading { get; set; }
+
+    /// <summary>Native button type attribute.</summary>
+    [Parameter] public string Type { get; set; } = "button";
+
+    /// <summary>Additional CSS classes appended to the root button element.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>Raised on click. Awaited internally so the built-in double-click guard covers async handlers too.</summary>
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    /// <summary>For the Split variant: content of the popover menu opened by the caret segment.</summary>
+    [Parameter] public RenderFragment? SplitContent { get; set; }
+
+    private bool _busy;
+    private bool _splitOpen;
+
+    private bool IsDisabled => Disabled || Loading || _busy;
+    private bool HasIcon => !string.IsNullOrEmpty(Icon);
+
+    private string VariantClass => Variant switch
+    {
+        WButtonVariant.Primary => "w-btn--primary",
+        WButtonVariant.Secondary => "w-btn--secondary",
+        WButtonVariant.Danger => "w-btn--danger",
+        WButtonVariant.Text => "w-btn--text",
+        _ => "w-btn--primary",
+    };
+
+    private async Task HandleClickAsync(MouseEventArgs args)
+    {
+        if (IsDisabled || !OnClick.HasDelegate)
+        {
+            return;
+        }
+
+        // Double-click guard: ignore re-entrant clicks while the previous handler is still running.
+        _busy = true;
+        try
+        {
+            await OnClick.InvokeAsync(args);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void ToggleSplit() => _splitOpen = !_splitOpen;
+
+    private RenderFragment BodyMarkup => @<text>
+        @if (Variant == WButtonVariant.Icon)
+        {
+            <WIcon Name="@(Icon ?? "help-circle")" Size="18" />
+        }
+        else if (Loading)
+        {
+            <span class="w-btn-spinner" aria-hidden="true"></span>
+            <span>@Ar.Loading.Working</span>
+        }
+        else
+        {
+            @if (HasIcon && IconPosition == WIconPosition.Leading)
+            {
+                <WIcon Name="@Icon" Size="16" />
+            }
+            <span class="w-btn-label">
+                @if (ChildContent is not null)
+                {
+                    @ChildContent
+                }
+                else
+                {
+                    @Label
+                }
+            </span>
+            @if (HasIcon && IconPosition == WIconPosition.Trailing)
+            {
+                <WIcon Name="@Icon" Size="16" />
+            }
+        }
+    </text>;
+}

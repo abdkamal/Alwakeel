@@ -1,0 +1,27 @@
+.w-clock-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--w-radius-lg);
+    background: var(--w-warning-soft);
+    border: 1px solid var(--w-warning-border);
+    color: var(--w-warning);
+}
+
+.w-clock-banner-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.w-clock-banner-title {
+    font-weight: 700;
+    color: var(--w-text);
+}
+
+.w-clock-banner-desc {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}

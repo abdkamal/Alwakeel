@@ -1,0 +1,41 @@
+@namespace Wakeel.UI.Components
+@using Wakeel.UI.Text
+
+<div class="w-toast w-toast--@VariantSlug" role="status">
+    <WIcon Name="@VariantIcon" Size="18" />
+    <span class="w-toast-text">@Text</span>
+    <button type="button" class="w-toast-close" aria-label="@Ar.Buttons.Close" @onclick="HandleCloseAsync">
+        <WIcon Name="x" Size="14" />
+    </button>
+</div>
+
+@code {
+    /// <summary>Message text.</summary>
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+
+    /// <summary>Semantic color/icon.</summary>
+    [Parameter] public WSemanticVariant Variant { get; set; } = WSemanticVariant.Neutral;
+
+    /// <summary>Raised when the close button is clicked.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string VariantSlug => Variant switch
+    {
+        WSemanticVariant.Info => "info",
+        WSemanticVariant.Warning => "warning",
+        WSemanticVariant.Danger => "danger",
+        WSemanticVariant.Success => "success",
+        _ => "neutral",
+    };
+
+    private string VariantIcon => Variant switch
+    {
+        WSemanticVariant.Info => "info",
+        WSemanticVariant.Warning => "alert-triangle",
+        WSemanticVariant.Danger => "alert-circle",
+        WSemanticVariant.Success => "check-circle",
+        _ => "info",
+    };
+
+    private Task HandleCloseAsync() => OnClose.InvokeAsync();
+}

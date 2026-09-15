@@ -1,0 +1,32 @@
+.w-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+.w-breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.w-breadcrumb-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--w-muted);
+    cursor: pointer;
+}
+.w-breadcrumb-link:hover { color: var(--w-primary); text-decoration: underline; }
+
+.w-breadcrumb-current {
+    color: var(--w-text);
+    font-weight: 600;
+}
+
+.w-breadcrumb-sep {
+    color: var(--w-placeholder);
+}

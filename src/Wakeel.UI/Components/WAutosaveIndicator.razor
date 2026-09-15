@@ -1,0 +1,33 @@
+@namespace Wakeel.UI.Components
+@using Wakeel.UI.Text
+
+<span class="w-autosave w-autosave--@StateSlug">
+    @if (State == WAutosaveState.Saving)
+    {
+        <span class="w-autosave-spinner" aria-hidden="true"></span>
+    }
+    else
+    {
+        <WIcon Name="@(State == WAutosaveState.Failed ? "alert-circle" : "check")" Size="14" />
+    }
+    <span>@StateText</span>
+</span>
+
+@code {
+    /// <summary>Current phase of the autosave cycle (saved / saving / failed).</summary>
+    [Parameter] public WAutosaveState State { get; set; } = WAutosaveState.Saved;
+
+    private string StateSlug => State switch
+    {
+        WAutosaveState.Saving => "saving",
+        WAutosaveState.Failed => "failed",
+        _ => "saved",
+    };
+
+    private string StateText => State switch
+    {
+        WAutosaveState.Saving => Ar.Autosave.Saving,
+        WAutosaveState.Failed => Ar.Autosave.Failed,
+        _ => Ar.Autosave.Saved,
+    };
+}

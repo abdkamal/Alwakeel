@@ -1,0 +1,155 @@
+/* Generated from design/tokens.json — do not hand-edit color values, regenerate instead. */
+
+:root {
+  --w-font: 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+  --w-radius: 6px;
+  --w-radius-lg: 10px;
+  --w-radius-pill: 999px;
+  --w-fs-meta: 12px;
+  --w-fs-body: 14px;
+  --w-fs-section: 16px;
+  --w-fs-title: 22px;
+  --w-fs-display: 26px;
+  --w-bg: #F3F4F6;
+  --w-surface: #FFFFFF;
+  --w-surface2: #F7F8F9;
+  --w-border: #D5D9DE;
+  --w-border-strong: #B9C0C7;
+  --w-text: #1D272D;
+  --w-muted: #66737B;
+  --w-placeholder: #8C979E;
+  --w-primary: #2D6F66;
+  --w-primary-hover: #367D73;
+  --w-primary-pressed: #245A53;
+  --w-primary-soft: #E7F1EF;
+  --w-primary-border: #B9D7D1;
+  --w-primary-fill: #2D6F66;
+  --w-success: #31735D;
+  --w-success-soft: #EAF5F0;
+  --w-success-border: #A7CFBE;
+  --w-success-fill: #31735D;
+  --w-warning: #A06B18;
+  --w-warning-soft: #FFF6E5;
+  --w-warning-border: #E8C982;
+  --w-warning-fill: #A06B18;
+  --w-danger: #A43E43;
+  --w-danger-soft: #FCEBED;
+  --w-danger-border: #E6AEB2;
+  --w-danger-fill: #A43E43;
+  --w-info: #3E6D8C;
+  --w-info-soft: #EDF4F7;
+  --w-info-border: #BCD1DC;
+  --w-info-fill: #3E6D8C;
+  --w-neutral-soft: #EAEDF0;
+  --w-disabled: #A7AFB5;
+  --w-disabled-bg: #E5E7E9;
+  --w-sidebar: #1D2B32;
+  --w-sidebar-hover: #263941;
+  --w-sidebar-selected: #304B52;
+  --w-sidebar-text: #D5DDE0;
+  --w-sidebar-muted: #AEBBC1;
+  --w-sidebar-divider: #38505A;
+  --w-table-header: #E9ECEF;
+  --w-attention-bg: #FFF9ED;
+  --w-scrim: #1D272D99;
+  --w-white: #FFFFFF;
+  --w-on-fill: #FFFFFF;
+}
+
+/* Explicit dark selection */
+:root[data-theme="dark"] {
+  --w-bg: #121A1E;
+  --w-surface: #1A252B;
+  --w-surface2: #202D34;
+  --w-border: #2E3D45;
+  --w-border-strong: #3C4D56;
+  --w-text: #E6ECEF;
+  --w-muted: #9AAAB2;
+  --w-placeholder: #728089;
+  --w-primary: #7FD0C2;
+  --w-primary-hover: #38897E;
+  --w-primary-pressed: #266A61;
+  --w-primary-soft: #1F3B38;
+  --w-primary-border: #2E5551;
+  --w-primary-fill: #2F7A70;
+  --w-success: #7CCBA4;
+  --w-success-soft: #1E3A30;
+  --w-success-border: #2E5A47;
+  --w-success-fill: #2E7D5B;
+  --w-warning: #E3B45C;
+  --w-warning-soft: #3A2E14;
+  --w-warning-border: #6A5220;
+  --w-warning-fill: #8A5E14;
+  --w-danger: #EE8E93;
+  --w-danger-soft: #3D2224;
+  --w-danger-border: #6B3237;
+  --w-danger-fill: #B4484E;
+  --w-info: #8CBBDA;
+  --w-info-soft: #1F3140;
+  --w-info-border: #2F4D62;
+  --w-info-fill: #3E6D8C;
+  --w-neutral-soft: #263238;
+  --w-disabled: #5C6A72;
+  --w-disabled-bg: #2A363D;
+  --w-sidebar: #0E1519;
+  --w-sidebar-hover: #182228;
+  --w-sidebar-selected: #24333B;
+  --w-sidebar-text: #C9D3D8;
+  --w-sidebar-muted: #7F8F97;
+  --w-sidebar-divider: #26343B;
+  --w-table-header: #1F2B31;
+  --w-attention-bg: #33291A;
+  --w-scrim: #000000A6;
+  --w-white: #FFFFFF;
+  --w-on-fill: #FFFFFF;
+}
+
+/* System preference, only when theme is left as "system" (no explicit [data-theme]) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+  --w-bg: #121A1E;
+  --w-surface: #1A252B;
+  --w-surface2: #202D34;
+  --w-border: #2E3D45;
+  --w-border-strong: #3C4D56;
+  --w-text: #E6ECEF;
+  --w-muted: #9AAAB2;
+  --w-placeholder: #728089;
+  --w-primary: #7FD0C2;
+  --w-primary-hover: #38897E;
+  --w-primary-pressed: #266A61;
+  --w-primary-soft: #1F3B38;
+  --w-primary-border: #2E5551;
+  --w-primary-fill: #2F7A70;
+  --w-success: #7CCBA4;
+  --w-success-soft: #1E3A30;
+  --w-success-border: #2E5A47;
+  --w-success-fill: #2E7D5B;
+  --w-warning: #E3B45C;
+  --w-warning-soft: #3A2E14;
+  --w-warning-border: #6A5220;
+  --w-warning-fill: #8A5E14;
+  --w-danger: #EE8E93;
+  --w-danger-soft: #3D2224;
+  --w-danger-border: #6B3237;
+  --w-danger-fill: #B4484E;
+  --w-info: #8CBBDA;
+  --w-info-soft: #1F3140;
+  --w-info-border: #2F4D62;
+  --w-info-fill: #3E6D8C;
+  --w-neutral-soft: #263238;
+  --w-disabled: #5C6A72;
+  --w-disabled-bg: #2A363D;
+  --w-sidebar: #0E1519;
+  --w-sidebar-hover: #182228;
+  --w-sidebar-selected: #24333B;
+  --w-sidebar-text: #C9D3D8;
+  --w-sidebar-muted: #7F8F97;
+  --w-sidebar-divider: #26343B;
+  --w-table-header: #1F2B31;
+  --w-attention-bg: #33291A;
+  --w-scrim: #000000A6;
+  --w-white: #FFFFFF;
+  --w-on-fill: #FFFFFF;
+  }
+}

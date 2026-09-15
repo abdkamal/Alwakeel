@@ -1,0 +1,15 @@
+@namespace Wakeel.UI
+@using Microsoft.AspNetCore.Components.Routing
+@using Wakeel.UI.Layout
+@using Wakeel.UI.Text
+
+<Router AppAssembly="@typeof(Routes).Assembly" AdditionalAssemblies="@(new[] { typeof(MainLayout).Assembly })">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p>@Ar.NotFound.Title</p>
+        </LayoutView>
+    </NotFound>
+</Router>

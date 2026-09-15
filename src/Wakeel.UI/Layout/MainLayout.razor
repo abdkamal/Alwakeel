@@ -1,0 +1,79 @@
+@inherits LayoutComponentBase
+@namespace Wakeel.UI.Layout
+@using Wakeel.UI.Components
+@using Wakeel.UI.Services
+@using Wakeel.UI.Text
+@using Wakeel.UI.Bidi
+@implements IDisposable
+@inject PageHeaderState HeaderState
+@inject ThemeService Theme
+@inject NavigationManager Nav
+
+<div class="w-shell">
+    <WSidebar SelectedKey="@HeaderState.NavKey" Badges="@SampleBadges" SyncStatusText="@Ar.Footer.Synced" Version="v0.21" OnNavigate="HandleNavigate" />
+    <div class="w-shell-main">
+        <WTopBar UserName="@Ar.Sample.UserName" UserRole="@Ar.Sample.UserRole" NotificationCount="@SampleNotificationCount" />
+        <div class="w-page">
+            @if (!string.IsNullOrEmpty(HeaderState.Title))
+            {
+                <div class="w-page-header">
+                    <div class="w-page-header-titles">
+                        <h1 class="w-page-header-title w-text-title">@HeaderState.Title</h1>
+                        @if (!string.IsNullOrEmpty(HeaderState.Sub))
+                        {
+                            <p class="w-page-header-sub">@Bidi.Wrap(HeaderState.Sub)</p>
+                        }
+                    </div>
+                    @if (HeaderState.Actions is not null)
+                    {
+                        <div class="w-page-header-actions">@HeaderState.Actions</div>
+                    }
+                </div>
+            }
+            <div class="w-page-content">
+                @Body
+            </div>
+        </div>
+    </div>
+    <WToastHost />
+</div>
+
+@code {
+    // Fixed sample counts (DESIGN-GUIDE.md's single fixed sample dataset for v0.21 — organization
+    // "هيئة تنمية المناطق الريفية" / office "مكتب مدير دائرة التخطيط" / user "أحمد الخطيب") shown
+    // across every screen until a page wires live counts from Wakeel.Core.
+    private static readonly IReadOnlyDictionary<string, int> SampleBadges = new Dictionary<string, int>(StringComparer.Ordinal)
+    {
+        [WSidebar.Keys.GroupDailyWork] = 18,
+        [WSidebar.Keys.Attention] = 5,
+        [WSidebar.Keys.Correspondence] = 12,
+        [WSidebar.Keys.Tasks] = 3,
+        [WSidebar.Keys.GroupFinanceReports] = 2,
+    };
+
+    private const int SampleNotificationCount = 3;
+
+    protected override async Task OnInitializedAsync()
+    {
+        HeaderState.Changed += HandleChanged;
+        await Theme.InitializeAsync();
+    }
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+
+    /// <summary>Maps a sidebar nav-item key to its route. Keys with no page built yet are a no-op.</summary>
+    private static readonly IReadOnlyDictionary<string, string> RouteByKey = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [WSidebar.Keys.Attention] = "/w08",
+    };
+
+    private void HandleNavigate(string key)
+    {
+        if (RouteByKey.TryGetValue(key, out var route))
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    public void Dispose() => HeaderState.Changed -= HandleChanged;
+}

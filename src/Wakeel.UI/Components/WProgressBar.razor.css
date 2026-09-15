@@ -1,0 +1,32 @@
+.w-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.w-progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+.w-progress-percent {
+    font-weight: 700;
+    color: var(--w-text);
+}
+
+.w-progress-track {
+    height: 8px;
+    border-radius: var(--w-radius-pill);
+    background: var(--w-neutral-soft);
+    overflow: hidden;
+}
+
+.w-progress-fill {
+    height: 100%;
+    border-radius: var(--w-radius-pill);
+    background: var(--w-primary-fill);
+    transition: width 200ms ease;
+}

@@ -1,0 +1,47 @@
+.w-timeline-item {
+    display: flex;
+    gap: 10px;
+    padding-bottom: 16px;
+    position: relative;
+}
+.w-timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    inset-inline-start: 3px;
+    bottom: 0;
+    width: 1px;
+    background: var(--w-border);
+}
+
+.w-timeline-marker {
+    width: 8px;
+    height: 8px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--w-primary-fill);
+    flex-shrink: 0;
+}
+
+.w-timeline-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.w-timeline-title {
+    font-weight: 600;
+    color: var(--w-text);
+    font-size: var(--w-fs-body);
+}
+
+.w-timeline-desc {
+    color: var(--w-muted);
+    font-size: var(--w-fs-body);
+    unicode-bidi: plaintext;
+}
+
+.w-timeline-meta {
+    color: var(--w-placeholder);
+    font-size: var(--w-fs-meta);
+}

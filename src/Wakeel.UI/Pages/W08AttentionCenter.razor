@@ -1,0 +1,183 @@
+@page "/w08"
+@using Wakeel.UI.Text
+@using Wakeel.UI.Services
+@implements IDisposable
+@inject PageHeaderState HeaderState
+
+<div class="w08">
+    <div class="w08-kpis">
+        <WKpiCard Label="@Ar.AttentionCenter.AwaitingConfirmationLabel" Icon="check-circle" Value="3" Sub="@Ar.AttentionCenter.AwaitingConfirmationSub" />
+        <WKpiCard Label="@Ar.AttentionCenter.StaleLabel" Icon="clock" Value="5" Sub="@Ar.AttentionCenter.StaleSub" />
+        <WKpiCard Label="@Ar.AttentionCenter.NearDueLabel" Icon="calendar" Value="8" Sub="@Ar.AttentionCenter.NearDueSub" />
+        <WKpiCard Label="@Ar.AttentionCenter.OverdueLabel" Icon="alert-triangle" Value="12" Sub="@Ar.AttentionCenter.OverdueSub" />
+    </div>
+
+    <WCard Variant="WSemanticVariant.Warning" Icon="calendar">
+        <div class="w08-banner">
+            <div class="w08-banner-text">
+                <p class="w08-banner-desc">@Ar.AttentionCenter.MonthlyReportBanner</p>
+                <WProgressBar Percent="80" Label="@Ar.AttentionCenter.MonthlyReportProgressLabel" />
+            </div>
+            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.OpenMonthlyReport" Icon="chevron-left" IconPosition="WIconPosition.Trailing" OnClick="HandleOpenMonthlyReportAsync" />
+        </div>
+    </WCard>
+
+    <div class="w08-columns">
+        <div class="w08-col-side">
+            <WCard Title="@Ar.AttentionCenter.TodayMeetingsTitle">
+                <div class="w08-meeting">
+                    <bdi class="w08-meeting-time">@Ar.AttentionCenter.Meeting1Time</bdi>
+                    <div class="w08-meeting-text">
+                        <p class="w08-meeting-title">@Ar.AttentionCenter.Meeting1Title</p>
+                        <p class="w08-meeting-meta">@Ar.AttentionCenter.Meeting1Meta</p>
+                    </div>
+                </div>
+                <div class="w08-meeting">
+                    <bdi class="w08-meeting-time">@Ar.AttentionCenter.Meeting2Time</bdi>
+                    <div class="w08-meeting-text">
+                        <p class="w08-meeting-title">@Ar.AttentionCenter.Meeting2Title</p>
+                        <p class="w08-meeting-meta">@Ar.AttentionCenter.Meeting2Meta</p>
+                    </div>
+                </div>
+            </WCard>
+
+            <WCard Title="@Ar.AttentionCenter.SyncStatusTitle">
+                <p class="w08-status-detail">@Ar.AttentionCenter.SyncStatusDetail</p>
+            </WCard>
+
+            <WCard Title="@Ar.AttentionCenter.BackupStatusTitle">
+                <p class="w08-status-detail">@Ar.AttentionCenter.BackupStatusDetail</p>
+            </WCard>
+        </div>
+
+        <div class="w08-col-main">
+            <WCard>
+                <WSectionHeader Title="@Ar.AttentionCenter.TodayActionTitle" />
+                <WTabs>
+                    <WTabItem Label="@Ar.AttentionCenter.TabAll" Count="9" Active="@(_tab == 0)" OnClick="@(() => _tab = 0)" />
+                    <WTabItem Label="@Ar.AttentionCenter.TabCorrespondence" Count="4" Active="@(_tab == 1)" OnClick="@(() => _tab = 1)" />
+                    <WTabItem Label="@Ar.AttentionCenter.TabTasks" Count="3" Active="@(_tab == 2)" OnClick="@(() => _tab = 2)" />
+                    <WTabItem Label="@Ar.AttentionCenter.TabCommitments" Count="2" Active="@(_tab == 3)" OnClick="@(() => _tab = 3)" />
+                </WTabs>
+                <WSearch @bind-Value="_actionSearch" BindGlobalShortcut="false" />
+                <WTable HeaderRow="@ActionTableHeader" FooterText="@Ar.Table.ShowingRange(1, 3, 3)">
+                    <tr class="w-table-row w-table-row--attention">
+                        <td><WChip Variant="WChipVariant.Info" Label="@Ar.AttentionCenter.TypeMessage" /></td>
+                        <td>@Ar.AttentionCenter.ActionRow1Subject</td>
+                        <td>@Ar.AttentionCenter.ActionRow1Assignee</td>
+                        <td><bdi class="w08-due w08-due--danger">@Ar.AttentionCenter.ActionRow1Due</bdi></td>
+                        <td class="w08-chevron-cell">
+                            <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
+                            <WIcon Name="chevron-left" Size="16" Class="w08-chevron-icon" />
+                        </td>
+                    </tr>
+                    <tr class="w-table-row">
+                        <td><WChip Variant="WChipVariant.Primary" Label="@Ar.AttentionCenter.TypeTask" /></td>
+                        <td>@Ar.AttentionCenter.ActionRow2Subject</td>
+                        <td>@Ar.AttentionCenter.ActionRow2Assignee</td>
+                        <td><bdi class="w08-due">@Ar.AttentionCenter.ActionRow2Due</bdi></td>
+                        <td class="w08-chevron-cell">
+                            <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
+                            <WIcon Name="chevron-left" Size="16" Class="w08-chevron-icon" />
+                        </td>
+                    </tr>
+                    <tr class="w-table-row">
+                        <td><WChip Variant="WChipVariant.Warning" Label="@Ar.AttentionCenter.TypeCommitment" /></td>
+                        <td>@Ar.AttentionCenter.ActionRow3Subject</td>
+                        <td>@Ar.AttentionCenter.ActionRow3Assignee</td>
+                        <td><bdi class="w08-due">@Ar.AttentionCenter.ActionRow3Due</bdi></td>
+                        <td class="w08-chevron-cell">
+                            <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
+                            <WIcon Name="chevron-left" Size="16" Class="w08-chevron-icon" />
+                        </td>
+                    </tr>
+                </WTable>
+            </WCard>
+
+            <WCard>
+                <WSectionHeader Title="@Ar.AttentionCenter.PendingExpensesTitle" Count="6">
+                    <ActionContent>
+                        <div class="w08-expenses-actions">
+                            <WSearch @bind-Value="_expenseSearch" BindGlobalShortcut="false" Placeholder="@Ar.AttentionCenter.ExpensesSearchPlaceholder" />
+                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ViewAllExpenses" Icon="chevron-left" IconPosition="WIconPosition.Trailing" OnClick="HandleViewAllExpensesAsync" />
+                        </div>
+                    </ActionContent>
+                </WSectionHeader>
+                <WTable HeaderRow="@ExpensesTableHeader">
+                    <tr class="w-table-row">
+                        <td>@Ar.AttentionCenter.Expense1Employee</td>
+                        <td>
+                            <span>@Ar.AttentionCenter.Expense1Subject</span>
+                            <div class="w08-expense-meta"><bdi>@Ar.AttentionCenter.Expense1Meta</bdi></div>
+                        </td>
+                        <td><bdi>@Ar.AttentionCenter.Expense1Date</bdi></td>
+                        <td><bdi>@Ar.AttentionCenter.Expense1Amount</bdi></td>
+                        <td>
+                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseConfirm" Icon="check" Class="w08-expense-confirm" OnClick="HandleConfirmExpenseAsync" />
+                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseReject" Icon="x" Class="w08-expense-reject" OnClick="HandleRejectExpenseAsync" />
+                        </td>
+                    </tr>
+                    <tr class="w-table-row">
+                        <td>@Ar.AttentionCenter.Expense2Employee</td>
+                        <td>
+                            <span>@Ar.AttentionCenter.Expense2Subject</span>
+                            <div class="w08-expense-meta"><bdi>@Ar.AttentionCenter.Expense2Meta</bdi></div>
+                        </td>
+                        <td><bdi>@Ar.AttentionCenter.Expense2Date</bdi></td>
+                        <td><bdi>@Ar.AttentionCenter.Expense2Amount</bdi></td>
+                        <td>
+                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseConfirm" Icon="check" Class="w08-expense-confirm" OnClick="HandleConfirmExpenseAsync" />
+                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseReject" Icon="x" Class="w08-expense-reject" OnClick="HandleRejectExpenseAsync" />
+                        </td>
+                    </tr>
+                </WTable>
+            </WCard>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int _tab;
+    private string _actionSearch = string.Empty;
+    private string _expenseSearch = string.Empty;
+
+    private RenderFragment HeaderActions => @<text>
+        <WButton Variant="WButtonVariant.Primary" Label="@Ar.AttentionCenter.QuickEntry" Icon="plus" OnClick="HandleQuickEntryAsync" />
+        <WButton Variant="WButtonVariant.Secondary" Label="@Ar.AttentionCenter.Refresh" Icon="refresh-cw" OnClick="HandleRefreshAsync" />
+    </text>;
+
+    private RenderFragment ActionTableHeader => @<text>
+        <th>@Ar.AttentionCenter.ColType</th>
+        <th>@Ar.AttentionCenter.ColSubject</th>
+        <th>@Ar.AttentionCenter.ColAssignee</th>
+        <th>@Ar.AttentionCenter.ColDueDate</th>
+        <th><span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span></th>
+    </text>;
+
+    private RenderFragment ExpensesTableHeader => @<text>
+        <th>@Ar.AttentionCenter.ExpensesColEmployee</th>
+        <th>@Ar.AttentionCenter.ExpensesColSubject</th>
+        <th>@Ar.AttentionCenter.ExpensesColDate</th>
+        <th>@Ar.AttentionCenter.ExpensesColAmount</th>
+        <th><span class="w-visually-hidden">@Ar.AttentionCenter.ExpensesActionsColLabel</span></th>
+    </text>;
+
+    protected override void OnInitialized()
+    {
+        HeaderState.Set(Ar.AttentionCenter.Title, Ar.AttentionCenter.Sub, HeaderActions, navKey: WSidebar.Keys.Attention);
+    }
+
+    private Task HandleQuickEntryAsync(MouseEventArgs args) => Task.CompletedTask;
+
+    private Task HandleRefreshAsync(MouseEventArgs args) => Task.CompletedTask;
+
+    private Task HandleOpenMonthlyReportAsync(MouseEventArgs args) => Task.CompletedTask;
+
+    private Task HandleViewAllExpensesAsync(MouseEventArgs args) => Task.CompletedTask;
+
+    private Task HandleConfirmExpenseAsync(MouseEventArgs args) => Task.CompletedTask;
+
+    private Task HandleRejectExpenseAsync(MouseEventArgs args) => Task.CompletedTask;
+
+    public void Dispose() => HeaderState.Clear();
+}

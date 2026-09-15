@@ -1,0 +1,31 @@
+@namespace Wakeel.UI.Components
+
+<ol class="w-stepper">
+    @for (var i = 0; i < Steps.Count; i++)
+    {
+        var index = i;
+        var stepNumber = index + 1;
+        var state = stepNumber < CurrentStep ? "done" : stepNumber == CurrentStep ? "active" : "pending";
+        <li class="w-stepper-item w-stepper-item--@state">
+            <span class="w-stepper-circle" aria-hidden="true">
+                @if (state == "done")
+                {
+                    <WIcon Name="check" Size="13" />
+                }
+                else
+                {
+                    <bdi>@stepNumber</bdi>
+                }
+            </span>
+            <span class="w-stepper-label">@Steps[index]</span>
+        </li>
+    }
+</ol>
+
+@code {
+    /// <summary>Ordered Arabic step labels.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<string> Steps { get; set; } = Array.Empty<string>();
+
+    /// <summary>1-based index of the currently active step.</summary>
+    [Parameter] public int CurrentStep { get; set; } = 1;
+}

@@ -1,0 +1,8 @@
+.w-icon {
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.w-icon--mirror {
+    transform: scaleX(-1);
+}

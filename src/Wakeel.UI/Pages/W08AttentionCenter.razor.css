@@ -1,0 +1,102 @@
+.w08 {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.w08-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 900px) {
+    .w08-kpis { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+}
+
+.w08-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex: 1;
+}
+
+.w08-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    max-width: 420px;
+}
+
+.w08-banner-desc { margin: 0; }
+
+.w08-columns {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .w08-columns { grid-template-columns: 1fr; }
+}
+
+.w08-col-side, .w08-col-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.w08-meeting {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding-block: 8px;
+    border-bottom: 1px solid var(--w-border);
+}
+.w08-meeting:last-child { border-bottom: 0; }
+
+.w08-meeting-time {
+    font-weight: 700;
+    color: var(--w-primary);
+    flex-shrink: 0;
+    min-width: 44px;
+}
+
+.w08-meeting-text { min-width: 0; }
+.w08-meeting-title { margin: 0; font-weight: 600; }
+.w08-meeting-meta { margin: 2px 0 0; font-size: var(--w-fs-meta); color: var(--w-muted); }
+
+.w08-status-detail {
+    margin: 0;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+.w08-due--danger { color: var(--w-danger); font-weight: 600; }
+
+.w08-chevron-cell {
+    width: 1%;
+    text-align: center;
+}
+
+::deep .w08-chevron-icon { color: var(--w-muted); }
+
+.w08-expenses-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.w08-expense-meta {
+    margin-top: 2px;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+::deep .w08-expense-confirm { color: var(--w-success); }
+::deep .w08-expense-reject { color: var(--w-danger); }

@@ -321,7 +321,7 @@ public class PairingTests
             CanonicalJson.SerializeToUtf8Bytes(Issue(pki, request, invitation, clock)));
         var orgKey = pki.Org.SigningPublicKey;
 
-        var phoneCertificate = accept.EnsureTrusted(orgKey, invitation, pki.NoRevocations(Now), clock);
+        var phoneCertificate = accept.EnsureTrusted(orgKey, invitation, pki.NoRevocations(Now), clock, pki.Phone);
 
         Assert.Equal(TestPki.PhoneDeviceId, phoneCertificate.Body.DeviceId);
         Assert.Equal(DeviceKind.Phone, phoneCertificate.Body.Kind);
@@ -373,7 +373,7 @@ public class PairingTests
             clock);
 
         var error = Assert.Throws<CryptoException>(
-            () => accept.EnsureTrusted(pki.Org.SigningPublicKey, invitation, revocations: null, clock));
+            () => accept.EnsureTrusted(pki.Org.SigningPublicKey, invitation, revocations: null, clock, pki.Phone));
         Assert.Equal(ErrorCode.BadSignature, error.Code);
     }
 
@@ -395,7 +395,99 @@ public class PairingTests
             clock);
 
         var error = Assert.Throws<CryptoException>(
-            () => accept.EnsureTrusted(pki.Org.SigningPublicKey, otherInvitation, revocations: null, clock));
+            () => accept.EnsureTrusted(pki.Org.SigningPublicKey, otherInvitation, revocations: null, clock, pki.Phone));
+        Assert.Equal(ErrorCode.BadSignature, error.Code);
+    }
+
+    [Fact]
+    public void An_issued_certificate_for_different_keys_than_this_phone_is_refused()
+    {
+        using var pki = TestPki.Create();
+        using var impostor = DeviceIdentity.Generate();
+        var clock = new FixedClock(Now);
+        var token = PairingToken.Generate();
+        var invitation = BuildInvitation(pki, token, clock);
+
+        // A request signed with someone else's keys, but still claiming to be TestPki.PhoneDeviceId.
+        var request = PairingRequest.Create(
+            new PairingRequestBody(
+                TestPki.OrgId,
+                TestPki.OfficeId,
+                TestPki.PcDeviceId,
+                TestPki.PhoneDeviceId,
+                impostor.SigningPublicKeyText,
+                impostor.AgreementPublicKeyText,
+                PairingCodes.TokenProof(token.Value, TestPki.PhoneDeviceId),
+                Now),
+            impostor);
+
+        var accept = Issue(pki, request, invitation, clock);
+
+        // The real phone (pki.Phone) receives this answer file. The certificate it carries
+        // chains cleanly to the organisation and names the right device id, but it was issued
+        // for someone else's public keys, so this phone must refuse it rather than store a
+        // certificate it can never actually use to sign anything.
+        var error = Assert.Throws<CryptoException>(
+            () => accept.EnsureTrusted(pki.Org.SigningPublicKey, invitation, pki.NoRevocations(Now), clock, pki.Phone));
+        Assert.Equal(ErrorCode.BadSignature, error.Code);
+    }
+
+    [Fact]
+    public void An_answer_with_no_body_reports_corruption_not_a_null_reference()
+    {
+        using var pki = TestPki.Create();
+        var accept = CanonicalJson.Deserialize<PairingAccept>("{\"signature\":\"AA\"}");
+
+        var sessionError = Assert.Throws<CryptoException>(() => accept.OpenSessionKey(pki.Phone));
+        Assert.Equal(ErrorCode.Corrupt, sessionError.Code);
+
+        var officeError = Assert.Throws<CryptoException>(() => accept.OpenOfficeKey(pki.Phone));
+        Assert.Equal(ErrorCode.Corrupt, officeError.Code);
+    }
+
+    [Fact]
+    public void An_answer_whose_plain_fields_disagree_with_its_own_certificate_is_refused()
+    {
+        using var pki = TestPki.Create();
+        var clock = new FixedClock(Now);
+        var token = PairingToken.Generate();
+        var invitation = BuildInvitation(pki, token, clock);
+        var request = BuildRequest(pki, token, Now);
+
+        var phoneCertificate = DeviceCertificate.Issue(
+            new DeviceCertificateBody(
+                pki.PcCertificate.Body.OrgId,
+                pki.PcCertificate.Body.OfficeId,
+                request.Body.PhoneDeviceId,
+                1,
+                2,
+                "secretary",
+                DeviceKind.Phone,
+                request.Body.Ed25519Pub,
+                request.Body.X25519Pub,
+                Now,
+                pki.PcCertificate.Body.DeviceId),
+            pki.Pc);
+
+        // The body's own OrgId disagrees with the OrgId carried inside its own certificate,
+        // even though the whole thing is validly signed by the computer's real key: only an
+        // already org-certified computer could ever produce such a file, so this proves the
+        // phone still refuses it rather than trusting the plain field on its own.
+        var body = new PairingAcceptBody(
+            "ANOTHER-ORG",
+            pki.PcCertificate.Body.OfficeId,
+            pki.PcCertificate.Body.DeviceId,
+            pki.PcCertificate,
+            request.Body.PhoneDeviceId,
+            phoneCertificate,
+            Base64Url.Encode(DeviceIdentity.SealFor(pki.Phone.AgreementPublicKey, RandomBytes.Next(32), PairingAccept.SessionKeyContext)),
+            Base64Url.Encode(DeviceIdentity.SealFor(pki.Phone.AgreementPublicKey, RandomBytes.Next(32), PairingAccept.OfficeKeyContext)),
+            Now);
+
+        var accept = PairingAccept.Create(body, pki.Pc);
+
+        var error = Assert.Throws<CryptoException>(
+            () => accept.EnsureTrusted(pki.Org.SigningPublicKey, invitation, pki.NoRevocations(Now), clock, pki.Phone));
         Assert.Equal(ErrorCode.BadSignature, error.Code);
     }
 

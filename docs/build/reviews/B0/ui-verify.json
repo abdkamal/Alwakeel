@@ -1,0 +1,86 @@
+{
+  "verdict": "fix",
+  "build_ok": true,
+  "tests_ok": false,
+  "findings": [
+    {
+      "severity": "high",
+      "file": "tests/Wakeel.UI.Tests/Components/WButtonTests.cs",
+      "issue": "`Loading_DoubleClickGuard_RunsHandlerOnlyOnce` is timing-dependent and FAILS on most full-suite runs (I ran the suite 4 times: 3 runs failed with `Assert.Equal() Failure: Expected 2, Actual 1` at line 98; it passes only when run in isolation or when the machine is idle). After `tcs.SetResult()` the `finally { _busy = false; }` continuation of `await OnClick.InvokeAsync(args)` is queued on bUnit's renderer dispatcher; `await Task.Delay(1)` does not guarantee it has run, so the third `button.Click()` is still swallowed by the guard. The builder's claim of 133/133 is therefore not reproducible — the suite is effectively red.",
+      "fix": "Replace the `tcs.SetResult(); await Task.Delay(1);` pair with a deterministic wait for the guard to clear before the third click, e.g.:\n\n    tcs.SetResult();\n    cut.WaitForState(() => !cut.Find(\"button\").HasAttribute(\"disabled\"));\n    cut.Find(\"button\").Click();\n    Assert.Equal(2, runCount);\n\n(`IsDisabled` includes `_busy`, and completing the awaited EventCallback triggers a re-render, so the rendered `disabled` attribute is a reliable signal.) Do not use a fixed `Task.Delay`."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.UI/Bidi/Bidi.cs",
+      "issue": "`Wrap()` isolates each whitespace-separated Latin/numeric token in its own LRI…PDI run. Per UBA rule X an isolate is treated as a neutral object and is ordered by the paragraph direction (RTL here), so two adjacent isolates render in reverse visual order: «184 GB» comes out as «GB 184», «Canon DR-C240» as «DR-C240 Canon», «Microsoft Word 365» as «365 Word Microsoft». docs/design/bidi-test.html — the normative reference — wraps each whole run in a single `<bdi>` (`<bdi>184 GB</bdi>`, `<bdi>Canon DR-C240</bdi>`), i.e. the helper actively breaks lines that plain `dir=\"rtl\"` would have rendered correctly. BidiWrapTests.cs enshrines the wrong behaviour (`Assert.Contains(Isolated(\"184\"))` + `Isolated(\"GB\")` separately), so the defect is invisible to the suite. This is the designated helper for AGREEMENT item 55 across the whole app.",
+      "fix": "Let a token run span internal single spaces so one isolate covers the whole Latin/numeric run: change the pattern to `[A-Za-z0-9](?:[A-Za-z0-9./\\\\_:@+,\\- ]*[A-Za-z0-9])?` (space added to the interior class; the both-ends alphanumeric anchor already keeps trailing punctuation out), or post-process by merging adjacent isolates separated only by whitespace. Then update tests/Wakeel.UI.Tests/BidiWrapTests.cs to assert the whole runs: `Isolated(\"184 GB\")`, `Isolated(\"512 GB\")`, `Isolated(\"Canon DR-C240\")`, `Isolated(\"Microsoft Word 365\")`, `Isolated(\"1.8 GB\")`, matching the «مع العزل» column of docs/design/bidi-test.html."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.UI/Pages/W08AttentionCenter.razor",
+      "issue": "The 4th `<th>` of the expenses table is `@Ar.LocalSearch.Placeholder`, so the string «ابحث في هذه القائمة...» is rendered as a table column header — a visible wrong-Arabic-text bug (copy/paste of the search placeholder). The reference PNG (design/exports/light/W/W08) shows 5 columns: الموظف | البيان | التاريخ | المبلغ | (empty header over the تأكيد/رفض actions). `Ar.AttentionCenter.ExpensesColDate` already exists and is unused.",
+      "fix": "In `ExpensesTableHeader` replace the last cell with `<th>@Ar.AttentionCenter.ExpensesColDate</th>` and add a final `<th><span class=\"w-visually-hidden\">…</span></th>` (Ar-backed label) for the action column; add the matching `<td><bdi>11/09/2026</bdi></td>` / `<td><bdi>10/09/2026</bdi></td>` date cells to both expense rows so header and body column counts agree."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.UI/Components/WMenu.razor",
+      "issue": "When `TriggerContent` is null (the default used for the row \"more\" menu) the trigger renders as an icon-only button carrying a bare `more-vertical` WIcon with `aria-hidden=\"true\"`, no tooltip and no `aria-label`. This violates the spec rule «tooltips on every icon-only button» and leaves the control with no accessible name.",
+      "fix": "Wrap the default branch of the trigger in `<WTooltip Text=\"@Ar.Menu.MoreActions\">` and add `aria-label=\"@Ar.Menu.MoreActions\"` to the `<button>` (only when `TriggerContent` is null, so the avatar trigger in WTopBar is unaffected). Add `public const string MoreActions = \"خيارات إضافية\";` to `Ar.Menu` in src/Wakeel.UI/Text/Ar.cs, and a bUnit assertion that the default trigger exposes that name."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W08AttentionCenter.razor",
+      "issue": "Other pixel gaps vs design/exports/light/W/W08: the expenses card lacks the section header with the count badge «6» + local search box + «عرض كل المصروفات» text action; the البيان cells lack the meta sub-line (فاتورة جوال • 0599-482-117 …); the تأكيد/رفض controls are Secondary+Text buttons instead of text buttons with check / x icons in success and danger colours; the «يحتاج إجراء اليوم» table is missing the trailing chevron column and the colour-coded الاستحقاق text (red for متأخر).",
+      "fix": "Add a `WSectionHeader` with a `WBadge Count=\"6\"` and an `ActionLabel=\"عرض كل المصروفات\"` above the expenses `WTable`, a `WSearch BindGlobalShortcut=\"false\"` row, the meta sub-line as a second `<div class=\"w08-expense-meta\"><bdi>…</bdi></div>` inside the البيان cell, and switch the row actions to `WButtonVariant.Text` with `Icon=\"check\"` / `Icon=\"x\"`. Add the Arabic strings to `Ar.AttentionCenter`."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Text/Ar.cs",
+      "issue": "`Ar.AttentionCenter.MonthlyReportBanner` reads «بقي 3 أيام على نهاية دورة سبتمبر — الجاهزية 80 بالمئة», but the reference PNG (verified by crop) says «دورة أكتوبر». The builder changed the design's wording on its own judgement (sample date is 12/09/2026) in response to a previous review note. The PNGs are the stated source of truth for this package, so the build now diverges from the approved design.",
+      "fix": "Either restore «أكتوبر» to match design/exports/light/W/W08 — مركز الانتباه.png, or raise the inconsistency to the owner and change the Pen design first; do not let code and design drift apart silently. Record whichever is chosen in docs/build/BUILD-PLAN.md."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Components/WPager.razor",
+      "issue": "Arabic user-facing strings are hard-coded in markup instead of coming from `Ar` (`aria-label=\"ترقيم الصفحات\"`, `\"السابق\"`, `\"التالي\"`); `WBreadcrumb.razor` does the same with `aria-label=\"مسار التصفح\"`. Spec item 4 requires `Text/Ar.cs` to hold every Arabic string of the shell.",
+      "fix": "Add `Ar.Pager.Label/Previous/Next` and `Ar.Breadcrumb.Label` and reference them from both components."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/Gallery.razor",
+      "issue": "Table demo cells render raw Latin/numeric tokens outside any isolate (`<td>20260911/12001</td>`, `<td>15/09/2026</td>`), contradicting the rule the gallery is meant to demonstrate (bidi-test.html rule 2: every Latin/numeric token inside `<bdi>` or `unicode-bidi: isolate`).",
+      "fix": "Wrap those cell values in `<bdi>…</bdi>` (or `<Bdi Text=\"…\" />`) as W08AttentionCenter already does for its due-date and amount cells."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Components/WSidebar.razor.css",
+      "issue": "Sidebar org header fidelity: the reference shows a ~44px white rounded tile containing the brand mark in the primary colour; the build renders a 36px tile filled with `--w-sidebar-hover` and a `sidebar-text`-coloured `building` glyph. The footer version line in the reference also carries the approved brand mark (BRAND / الختم الرسمي, AGREEMENT item 54) which is absent here.",
+      "fix": "Set `.w-sidebar-org-icon` to 44x44 with `background: var(--w-white); color: var(--w-primary);`, and add the approved brand glyph next to the version line once the brand asset is vendored (or note it as deferred in BUILD-PLAN)."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Components/WAvatar.razor",
+      "issue": "`SizeStyle => $\"width:{Size}px;height:{Size}px;font-size:{Size * 0.42:0}px;\"` formats a double with the ambient culture. Under an Arabic UI culture the produced CSS value is culture-dependent, which can emit a string the CSS parser rejects and silently drop the font-size.",
+      "fix": "Format with the invariant culture, e.g. `FormattableString.Invariant($\"width:{Size}px;height:{Size}px;font-size:{(int)Math.Round(Size * 0.42)}px;\")`."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Components/WDialog.razor",
+      "issue": "The Danger confirm button defaults to the `x-circle` icon; the reference W92 danger dialog («حذف نهائيًا») uses a circle-with-slash (`ban`) glyph, which is not in the vendored icon set.",
+      "fix": "Vendor Lucide `ban` into src/Wakeel.UI/wwwroot/icons, regenerate IconRegistry.g.cs, and change `ResolvedConfirmIcon`'s danger default to \"ban\"; or accept `x-circle` and record the deviation."
+    },
+    {
+      "severity": "low",
+      "file": "docs/build/BUILD-PLAN.md",
+      "issue": "The mandated verification command `dotnet test tests/Wakeel.UI.Tests --no-dependencies` cannot run on SDK 10.0.401: `dotnet test` forwards the switch verbatim to MSBuild, which rejects it with `MSBUILD : error MSB1001: Unknown switch`. I reproduced this exactly. The acceptance criterion as written is unsatisfiable for every UI work package, not just this one.",
+      "fix": "Change the documented acceptance command to the dependency-safe equivalent `dotnet build tests/Wakeel.UI.Tests --no-dependencies && dotnet test tests/Wakeel.UI.Tests --no-build` so Wakeel.Core is still never built while the tests actually run."
+    }
+  ],
+  "missing_spec_items": [
+    "Reliable green test run: the mandated `dotnet test` invocation errors out on this SDK, and the dependency-safe equivalent fails 3 runs out of 4 on WButtonTests.Loading_DoubleClickGuard_RunsHandlerOnlyOnce (132/133). The package cannot be accepted until the suite is deterministically green.",
+    "Bidi.Wrap does not reproduce docs/design/bidi-test.html's «مع العزل» column for multi-word Latin runs (184 GB, Canon DR-C240, Microsoft Word 365, 1.8 GB) — it splits them into separate isolates that render in reverse visual order.",
+    "Tooltip on every icon-only button: WMenu's default (no TriggerContent) trigger is icon-only with neither tooltip nor aria-label.",
+    "W08 placeholder is incomplete against the reference PNG: expenses table missing the التاريخ column (its header slot holds the local-search placeholder string by mistake), the البيان meta sub-lines, the section header with the «6» badge / local search / «عرض كل المصروفات» action, and the action table's trailing chevron column."
+  ],
+  "notes": "Commands run (exact, full output read): `dotnet build src/Wakeel.UI --no-dependencies` -> 0 warnings / 0 errors; `dotnet build src/Wakeel.Desktop --no-dependencies` -> 0/0; `dotnet test tests/Wakeel.UI.Tests --no-dependencies` -> MSBUILD error MSB1001 (Unknown switch: --no-dependencies) — the SDK forwards the flag to MSBuild, which rejects it, so the mandated command cannot execute. Dependency-safe substitute `dotnet build tests/Wakeel.UI.Tests --no-dependencies` (0/0) + `dotnet test tests/Wakeel.UI.Tests --no-build` run 4 times: 133/133 once, 132/133 three times, always the same flaky double-click-guard test. Wakeel.Core was never built or touched. No files were modified.\n\nVerified good — security: the only MarkupString is WIcon rendering a compile-time-static internal registry keyed by name, with an empty-glyph fallback (no user data reaches it); no `innerHTML`/`eval` in wwwroot/js/app.js; JS interop is limited to three named helpers with primitive/ElementReference arguments; `--remote-debugging-port` is validated with `ushort.TryParse` before being written to WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS, so no extra Chromium switches can be smuggled in; IUiStateStore holds only theme + sidebar booleans (no secrets), and WInput's password value never leaves the parent-supplied binding.\n\nVerified good — RTL/bidi: zero physical `left:`/`right:` or margin/padding/border-left/right declarations anywhere in src/Wakeel.UI or src/Wakeel.Desktop (grep-clean); `html{direction:rtl}`, `bdi/.w-bdi{unicode-bidi:isolate}` and `.w-plaintext{unicode-bidi:plaintext}` in app.css; `unicode-bidi: plaintext` on the free-text surfaces (WInput/WSelect controls, card bodies, timeline and state descriptions); directional icons (arrow-left/right, chevron-left/right, log-out, external-link) mirrored via `scaleX(-1)`; index.html is `<html dir=\"rtl\" lang=\"ar\">`; all UI text is Arabic (only XML docs are English).\n\nVerified good — pixel fidelity (measured by pixel-sampling the 1366x768 PNGs, not by eye): top bar 56px incl. border (sampled row transition at y=55), sidebar width 232px (sidebar edge at x=1134), button height 38px (y=96..134), input/select/search 38px, table row 44px with a 40px sticky header, radii 6/10/pill, attention row = attention-bg + 3px danger `border-inline-start`. Child order matches the RTL reading order everywhere I checked against the PNGs: top bar (user/bell/calendar right, search left), page header (titles right, actions left), dialog (close left of title; confirm right, cancel left, packed to the right), sidebar item (icon right, label, badge left), sidebar group header (label, badge, chevron left), sidebar footer sync row (refresh icon rightmost, then dot, then text), button icon to the right of the label. The full Lucide list from the spec is vendored (all 70+ names present).\n\nVerified good — structure: all 36 specified components exist as .razor + scoped .razor.css with English XML docs; Gallery covers every component and state with a working theme segmented control; the Desktop host builds under Microsoft.NET.Sdk.Razor and its staticwebassets.runtime.json declares index.html, Wakeel.Desktop.styles.css (which bundles the RCL's scoped CSS) and every `_content/Wakeel.UI/...` asset, so the BlazorWebView file provider can resolve them; Serilog ProgramData->LocalAppData fallback probes writability correctly; 115 test declarations expanding to 133 cases, and they assert real behaviour (store-backed sidebar collapse across a remount, JS interop argument values, danger dialog button variant, exact bidi-test.html lines landing inside `bdi`), not tautologies. Build is warnings-as-errors clean."
+}

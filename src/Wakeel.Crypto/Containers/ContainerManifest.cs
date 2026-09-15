@@ -36,6 +36,11 @@ public sealed record ContainerManifest(
     // X25519 public key, so a backup or a correspondence can always be opened for
     // maintenance without the password or the recipient's device.
     string? AdminSealedKey,
+
+    // Random per container salt mixed into the office/session key derivation, so that no
+    // two .wakeel-sync packets from the same office ever encrypt under the same AES-256-GCM
+    // key. Null for the Password and SealedFor modes, which already derive a fresh key.
+    byte[]? KeySalt,
     IReadOnlyList<ContainerEntry> Entries)
 {
     public const int CurrentVersion = 1;

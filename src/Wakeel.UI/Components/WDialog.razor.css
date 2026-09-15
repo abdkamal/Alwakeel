@@ -1,0 +1,70 @@
+.w-dialog-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--w-scrim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.w-dialog {
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--w-surface);
+    border-radius: var(--w-radius-lg);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.w-dialog-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.w-dialog-title {
+    font-size: var(--w-fs-section);
+    font-weight: 700;
+    color: var(--w-text);
+}
+
+.w-dialog-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: var(--w-radius);
+    background: transparent;
+    color: var(--w-muted);
+    cursor: pointer;
+}
+.w-dialog-close:hover { background: var(--w-surface2); color: var(--w-text); }
+
+.w-dialog-desc {
+    color: var(--w-muted);
+    font-size: var(--w-fs-body);
+}
+
+.w-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.w-dialog-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-top: 6px;
+}

@@ -1,0 +1,14 @@
+.w-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.w-avatar--initial {
+    background: var(--w-primary-soft);
+    color: var(--w-primary);
+    font-weight: 700;
+}

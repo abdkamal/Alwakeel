@@ -1,0 +1,23 @@
+.w-autosave {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+.w-autosave--saved { color: var(--w-success); }
+.w-autosave--failed { color: var(--w-danger); }
+
+.w-autosave-spinner {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-inline-end-color: transparent;
+    animation: w-autosave-spin 700ms linear infinite;
+}
+
+@keyframes w-autosave-spin {
+    to { transform: rotate(360deg); }
+}

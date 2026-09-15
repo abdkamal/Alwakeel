@@ -1,0 +1,62 @@
+@namespace Wakeel.UI.Components
+
+@if (Variant == WSemanticVariant.Neutral)
+{
+    <div class="w-card">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <h3 class="w-card-title w-text-section">@Title</h3>
+        }
+        <div class="w-card-body">
+            @ChildContent
+        </div>
+    </div>
+}
+else
+{
+    <div class="w-card w-card--@VariantSlug">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <span class="w-card-icon" aria-hidden="true">
+                <WIcon Name="@Icon" Size="20" />
+            </span>
+        }
+        <div class="w-card-semantic-text">
+            @if (!string.IsNullOrEmpty(Title))
+            {
+                <p class="w-card-semantic-title">@Title</p>
+            }
+            @if (!string.IsNullOrEmpty(Desc))
+            {
+                <p class="w-card-semantic-desc">@Desc</p>
+            }
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>Neutral renders the plain white "Card.Standard" style; the others render a colored semantic card with an icon.</summary>
+    [Parameter] public WSemanticVariant Variant { get; set; } = WSemanticVariant.Neutral;
+
+    /// <summary>Heading text.</summary>
+    [Parameter] public string? Title { get; set; }
+
+    /// <summary>Description paragraph, used by the semantic (Info/Warning/Danger/Success) variants.</summary>
+    [Parameter] public string? Desc { get; set; }
+
+    /// <summary>Lucide icon name shown for the semantic variants.</summary>
+    [Parameter] public string? Icon { get; set; }
+
+    /// <summary>Body content: for Neutral this is the card's main content area; for semantic variants it appends below the description.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string VariantSlug => Variant switch
+    {
+        WSemanticVariant.Info => "info",
+        WSemanticVariant.Warning => "warning",
+        WSemanticVariant.Danger => "danger",
+        WSemanticVariant.Success => "success",
+        _ => "neutral",
+    };
+}

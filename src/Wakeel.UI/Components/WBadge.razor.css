@@ -1,0 +1,31 @@
+.w-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding-inline: 6px;
+    border-radius: var(--w-radius-pill);
+    background: var(--w-danger-fill);
+    color: var(--w-on-fill);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    direction: ltr;
+}
+
+.w-badge--tab {
+    min-width: 18px;
+    height: 18px;
+    font-size: 10.5px;
+    background: var(--w-primary-soft);
+    color: var(--w-primary);
+}
+
+.w-badge--group {
+    min-width: 18px;
+    height: 18px;
+    font-size: 10.5px;
+    background: var(--w-sidebar-selected);
+    color: var(--w-sidebar-text);
+}

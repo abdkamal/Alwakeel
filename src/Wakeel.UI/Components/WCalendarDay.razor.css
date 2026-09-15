@@ -1,0 +1,61 @@
+.w-cal-day {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    width: 100%;
+    min-height: 64px;
+    padding: 6px;
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius);
+    background: var(--w-surface);
+    cursor: pointer;
+    text-align: end;
+}
+.w-cal-day:not(:disabled):hover { background: var(--w-surface2); }
+
+.w-cal-day--today .w-cal-day-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--w-primary-fill);
+    color: var(--w-on-fill);
+}
+
+.w-cal-day--selected {
+    border-color: var(--w-primary);
+    background: var(--w-primary-soft);
+}
+
+.w-cal-day--outside {
+    color: var(--w-placeholder);
+    background: var(--w-surface2);
+    cursor: default;
+}
+
+.w-cal-day-num {
+    font-size: var(--w-fs-meta);
+    font-weight: 600;
+    color: var(--w-text);
+}
+
+.w-cal-day-events {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.w-cal-day-event {
+    font-size: 11px;
+    padding-inline: 4px;
+    border-radius: 4px;
+    background: var(--w-info-soft);
+    color: var(--w-info);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

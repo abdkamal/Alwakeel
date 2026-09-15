@@ -92,8 +92,12 @@ public class KeyWrapTests
         var wrap = KeyWraps.ForAdmin(org.AgreementPublicKey, dbKey, KeyWraps.DbKeyContext);
 
         Assert.Equal(dbKey, KeyWraps.OpenAsAdmin(wrap, org, KeyWraps.DbKeyContext));
+
+        // KeyWraps.OpenAsAdmin must report the same code as ContainerKeySource.OpenContentKey
+        // does for the identical situation (an admin recovery copy opened with the wrong keys),
+        // so a caller maps one code to one user-facing message everywhere.
         var error = Assert.Throws<CryptoException>(() => KeyWraps.OpenAsAdmin(wrap, stranger, KeyWraps.DbKeyContext));
-        Assert.Equal(ErrorCode.Tampered, error.Code);
+        Assert.Equal(ErrorCode.WrongPassword, error.Code);
     }
 
     [Fact]

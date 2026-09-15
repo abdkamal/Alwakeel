@@ -1,0 +1,102 @@
+/* الوكيل — نظام التصميم: الأساس والإعادة الضبط وRTL. لا يسار/يمين مباشر، خصائص منطقية فقط. */
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/noto-sans-arabic-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/noto-sans-arabic-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/noto-sans-arabic-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/noto-sans-arabic-700.woff2') format('woff2');
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+html { direction: rtl; }
+body {
+  margin: 0;
+  background: var(--w-bg);
+  color: var(--w-text);
+  font-family: var(--w-font);
+  font-size: var(--w-fs-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+h1, h2, h3, h4, p, figure, blockquote, dl, dd { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+button { font: inherit; color: inherit; }
+input, select, textarea { font: inherit; color: inherit; }
+img, svg { display: block; }
+a { color: inherit; text-decoration: none; }
+
+/* درجات الخط القياسية */
+.w-text-meta { font-size: var(--w-fs-meta); }
+.w-text-body { font-size: var(--w-fs-body); }
+.w-text-section { font-size: var(--w-fs-section); font-weight: 700; }
+.w-text-title { font-size: var(--w-fs-title); font-weight: 700; }
+.w-text-display { font-size: var(--w-fs-display); font-weight: 700; }
+
+/* Bidi: كل رمز لاتيني أو رقمي داخل جملة عربية يُعزل باتجاهه */
+bdi, .w-bdi { unicode-bidi: isolate; }
+.w-plaintext { unicode-bidi: plaintext; }
+
+/* حلقة التركيز */
+:focus-visible {
+  outline: 2px solid var(--w-primary);
+  outline-offset: 2px;
+  border-radius: var(--w-radius);
+}
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--w-primary);
+  outline-offset: 2px;
+}
+
+/* شريط تمرير رفيع */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--w-border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--w-border-strong);
+  border-radius: var(--w-radius-pill);
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--w-muted); }
+
+/* أدوات مساعدة عامة */
+.w-visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* طباعة */
+@media print {
+  body { background: #fff; }
+  .w-no-print { display: none !important; }
+}

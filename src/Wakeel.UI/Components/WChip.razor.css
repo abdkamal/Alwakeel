@@ -1,0 +1,27 @@
+.w-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding-inline: 10px;
+    border-radius: var(--w-radius-pill);
+    border: 1px solid transparent;
+    font-size: var(--w-fs-meta);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.w-chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.w-chip--info { background: var(--w-info-soft); color: var(--w-info); border-color: var(--w-info-border); }
+.w-chip--primary { background: var(--w-primary-soft); color: var(--w-primary); border-color: var(--w-primary-border); }
+.w-chip--warning { background: var(--w-warning-soft); color: var(--w-warning); border-color: var(--w-warning-border); }
+.w-chip--success { background: var(--w-success-soft); color: var(--w-success); border-color: var(--w-success-border); }
+.w-chip--danger { background: var(--w-danger-soft); color: var(--w-danger); border-color: var(--w-danger-border); }
+.w-chip--neutral { background: var(--w-neutral-soft); color: var(--w-muted); border-color: var(--w-border); }

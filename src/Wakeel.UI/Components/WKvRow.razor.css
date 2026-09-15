@@ -1,0 +1,20 @@
+.w-kv-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-block: 8px;
+    border-bottom: 1px solid var(--w-border);
+    font-size: var(--w-fs-body);
+}
+.w-kv-row:last-child { border-bottom: none; }
+
+.w-kv-key {
+    color: var(--w-muted);
+    flex-shrink: 0;
+}
+
+.w-kv-value {
+    color: var(--w-text);
+    font-weight: 600;
+    text-align: end;
+}

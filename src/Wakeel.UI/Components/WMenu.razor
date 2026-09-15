@@ -1,0 +1,52 @@
+@namespace Wakeel.UI.Components
+@using Wakeel.UI.Text
+
+<span class="w-menu-wrap">
+    @if (TriggerContent is not null)
+    {
+        <button type="button" class="w-menu-trigger" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")" @onclick="Toggle">
+            @TriggerContent
+        </button>
+    }
+    else
+    {
+        <WTooltip Text="@Ar.Menu.MoreActions">
+            <button type="button" class="w-menu-trigger" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")" aria-label="@Ar.Menu.MoreActions" @onclick="Toggle">
+                <WIcon Name="more-vertical" Size="18" />
+            </button>
+        </WTooltip>
+    }
+    @if (_open)
+    {
+        <div class="w-menu-backdrop" @onclick="Close"></div>
+        <div class="w-menu-popover" role="menu">
+            @foreach (var item in Items)
+            {
+                <button type="button" role="menuitem" class="w-menu-item @(item.Danger ? "w-menu-item--danger" : null)" @onclick="() => SelectAsync(item)">
+                    <WIcon Name="@item.Icon" Size="16" />
+                    <span>@item.Label</span>
+                </button>
+            }
+        </div>
+    }
+</span>
+
+@code {
+    private bool _open;
+
+    /// <summary>Ordered menu entries.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<WMenuItem> Items { get; set; } = Array.Empty<WMenuItem>();
+
+    /// <summary>Custom trigger content (e.g. an avatar); defaults to a "more" icon button.</summary>
+    [Parameter] public RenderFragment? TriggerContent { get; set; }
+
+    private void Toggle() => _open = !_open;
+
+    private void Close() => _open = false;
+
+    private async Task SelectAsync(WMenuItem item)
+    {
+        _open = false;
+        await item.OnClick.InvokeAsync();
+    }
+}

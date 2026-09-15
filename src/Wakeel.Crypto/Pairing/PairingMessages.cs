@@ -215,10 +215,12 @@ public sealed record PairingAccept(PairingAcceptBody Body, string Signature)
         ReadOnlySpan<byte> orgSigningPublicKey,
         PairingQrPayload invitation,
         RevocationList? revocations,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        DeviceIdentity phoneIdentity)
     {
         ArgumentNullException.ThrowIfNull(invitation);
         ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(phoneIdentity);
 
         if (Body is null || Body.PcCertificate?.Body is null || Body.PhoneCertificate?.Body is null)
         {
@@ -244,14 +246,38 @@ public sealed record PairingAccept(PairingAcceptBody Body, string Signature)
             throw new CryptoException(ErrorCode.BadSignature, "The computer's answer is not signed by that computer.");
         }
 
+        // The plain OrgId/OfficeId/PcDeviceId fields on the answer body are read directly by
+        // some callers without looking inside the certificate; they must never be allowed to
+        // disagree with the certificate the same body carries, even though a legitimate,
+        // already org-certified computer is the only party that could sign such a mismatch.
+        if (!string.Equals(Body.OrgId, pc.Body.OrgId, StringComparison.Ordinal)
+            || !string.Equals(Body.OfficeId, pc.Body.OfficeId, StringComparison.Ordinal)
+            || !string.Equals(Body.PcDeviceId, pc.Body.DeviceId, StringComparison.Ordinal))
+        {
+            throw new CryptoException(ErrorCode.BadSignature, "The answer's plain fields disagree with its own certificate.");
+        }
+
         if (Body.CreatedAt > now + TimeSpan.FromDays(1))
         {
             throw new CryptoException(ErrorCode.Expired, "The computer's answer is dated in the future.");
         }
 
-        if (!string.Equals(Body.PhoneCertificate.Body.DeviceId, Body.PhoneDeviceId, StringComparison.Ordinal))
+        if (!string.Equals(Body.PhoneCertificate.Body.DeviceId, Body.PhoneDeviceId, StringComparison.Ordinal)
+            || !string.Equals(Body.PhoneCertificate.Body.OrgId, pc.Body.OrgId, StringComparison.Ordinal)
+            || !string.Equals(Body.PhoneCertificate.Body.OfficeId, pc.Body.OfficeId, StringComparison.Ordinal)
+            || !string.Equals(Body.PhoneCertificate.Body.IssuerId, pc.Body.DeviceId, StringComparison.Ordinal))
         {
             throw new CryptoException(ErrorCode.BadSignature, "The answer carries a certificate for another phone.");
+        }
+
+        // The certificate chains cleanly and names this phone, but nothing above proves it was
+        // issued to THIS phone's own keys rather than some other keys under the same device id —
+        // a phone that skipped this and stored the certificate anyway would find every packet it
+        // later signs rejected by the far side, long after pairing looked like it had succeeded.
+        if (!string.Equals(Body.PhoneCertificate.Body.Ed25519Pub, phoneIdentity.SigningPublicKeyText, StringComparison.Ordinal)
+            || !string.Equals(Body.PhoneCertificate.Body.X25519Pub, phoneIdentity.AgreementPublicKeyText, StringComparison.Ordinal))
+        {
+            throw new CryptoException(ErrorCode.BadSignature, "The issued certificate does not carry this phone's own keys.");
         }
 
         // Organisation → computer → phone, with the computer certificate this file supplied.
@@ -264,6 +290,11 @@ public sealed record PairingAccept(PairingAcceptBody Body, string Signature)
     public byte[] OpenSessionKey(DeviceIdentity phoneIdentity)
     {
         ArgumentNullException.ThrowIfNull(phoneIdentity);
+        if (Body is null || string.IsNullOrEmpty(Body.SealedSessionKey))
+        {
+            throw new CryptoException(ErrorCode.Corrupt, "The computer's answer is incomplete.");
+        }
+
         return phoneIdentity.Open(Base64Url.Decode(Body.SealedSessionKey), SessionKeyContext);
     }
 
@@ -271,6 +302,11 @@ public sealed record PairingAccept(PairingAcceptBody Body, string Signature)
     public byte[] OpenOfficeKey(DeviceIdentity phoneIdentity)
     {
         ArgumentNullException.ThrowIfNull(phoneIdentity);
+        if (Body is null || string.IsNullOrEmpty(Body.SealedOfficeKey))
+        {
+            throw new CryptoException(ErrorCode.Corrupt, "The computer's answer is incomplete.");
+        }
+
         return phoneIdentity.Open(Base64Url.Decode(Body.SealedOfficeKey), OfficeKeyContext);
     }
 }

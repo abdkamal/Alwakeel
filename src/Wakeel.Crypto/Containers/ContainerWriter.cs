@@ -97,7 +97,7 @@ public static class ContainerWriter
         var entries = BuildPayload(staging, request.Entries);
         staging.Position = 0;
 
-        var contentKey = request.Key.CreateContentKey(request.Kind, out var kdf, out var sealedKey);
+        var contentKey = request.Key.CreateContentKey(request.Kind, out var kdf, out var sealedKey, out var keySalt);
         try
         {
             var adminSealedKey = request.OrgAgreementPublicKey is { } orgKey
@@ -123,11 +123,12 @@ public static class ContainerWriter
                     request.Kind,
                     request.Version,
                     request.Producer,
-                    request.Time.GetUtcNow(),
+                    TruncateToMilliseconds(request.Time.GetUtcNow()),
                     request.Key.Mode,
                     kdf,
                     sealedKey,
                     adminSealedKey,
+                    keySalt,
                     entries);
 
                 manifestBytes = CanonicalJson.SerializeToUtf8Bytes(manifest);
@@ -164,6 +165,16 @@ public static class ContainerWriter
         manifestHash.CopyTo(hashes);
         payloadHash.CopyTo(hashes.AsSpan(manifestHash.Length));
         return DomainSeparation.Wrap(DomainSeparation.Container, hashes);
+    }
+
+    /// <summary>
+    /// Drops whatever precision the manifest's canonical JSON encoding cannot carry, so the
+    /// manifest this call returns is exactly what a reader parses back from the signed bytes.
+    /// </summary>
+    private static DateTimeOffset TruncateToMilliseconds(DateTimeOffset value)
+    {
+        var utc = value.UtcDateTime;
+        return new DateTimeOffset(utc.AddTicks(-(utc.Ticks % TimeSpan.TicksPerMillisecond)), TimeSpan.Zero);
     }
 
     internal static byte[] PayloadAssociatedData(ContainerKind kind, int version) =>

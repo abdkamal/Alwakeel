@@ -569,6 +569,159 @@ public class ContainerTests
     }
 
     [Fact]
+    public void An_entry_name_that_is_not_a_legal_windows_file_name_is_refused()
+    {
+        // Legal as a relative path, but not as an actual Windows file or folder name: a
+        // wildcard character, a trailing slash, a trailing dot or space, and a reserved
+        // DOS device name. ContainerReader.ExtractTo hands the name straight to FileStream,
+        // so any of these must be caught while the manifest is validated, not left to raise
+        // a raw IOException from the file system.
+        Assert.False(ContainerEntrySource.IsAcceptableName("a*b.txt"));
+        Assert.False(ContainerEntrySource.IsAcceptableName("a?b.txt"));
+        Assert.False(ContainerEntrySource.IsAcceptableName("vault/ab/"));
+        Assert.False(ContainerEntrySource.IsAcceptableName("trailing-dot."));
+        Assert.False(ContainerEntrySource.IsAcceptableName("trailing-space "));
+        Assert.False(ContainerEntrySource.IsAcceptableName("CON"));
+        Assert.False(ContainerEntrySource.IsAcceptableName("CON.txt"));
+        Assert.False(ContainerEntrySource.IsAcceptableName("con.txt"));
+        Assert.False(ContainerEntrySource.IsAcceptableName("vault/LPT1.bin"));
+        Assert.True(ContainerEntrySource.IsAcceptableName("connections.txt"));
+        Assert.True(ContainerEntrySource.IsAcceptableName("vault/ab/file.bin"));
+    }
+
+    [Fact]
+    public void Two_office_key_containers_never_share_a_content_key()
+    {
+        using var world = new ContainerWorld();
+        var officeKey = RandomBytes.Next(32);
+
+        var firstPath = world.Folder.File("first.wakeel-sync");
+        var secondPath = world.Folder.File("second.wakeel-sync");
+        ContainerWriter.Write(firstPath, new ContainerWriteRequest
+        {
+            Kind = ContainerKind.Sync,
+            Producer = world.Pki.PcCertificate,
+            Signer = world.Pki.Pc,
+            Key = ContainerKeySource.OfficeKey(officeKey),
+            Entries = [ContainerEntrySource.FromText("records.json", "{}")],
+            Time = new FixedClock(Now),
+        });
+        ContainerWriter.Write(secondPath, new ContainerWriteRequest
+        {
+            Kind = ContainerKind.Sync,
+            Producer = world.Pki.PcCertificate,
+            Signer = world.Pki.Pc,
+            Key = ContainerKeySource.OfficeKey(officeKey),
+            Entries = [ContainerEntrySource.FromText("records.json", "{}")],
+            Time = new FixedClock(Now),
+        });
+
+        using var firstReader = ContainerReader.Open(firstPath, world.Options(ContainerKind.Sync));
+        using var secondReader = ContainerReader.Open(secondPath, world.Options(ContainerKind.Sync));
+
+        // Every packet must carry its own random salt, and no two packets from the same
+        // office key may derive the same AES-256-GCM content key.
+        Assert.NotNull(firstReader.Manifest.KeySalt);
+        Assert.NotNull(secondReader.Manifest.KeySalt);
+        Assert.False(firstReader.Manifest.KeySalt!.AsSpan().SequenceEqual(secondReader.Manifest.KeySalt!));
+
+        // Both still round trip with the plain office key.
+        Assert.Equal("{}", Encoding.UTF8.GetString(
+            firstReader.ReadEntry("records.json", ContainerKeySource.OfficeKey(officeKey))));
+        Assert.Equal("{}", Encoding.UTF8.GetString(
+            secondReader.ReadEntry("records.json", ContainerKeySource.OfficeKey(officeKey))));
+    }
+
+    [Fact]
+    public void A_container_missing_its_key_salt_is_reported_as_damaged()
+    {
+        using var world = new ContainerWorld();
+        var officeKey = RandomBytes.Next(32);
+        var path = world.Write(
+            ContainerKind.Sync,
+            ContainerKeySource.OfficeKey(officeKey),
+            ContainerEntrySource.FromText("records.json", "{}"));
+
+        ReplaceManifest(path, world, bytes =>
+        {
+            var text = Encoding.UTF8.GetString(bytes);
+            const string key = "\"keySalt\":\"";
+            var start = text.IndexOf(key, StringComparison.Ordinal);
+            var closingQuote = text.IndexOf('"', start + key.Length);
+            return Encoding.UTF8.GetBytes(text[..start] + "\"keySalt\":null" + text[(closingQuote + 1)..]);
+        });
+
+        using var reader = ContainerReader.Open(path, world.Options(ContainerKind.Sync));
+        var error = Assert.Throws<CryptoException>(
+            () => reader.ReadEntry("records.json", ContainerKeySource.OfficeKey(officeKey)));
+        Assert.Equal(ErrorCode.Corrupt, error.Code);
+    }
+
+    [Fact]
+    public void The_manifest_it_returns_matches_what_a_reader_parses_back()
+    {
+        // ContainerWriter.Write returns the in-memory manifest before it is serialised. The
+        // canonical JSON encoding of an instant only carries millisecond precision, so the
+        // returned object must already reflect that truncation or it silently disagrees with
+        // what a reader parses back from the signed bytes.
+        using var world = new ContainerWorld();
+        var subMillisecond = Now.AddTicks(1234);
+        var path = world.Folder.File("sub-ms.wakeel-sync");
+
+        var manifest = ContainerWriter.Write(path, new ContainerWriteRequest
+        {
+            Kind = ContainerKind.Sync,
+            Producer = world.Pki.PcCertificate,
+            Signer = world.Pki.Pc,
+            Key = ContainerKeySource.OfficeKey(RandomBytes.Next(32)),
+            Entries = [ContainerEntrySource.FromText("records.json", "{}")],
+            Time = new FixedClock(subMillisecond),
+        });
+
+        using var reader = ContainerReader.Open(path, new ContainerOpenOptions
+        {
+            ExpectedKind = ContainerKind.Sync,
+            OrgSigningPublicKey = world.Pki.Org.SigningPublicKey,
+            Time = new FixedClock(subMillisecond),
+        });
+
+        Assert.Equal(reader.Manifest.CreatedAt, manifest.CreatedAt);
+        Assert.NotEqual(subMillisecond, manifest.CreatedAt);
+    }
+
+    [Fact]
+    public void An_entry_larger_than_the_manifest_declares_is_refused_without_buffering_it_whole()
+    {
+        using var world = new ContainerWorld();
+        var officeKey = RandomBytes.Next(32);
+        var payload = Encoding.UTF8.GetBytes("this content is longer than the manifest will admit to");
+        var path = world.Write(
+            ContainerKind.Sync,
+            ContainerKeySource.OfficeKey(officeKey),
+            ContainerEntrySource.FromBytes("records.json", payload));
+
+        // The signed manifest is edited to understate the entry's size, the way a hostile inner
+        // zip that lies about a small size while actually expanding to something huge would.
+        // The size check inside CheckEntry would eventually catch this too, but only after the
+        // whole oversized entry has been copied into memory or onto disk; the fix is supposed to
+        // stop the copy as soon as the declared limit is passed.
+        ReplaceManifest(path, world, bytes =>
+        {
+            var text = Encoding.UTF8.GetString(bytes);
+            return Encoding.UTF8.GetBytes(text.Replace(
+                $"\"size\":{payload.Length}",
+                "\"size\":1",
+                StringComparison.Ordinal));
+        });
+
+        using var reader = ContainerReader.Open(path, world.Options(ContainerKind.Sync));
+
+        var readEntryError = Assert.Throws<CryptoException>(
+            () => reader.ReadEntry("records.json", ContainerKeySource.OfficeKey(officeKey)));
+        Assert.Equal(ErrorCode.Tampered, readEntryError.Code);
+    }
+
+    [Fact]
     public void The_administrator_opens_a_password_backup_without_the_password()
     {
         using var world = new ContainerWorld();

@@ -1,0 +1,17 @@
+@namespace Wakeel.UI.Components
+
+<span class="w-tooltip-wrap">
+    @ChildContent
+    <span class="w-tooltip-bubble w-tooltip-@Placement" role="tooltip">@Text</span>
+</span>
+
+@code {
+    /// <summary>Tooltip text shown on hover/focus. Required — every icon-only button must carry a tooltip.</summary>
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+
+    /// <summary>The element the tooltip is attached to (typically a WButton with an Icon variant).</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Which side of the anchor the bubble opens toward.</summary>
+    [Parameter] public TooltipPlacement Placement { get; set; } = TooltipPlacement.Bottom;
+}

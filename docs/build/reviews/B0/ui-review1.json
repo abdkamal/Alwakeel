@@ -1,0 +1,149 @@
+{
+  "verdict": "fix",
+  "build_ok": true,
+  "tests_ok": true,
+  "findings": [
+    {
+      "severity": "high",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.Desktop\\Wakeel.Desktop.csproj",
+      "issue": "The WPF Blazor Hybrid host is declared as `<Project Sdk=\"Microsoft.NET.Sdk\">`. The Razor SDK's static-web-assets and wwwroot pipelines therefore never run, so the project compiles clean but cannot render anything at runtime. Verified against the actual build output at bin/Debug/net10.0-windows: (a) there is NO `wwwroot` folder, so `BlazorWebView HostPage=\"wwwroot\\index.html\"` (resolved relative to the content root = AppContext.BaseDirectory) points at a missing file; (b) there is NO `Wakeel.Desktop.staticwebassets.runtime.json` and no `_content` folder, so `_content/Wakeel.UI/css/tokens.css`, `_content/Wakeel.UI/css/app.css` and `_content/Wakeel.UI/js/app.js` referenced by index.html cannot be resolved (only `Wakeel.UI.staticwebassets.*.json`, named for the RCL, is copied, and the WebView file provider looks for the *app's* manifest); (c) there is NO `Wakeel.Desktop.styles.css`. The official `wpfblazor` template uses Microsoft.NET.Sdk.Razor precisely for this reason. Net effect: `dotnet build src/Wakeel.Desktop` is green while the delivered application shows a blank/unstyled window.",
+      "fix": "Change the first line of Wakeel.Desktop.csproj to `<Project Sdk=\"Microsoft.NET.Sdk.Razor\">` (keep `UseWPF`, `OutputType=WinExe`, `TargetFramework=net10.0-windows`). Rebuild and confirm that bin/Debug/net10.0-windows now contains `wwwroot/index.html`, `wwwroot/_content/Wakeel.UI/css/tokens.css`, `wwwroot/_content/Wakeel.UI/js/app.js` and `Wakeel.Desktop.styles.css`.",
+      "line": 1
+    },
+    {
+      "severity": "high",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.Desktop\\wwwroot\\index.html",
+      "issue": "The host page links only `_content/Wakeel.UI/css/tokens.css` and `_content/Wakeel.UI/css/app.css`. It never links the scoped-CSS bundle. Every one of the 40+ design-system components ships its styling exclusively in a `*.razor.css` scoped stylesheet (WButton.razor.css, WSidebar.razor.css, WTable.razor.css, MainLayout.razor.css, ...), which Blazor emits into the *consuming application's* `{AssemblyName}.styles.css`. Without that link the entire component layer renders completely unstyled — no 38px buttons, no sidebar, no table, no dialog scrim — even after finding #1 is fixed.",
+      "fix": "Add `<link rel=\"stylesheet\" href=\"Wakeel.Desktop.styles.css\" />` immediately after the app.css link in <head>. (The file is produced only once the project uses Microsoft.NET.Sdk.Razor — fix #1 first.)",
+      "line": 10
+    },
+    {
+      "severity": "medium",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WSearch.razor",
+      "issue": "The global Ctrl+F binding is never released. `OnAfterRenderAsync` calls `wakeelUi.bindCtrlF(_dotNetRef)`, which registers a `window` keydown listener in `wwwroot/js/app.js` that captures the DotNetObjectReference. `DisposeAsync` disposes the reference but never removes the listener (there is no unbind function in app.js at all). After the user navigates away from a page containing a WSearch, the listener is still attached: it keeps calling `e.preventDefault()` (so Ctrl+F is dead for the rest of the session) and calls `invokeMethodAsync('FocusInputAsync')` on a disposed .NET object reference, which throws in JS on every Ctrl+F press. Breaks AGREEMENT item 41's Ctrl+F requirement after the first navigation.",
+      "fix": "Add to app.js: `unbindCtrlF() { if (window.__wakeelCtrlFHandler) { window.removeEventListener('keydown', window.__wakeelCtrlFHandler); window.__wakeelCtrlFHandler = null; } }`. In WSearch, make DisposeAsync `async`: `if (_dotNetRef is not null) { try { await Js.InvokeVoidAsync(\"wakeelUi.unbindCtrlF\"); } catch (JSDisconnectedException) { } catch (JSException) { } _dotNetRef.Dispose(); }`. Guard the unbind so only the instance that currently owns the handler clears it (store an instance token alongside `__wakeelCtrlFHandler` and compare before removing).",
+      "line": 62
+    },
+    {
+      "severity": "medium",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WDialog.razor",
+      "issue": "The focus trap is installed but never released. `wakeelUi.trapDialog` in app.js registers a `window` keydown handler (`window.__wakeelDialogHandler`) and there is no corresponding release function. When the dialog closes, WDialog only sets `_wasOpen = false`; the listener stays attached for the lifetime of the page. Consequences: (1) pressing Esc after the dialog is closed still calls `HandleEscapeAsync` -> `OnCancel.InvokeAsync()`, firing the caller's cancel handler at an arbitrary later time (or throwing on a disposed DotNetObjectReference once the component is gone); (2) focus is never restored to the element that opened the dialog, so keyboard users are dropped at the top of the document — a focus trap without a release is not a compliant focus trap.",
+      "fix": "In app.js, have `trapDialog` save `const previouslyFocused = document.activeElement;` on `window.__wakeelDialogRestore`, and add `releaseDialog() { if (window.__wakeelDialogHandler) { window.removeEventListener('keydown', window.__wakeelDialogHandler); window.__wakeelDialogHandler = null; } if (window.__wakeelDialogRestore) { window.__wakeelDialogRestore.focus?.(); window.__wakeelDialogRestore = null; } }`. In WDialog.OnAfterRenderAsync, replace the `else if (!Open)` branch with: `else if (!Open && _wasOpen) { _wasOpen = false; try { await Js.InvokeVoidAsync(\"wakeelUi.releaseDialog\"); } catch (JSException) { } }`, and call the same release from `DisposeAsync` before disposing `_dotNetRef`.",
+      "line": 84
+    },
+    {
+      "severity": "medium",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WBadge.razor.css",
+      "issue": "`.w-badge--group` uses `background: var(--w-surface2); color: var(--w-muted);`. The group badge is rendered only by WSidebar's group header, and the sidebar is dark in BOTH themes (`--w-sidebar` is #1D2B32 light / #0E1519 dark). In the light theme `--w-surface2` resolves to #F7F8F9, so the group badge renders as a glaring near-white pill with light-grey text on the dark sidebar. I sampled the reference PNG (design/exports/light/W/W08, the \"18\" badge at x=1267,y=113): the fill is rgb(48,75,82) = #304B52 = `--w-sidebar-selected`, and the digits are #D5DDE0 = `--w-sidebar-text`. Wrong token family, visibly wrong in light mode.",
+      "fix": "Change `.w-badge--group` to `background: var(--w-sidebar-selected); color: var(--w-sidebar-text);` (keep the 18px/10.5px metrics).",
+      "line": 21
+    },
+    {
+      "severity": "medium",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WTopBar.razor.css",
+      "issue": "`.w-topbar { height: 64px; min-height: 64px; }` is 8px taller than the design. Measured from the 1366x768 reference canvases by scanning column x=600: in design/exports/light/W/W08 the surface (#FFFFFF) runs y=0..54, the 1px `--w-border` (#D5D9DE) line is at y=55, and the page background (#F3F4F6) starts at y=56; the dark twin gives exactly the same boundaries (#1A252B to y=54, #2E3D45 at y=55, #121A1E from y=56). The top bar is 56px, not 64px. DESIGN-GUIDE.md gives no top-bar height, so the PNGs are the source of truth, and the brief requires pixel fidelity to them. (The sidebar width 232px, page padding-inline 28px and button height 38px all measured correct.)",
+      "fix": "Set `.w-topbar { height: 56px; min-height: 56px; }`. Re-check `.w-topbar-user { height: 44px }` still fits (reduce to 40px if it overflows the 56px bar).",
+      "line": 2
+    },
+    {
+      "severity": "medium",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WSidebar.razor",
+      "issue": "The collapsible group header renders its children in the order chevron, label, badge. Under the app's permanent RTL flow that places the chevron at the RIGHT edge of the row and the count badge at the FAR LEFT. The reference PNG shows the opposite: the group label sits flush at the right edge, the group badge sits immediately to its left, and the chevron is pushed to the far left (verified by pixel-scanning design/exports/light/W/W08 at y=113 — badge occupies x=1259..1281, label runs from x=1291 rightwards, chevron is at the far-left of the row). The nav items below it are ordered correctly (icon right, label, badge left), so the group header is inconsistent with both the design and its own child rows.",
+      "fix": "Reorder the contents of `<button class=\"w-sidebar-group-header\">` to: `<span class=\"w-sidebar-group-label\">@group.Label</span>`, then the `@if (GroupBadge(...)) { <WBadge Kind=\"WBadgeKind.Group\" /> }` block, then the `<WIcon Name=\"chevron-down\" ... Mirror=\"false\" />`. In WSidebar.razor.css remove `flex: 1` from `.w-sidebar-group-label` and add `margin-inline-start: auto;` to `.w-sidebar-chevron` so the chevron is pushed to the row's end.",
+      "line": 21
+    },
+    {
+      "severity": "medium",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WInput.razor.css",
+      "issue": "`unicode-bidi: plaintext` is required by AGREEMENT item 55 and DESIGN-GUIDE.md (\"النص الحر يُعرض بـplaintext\", and ARCHITECTURE.md §10 repeats it) but is applied nowhere in the product. `app.css` declares a `.w-plaintext { unicode-bidi: plaintext; }` utility and a repo-wide grep shows zero references to it in any .razor file — it is dead code. In particular WInput's `<input>` and `<textarea>` carry free user text with no plaintext directionality, so a value that begins with a Latin token or a digit (a reference number, a file name, an amount) flips the whole field to LTR and drags its Arabic remainder and punctuation with it — exactly the failure mode item 55 exists to prevent.",
+      "fix": "Add `unicode-bidi: plaintext;` to `.w-field-control` and `.w-field-textarea` in WInput.razor.css, and to WSelect's `.w-select-control`. Apply the `.w-plaintext` utility (or the same declaration) to the free-text paragraph styles that display user content: `.w-timeline-desc` (WTimelineItem.razor.css), `.w-card-body`/`.w-card-desc` (WCard.razor.css) and `.w-state-desc` (WStateCard.razor.css). Add a bUnit test rendering a WInput whose Value is one of the mixed lines from docs/design/bidi-test.html and assert the control class is present.",
+      "line": 1
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.Desktop\\App.xaml.cs",
+      "issue": "`ConfigureRemoteDebugging` takes everything after `--remote-debugging-port=` verbatim and interpolates it into the `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` environment variable without validating it is a port number. A single argv element such as `--remote-debugging-port=9222 --disable-web-security --remote-allow-origins=*` injects arbitrary Chromium switches into the renderer that displays the user's correspondence. The threat model is limited (the user launches the app themselves) but the guard costs one line.",
+      "fix": "Inside the loop, after extracting `port`, add `if (!ushort.TryParse(port, out var parsedPort) || parsedPort == 0) { continue; }` and set the variable using `parsedPort` rather than the raw string.",
+      "line": 74
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WSidebar.razor.css",
+      "issue": "Two RTL/design mismatches in the sidebar footer and frame. (1) `.w-sidebar-sync { justify-content: space-between }` with the status span rendered first pushes the refresh button to the far LEFT of the footer row; the reference PNG (cropped region y=690..768) shows the refresh glyph at the RIGHT edge, then the green status dot, then the text running leftwards. (2) `.w-sidebar { border-inline-start: 1px solid var(--w-sidebar-divider) }` — under RTL, inline-start is the RIGHT edge, i.e. the window edge, so the divider is drawn on the outside instead of on the edge facing the page content.",
+      "fix": "(1) In WSidebar.razor move the `<button class=\"w-sidebar-sync-refresh\">` before the `<span class=\"w-sidebar-sync-status\">`, and change `.w-sidebar-sync` to `justify-content: flex-start; gap: 6px;`. (2) Change `border-inline-start` to `border-inline-end` on `.w-sidebar`.",
+      "line": 9
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Pages\\Gallery.razor",
+      "issue": "ARCHITECTURE.md §12 requires every user-facing string to live in `Ar.*`. Gallery.razor hardcodes roughly seventy Arabic literals inline (\"المظهر\", \"الأزرار\", \"حفظ\", \"حذف نهائيًا\", \"اسم المراسل\", ...) while Text/Ar.cs already defines a complete `Ar.Gallery` class holding those exact strings — so `Ar.Gallery` is entirely dead code and the two will drift. The same rule is broken in two shell components: WInput.razor hardcodes the password-toggle aria-labels \"إظهار كلمة المرور\"/\"إخفاء كلمة المرور\", and WSidebar.razor hardcodes `aria-label=\"التنقل الرئيسي\"`.",
+      "fix": "Rewrite Gallery.razor to reference the existing `Ar.Gallery.*` constants (add the handful that are missing, e.g. the theme-section title). Add `Ar.Fields.ShowPassword`/`Ar.Fields.HidePassword` and `Ar.Nav.MainNavigationLabel`, and use them in WInput.razor line 33 and WSidebar.razor line 18.",
+      "line": 1
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WIcon.razor",
+      "issue": "`Markup` throws `ArgumentException` from the render path when `Name` is not in IconRegistry. A single typo in any page built in B1–B8 will tear down the whole Blazor render tree at runtime rather than degrade to a missing glyph — and the user would see an unlocalized .NET exception, violating AGREEMENT item 15 (no technical text or error codes in the UI). The MarkupString itself is safe: IconRegistry.g.cs is generated from vendored Lucide SVGs and contains no <script>, on* handlers or javascript: URLs (verified).",
+      "fix": "Replace the throw with `IconRegistry.Icons.TryGetValue(Name, out var svg) ? svg : string.Empty;` and add `System.Diagnostics.Debug.Fail($\"Unknown icon '{Name}'\")` so the mistake still fails loudly in Debug builds and in the bUnit suite without crashing a shipped screen.",
+      "line": 47
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Services\\ToastService.cs",
+      "issue": "`_order` is a ConcurrentQueue that is only ever enqueued — `Dismiss` removes the entry from `_byId` but leaves it in `_order` forever. The `Toasts` property then re-enumerates and re-filters the entire historical queue and allocates a new List on every render of WToastHost, so both cost and allocation grow linearly with the number of toasts shown during the session. WToastHost has the matching leak: `_scheduled` records every toast id and is never pruned.",
+      "fix": "In `Dismiss`, after a successful `TryRemove`, drain the stale head: `while (_order.TryPeek(out var head) && !_byId.ContainsKey(head.Id)) { _order.TryDequeue(out _); }`. In WToastHost.ScheduleDismissAsync, add `_scheduled.Remove(id);` after `ToastService.Dismiss(id)`.",
+      "line": 10
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Bidi\\Bidi.cs",
+      "issue": "The token regex `[A-Za-z0-9][A-Za-z0-9./\\\\_:@+,-]*` is greedy on trailing punctuation, so a sentence such as «... عبر USB.» yields the token `USB.` and «الإصدار v0.21.» yields `v0.21.`. The sentence-final period is placed INSIDE the LRI…PDI run, so it renders at the wrong end of the right-to-left line — the precise failure DESIGN-GUIDE.md's bidi section says the isolation exists to prevent (\"حتى تبقى الأقواس وعلامات الترقيم في مواضعها الصحيحة\"). The existing tests do not catch it because they assert `Contains` on tokens that happen to sit mid-sentence.",
+      "fix": "Anchor the token on an alphanumeric at both ends: `[GeneratedRegex(@\"[A-Za-z0-9](?:[A-Za-z0-9./\\\\_:@+,-]*[A-Za-z0-9])?\")]`. Add a regression test: `Assert.Contains(Isolated(\"v0.21\"), Wrap(\"الإصدار v0.21.\"))` and assert the result ends with a bare '.' outside the PDI.",
+      "line": 30
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WInput.razor",
+      "issue": "`private static int _seq;` incremented as `$\"w-field-{++_seq}\"` from a field initializer. `++` on a static int is not atomic, and the same pattern is repeated in WSelect.razor and WDialog.razor. Under xUnit's parallel test collections (and in any host that renders more than one Blazor root) two components can be handed the same DOM id, producing duplicate `id` values and a `<label for>` / `aria-labelledby` that points at the wrong control.",
+      "fix": "Use `private readonly string _id = $\"w-field-{System.Threading.Interlocked.Increment(ref _seq)}\";` in WInput.razor, WSelect.razor and WDialog.razor.",
+      "line": 52
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Pages\\W08AttentionCenter.razor",
+      "issue": "Three divergences from design/exports/light/W/W08: (1) the «التزامات» tab is given `Count=\"4\"` where the reference badge reads 2 (the other three tabs, 9/4/3, match); (2) the page subtitle published to PageHeaderState is «ما يحتاج انتباهك اليوم» where the reference header reads «ما يحتاج انتباهك اليوم — السبت 12/09/2026، مكتب نابلس»; (3) `Ar.AttentionCenter.MonthlyReportBanner` names «دورة أكتوبر» while DESIGN-GUIDE.md fixes the sample date at 12/09/2026 (September), so the banner contradicts every other date on the screen.",
+      "fix": "Set `Count=\"2\"` on the التزامات WTabItem; extend `Ar.AttentionCenter.Sub` to «ما يحتاج انتباهك اليوم — السبت 12/09/2026، مكتب نابلس»; change «دورة أكتوبر» to «دورة سبتمبر» in Ar.AttentionCenter.MonthlyReportBanner.",
+      "line": 57
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.UI\\Components\\WDialog.razor",
+      "issue": "The confirm and cancel buttons render with no icon. design/exports/light/W/W92 shows every standard dialog with an icon on the RIGHT of each action label: a check on the confirm button («✓ أرشفة», «✓ تحديث العرض»), an × on cancel («× إلغاء»), and a 'no entry' glyph on the danger confirm («حذف نهائيًا»). Also, `role=\"alertdialog\"` is hardcoded for both kinds; per ARIA it should be `dialog` for the Normal kind and `alertdialog` only for the Danger/irreversible kind.",
+      "fix": "Add `[Parameter] public string? ConfirmIcon { get; set; }` / `CancelIcon`, defaulting to \"check\" and \"x\" (and \"x-circle\" when `Kind == WDialogKind.Danger`), and pass them to the two WButtons with the default `IconPosition.Leading`. Change the role expression to `@(Kind == WDialogKind.Danger ? \"alertdialog\" : \"dialog\")`.",
+      "line": 8
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\tests\\Wakeel.UI.Tests\\Components\\WButtonTests.cs",
+      "issue": "`Disabled_PreventsClick` never clicks the button, so `Assert.False(clicked)` is tautologically true and the test would still pass if `HandleClickAsync`'s `IsDisabled` guard were deleted. Only the `disabled` attribute assertion carries any weight. Separately, the suite has no test at all for the Loading / `_busy` double-click guard that spec item 3 explicitly calls for (`Loading_ShowsWorkingText_InsteadOfLabel` only checks the label swap).",
+      "fix": "Insert `cut.Find(\"button\").Click();` before `Assert.False(clicked);` (bUnit dispatches the handler regardless of the rendered `disabled` attribute, so this actually exercises the guard). Add a test that renders WButton with an async OnClick backed by a TaskCompletionSource, clicks twice before completing the task, and asserts the handler ran exactly once.",
+      "line": 60
+    },
+    {
+      "severity": "low",
+      "file": "D:\\AI\\Administration2\\src\\Wakeel.Desktop\\Wakeel.Desktop.csproj",
+      "issue": "`<PackageReference Include=\"QRCoder\" />` is declared but nothing in Wakeel.Desktop references it — QR generation belongs to B6/B7 (pairing), not to the B0 shell. It drags an unused assembly into the published host.",
+      "fix": "Remove the QRCoder PackageReference from Wakeel.Desktop.csproj; re-add it in the work package that actually needs it. (Directory.Packages.props keeps the pinned version and must not be touched.)",
+      "line": 26
+    }
+  ],
+  "missing_spec_items": [
+    "Spec 5 (Desktop host): the BlazorWebView host does not actually serve its host page or any CSS — bin/Debug/net10.0-windows contains no wwwroot, no _content/Wakeel.UI, no Wakeel.Desktop.staticwebassets.runtime.json and no Wakeel.Desktop.styles.css, because the project uses Microsoft.NET.Sdk instead of Microsoft.NET.Sdk.Razor and index.html never links the scoped-CSS bundle. The host builds but cannot render the shell.",
+    "Spec 1 (app.css): `unicode-bidi: plaintext` for free text is declared as an unused `.w-plaintext` utility and applied to nothing — no input, textarea, card body, or timeline description uses it. AGREEMENT item 55 requires it for all free text.",
+    "Spec 4 (Text/Ar.cs holds every Arabic string of the shell): the requirement is met in Ar.cs but bypassed at the call sites — Pages/Gallery.razor hardcodes ~70 Arabic literals while the corresponding `Ar.Gallery` constants sit unused, and WInput.razor / WSidebar.razor hardcode three more Arabic aria-labels.",
+    "Spec 6 (tests): no test exercises WButton's Loading / double-click guard, which spec item 3 lists as a required behaviour. The bidi coverage tests `Bidi.Wrap` against 8 of the 9 lines in docs/design/bidi-test.html but never renders one of those lines through a component to assert it lands inside `<bdi>` / `unicode-bidi: isolate`, which is the wording of spec item 6.",
+    "Spec rule 'pixel-faithful to the PNGs': three measured deviations — top bar 64px vs 56px measured in both W08 twins; sidebar group header child order mirrored (chevron right / badge far left instead of label right / badge / chevron far left); group badge painted with --w-surface2/--w-muted instead of the #304B52 / --w-sidebar-text sampled from the reference. Dialog action buttons also drop the confirm/cancel icons shown throughout W92.",
+    "Spec rule 'tooltips on every icon-only button': WSidebar's own icon-only controls (the group-header collapse button and the footer sync-refresh button) carry only aria-label, no WTooltip, unlike WTopBar's bell and calendar buttons which use WButton Icon + Tooltip correctly."
+  ],
+  "notes": "BUILD/TEST VERIFICATION (full output read):\n- `dotnet build src/Wakeel.UI --no-dependencies` -> Build succeeded, 0 Warning(s), 0 Error(s).\n- `dotnet build src/Wakeel.Desktop --no-dependencies` -> Build succeeded, 0 Warning(s), 0 Error(s).\n- `dotnet test tests/Wakeel.UI.Tests --no-dependencies` -> FAILS with `MSBUILD : error MSB1001: Unknown switch` (full command line shows `--no-dependencies` being appended to the MSBuild invocation). This reproduces the builder's open issue exactly: SDK 10.0.401's `dotnet test` front-end no longer forwards that switch. I confirmed the equivalent dependency-safe sequence is green: `dotnet build tests/Wakeel.UI.Tests --no-dependencies` (0W/0E) then `dotnet test tests/Wakeel.UI.Tests --no-build` -> \"Passed! - Failed: 0, Passed: 127, Skipped: 0, Total: 127\". The orchestrator's verification step needs the same substitution. Wakeel.Core was never built or touched.\n- TreatWarningsAsErrors is on in Directory.Build.props (WarningsNotAsErrors=CS1591) and all three projects are clean, so warnings-as-errors is satisfied.\n\nSECURITY: No real exposure found. Exactly one `MarkupString` in the codebase (WIcon), fed solely from the generated `IconRegistry.g.cs`, which I grepped for `<script`, `onload`, `onerror` and `javascript:` — zero hits; it is compile-time constant data derived from vendored Lucide SVGs, never from user input. Only three JS interop call sites (`wakeelUi.setTheme`, `bindCtrlF`, `trapDialog`), all passing typed arguments, no `eval`, no `dangerouslySetInnerHTML` equivalent, no string-built JS. No secrets in UI state: `IUiStateStore` is used only for the theme choice and sidebar collapse flags, and `FileUiStateStore` writes plain preference keys to %LocalAppData%\\\\Wakeel\\\\ui-state.json with best-effort error swallowing. The only security-adjacent nit is the unvalidated `--remote-debugging-port` value (low finding #9).\n\nRTL/BIDI: Strong. A repo-wide grep for `left:`/`right:`/`margin-left`/`padding-right`/`border-left`/`text-align: left|right`/`float:` across every .css and .razor returns ZERO hits — the whole design system is logical-properties-only, including `inset-inline-end`, `border-start-end-radius` and `border-inline-start` on the attention row (which correctly lands the 3px danger edge on the visual right, matching W08). `<bdi>` is applied to all 20 value-bearing spots (badge counts, KV values, KPI values, file names, version line, org name, user name, page numbers, times, amounts, due dates). `direction: rtl` on html and `dir=\\\"rtl\\\" lang=\\\"ar\\\"` on index.html are both present. Directional icons auto-mirror via `IconRegistry.DirectionalIcons` and vertical chevrons correctly opt out with `Mirror=\\\"false\\\"`. The two real gaps are the missing `unicode-bidi: plaintext` (medium finding #8) and the greedy trailing-punctuation in `Bidi.Wrap` (low finding #15).\n\nPIXEL VERIFICATION METHOD: I read design/exports/light/W/W08, W92 and the dark W08, and pixel-scanned the light and dark W08 canvases with System.Drawing rather than eyeballing them. Confirmed CORRECT: sidebar width 232px (dark region starts x=1134 of 1366), page padding-inline 28px (card edge at x=1105), button height 38px (primary «إدخال سريع» spans y=96..134), table row stride 42-44px with the attention row painted #FFF9ED = --w-attention-bg and a right-side danger edge, icon-on-the-right-of-label in both action buttons and dialog buttons, top bar layout (search left / user-bell-calendar right), sidebar org header (icon right), nav item order (icon right, label, badge left), page header (titles right, actions left), dialog (title right, × left, confirm right, cancel left). Confirmed WRONG: top bar height, group-header child order, group badge tokens (findings #6, #7, #5).\n\nALL 71 SPEC ICONS PRESENT: I checked every name from the spec list against IconRegistry.g.cs — zero missing; the generic \\\"chevrons\\\" entry is covered by chevron-up/down/left/right plus chevrons-left-right (75 vendored files total). Fonts are real: four Noto Sans Arabic woff2 files of 48-53 KB each plus OFL-LICENSE.txt, with matching @font-face rules for weights 400/500/600/700. tokens.css reproduces every colour in design/tokens.json exactly, in all three blocks (`:root`, `:root[data-theme=\\\"dark\\\"]`, and a `@media (prefers-color-scheme: dark)` block correctly guarded with `:root:not([data-theme=\\\"light\\\"]):not([data-theme=\\\"dark\\\"])` so the system mode works).\n\nTEST QUALITY: 109 [Fact]/[Theory] attributes expanding to 127 cases, well over the ≥40 floor, and they assert real behaviour rather than tautologies. The strongest ones — `CollapsedState_PersistsThroughUiStateStore_AcrossARemount` (renders a second WSidebar instance and proves the collapse survived), `ExpandingAPreviouslyCollapsedGroup_PersistsTheExpandedState`, `SetThemeAsync_PersistsChoice_SoItSurvivesANewInstance`, `Gallery_ThemeToggle_ChangesDataThemeViaJsInterop` (asserts the recorded interop argument is \\\"dark\\\"), `DangerKind_RendersDangerConfirmButton`, `ConfirmButton_RendersBeforeCancelButton_SoItSitsOnTheRightUnderRtl`, and the 12 BidiWrapTests against the real bidi-test.html lines — each would fail on a genuine regression. Only `Disabled_PreventsClick` is tautological (low finding #19). Switching the shared context to `JSRuntimeMode.Loose` is the right call given three components legitimately call interop during render, and tests still assert against `JSInterop.Invocations`.\n\nBUILDER'S SECOND OPEN ISSUE (no fresh pixel pass) was well-founded: three of the four fidelity problems I found are exactly the kind a visual diff would have caught. I verified the two structural claims the builder made about pre-existing work and they hold — the component inventory is complete (all 40 components from spec item 3 exist as .razor + scoped .razor.css with English XML docs on parameters), and the WBreadcrumb fix the builder made is correct (non-final crumbs now always render as buttons).\n\nVERDICT RATIONALE: 'fix' rather than 'accept'. Build and tests are green, but two HIGH findings mean the delivered desktop application cannot actually display the shell it was asked to build — a defect invisible to `dotnet build` and to the bUnit suite, since neither exercises the WebView host. Six MEDIUM findings follow (two JS-interop listener leaks, a wrong-token badge, and three pixel/spec deviations). None of the work needs to be redone; every fix above is localized."
+}

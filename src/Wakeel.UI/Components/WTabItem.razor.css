@@ -1,0 +1,20 @@
+.w-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding-inline: 4px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--w-muted);
+    font-size: var(--w-fs-body);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.w-tab--active {
+    color: var(--w-primary);
+    border-bottom-color: var(--w-primary);
+}

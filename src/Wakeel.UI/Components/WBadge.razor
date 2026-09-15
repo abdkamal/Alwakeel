@@ -1,0 +1,18 @@
+@namespace Wakeel.UI.Components
+
+<bdi class="w-badge @VariantClass">@Count</bdi>
+
+@code {
+    /// <summary>Number shown inside the badge (a count of pending/attention-worthy items).</summary>
+    [Parameter] public int Count { get; set; }
+
+    /// <summary>Visual size: the plain sidebar-item badge, a smaller badge on a tab, or one on a group header.</summary>
+    [Parameter] public WBadgeKind Kind { get; set; } = WBadgeKind.Default;
+
+    private string VariantClass => Kind switch
+    {
+        WBadgeKind.Tab => "w-badge--tab",
+        WBadgeKind.Group => "w-badge--group",
+        _ => "w-badge--default",
+    };
+}

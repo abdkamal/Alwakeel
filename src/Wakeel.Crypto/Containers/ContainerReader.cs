@@ -250,7 +250,7 @@ public sealed class ContainerReader : IDisposable
             using (var output = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
             using (var hashing = new HashingStream(output))
             {
-                source.CopyTo(hashing);
+                CopyWithLimit(source, hashing, expected.Size);
                 hashing.Flush();
                 CheckEntry(expected, hashing.BytesWritten, hashing.Hash);
             }
@@ -310,12 +310,35 @@ public sealed class ContainerReader : IDisposable
         using (var source = entry.Open())
         using (var hashing = new HashingStream(buffer))
         {
-            source.CopyTo(hashing);
+            CopyWithLimit(source, hashing, expected.Size);
             hashing.Flush();
             CheckEntry(expected, hashing.BytesWritten, hashing.Hash);
         }
 
         return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// Copies <paramref name="source"/> to <paramref name="destination"/>, refusing as soon as
+    /// more than <paramref name="limit"/> bytes have been read. The manifest's declared size is
+    /// otherwise only checked after the whole entry has been buffered, which lets an inner zip
+    /// entry that lies about its own size exhaust memory (or disk) before the check ever runs.
+    /// </summary>
+    private static void CopyWithLimit(Stream source, Stream destination, long limit)
+    {
+        var buffer = new byte[81920];
+        long total = 0;
+        int read;
+        while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            total += read;
+            if (total > limit)
+            {
+                throw new CryptoException(ErrorCode.Tampered, "One of the contents is larger than the file declares.");
+            }
+
+            destination.Write(buffer, 0, read);
+        }
     }
 
     private Stream DecryptPayload(ContainerKeySource key)

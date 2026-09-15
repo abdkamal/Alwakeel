@@ -1,0 +1,7 @@
+@page "/"
+@inject NavigationManager Nav
+
+@code {
+    // The desktop host's start route is /gallery for now (no home screen has been built yet).
+    protected override void OnInitialized() => Nav.NavigateTo("/gallery", replace: true);
+}

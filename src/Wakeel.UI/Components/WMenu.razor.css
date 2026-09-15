@@ -1,0 +1,57 @@
+.w-menu-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.w-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--w-radius);
+    background: transparent;
+    color: var(--w-muted);
+    cursor: pointer;
+}
+.w-menu-trigger:hover { background: var(--w-surface2); color: var(--w-text); }
+
+.w-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+}
+
+.w-menu-popover {
+    position: absolute;
+    top: calc(100% + 4px);
+    inset-inline-end: 0;
+    z-index: 41;
+    min-width: 180px;
+    padding: 6px;
+    background: var(--w-surface);
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.w-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: var(--w-radius);
+    background: transparent;
+    color: var(--w-text);
+    font-size: var(--w-fs-body);
+    cursor: pointer;
+    text-align: start;
+}
+.w-menu-item:hover { background: var(--w-surface2); }
+
+.w-menu-item--danger { color: var(--w-danger); }

@@ -1,0 +1,28 @@
+.w-state-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 22px 18px;
+    background: var(--w-surface);
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+}
+
+.w-state-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--w-surface2);
+    color: var(--w-muted);
+    margin-bottom: 4px;
+}
+
+.w-state-title { font-weight: 700; }
+.w-state-desc { color: var(--w-muted); font-size: var(--w-fs-meta); max-width: 26ch; unicode-bidi: plaintext; }
+
+::deep .w-state-action { margin-top: 6px; }

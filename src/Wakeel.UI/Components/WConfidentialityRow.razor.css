@@ -1,0 +1,11 @@
+.w-confidentiality {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+.w-confidentiality--private { color: var(--w-info); }
+.w-confidentiality--secret { color: var(--w-warning); }
+.w-confidentiality--top-secret { color: var(--w-danger); }
