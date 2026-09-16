@@ -55,3 +55,7 @@ temp/
 /*.docx
 /*.pdf
 tests/Wakeel.E2E/artifacts/
+
+# Generated previews and agent progress notes
+design/exports/preview/
+docs/build/progress/
