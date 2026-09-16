@@ -1,0 +1,343 @@
+@page "/first-run"
+@namespace Wakeel.UI.Pages.FirstRun
+@layout Wakeel.UI.Layout.BareLayout
+@using Wakeel.Crypto
+@implements IDisposable
+@inject SetupInspectionService Inspection
+@inject SetupFileDrop Drops
+@inject LoginService Login
+@inject NavigationManager Nav
+@inject TimeProvider Time
+
+<PageTitle>@Ar.FirstRun.Setup.WelcomeTitle</PageTitle>
+
+<div class="w02">
+    <div class="w02-columns">
+
+        @* Written first, so under the page's right-to-left flow it is the column on the right. *@
+        <section class="w02-hero">
+            <header class="w02-brand">
+                <span class="w02-brand-mark" aria-hidden="true">
+                    <WIcon Name="mail" Size="30" />
+                </span>
+                <div>
+                    <h1 class="w-text-title">@Ar.AppName</h1>
+                    <p class="w02-muted"><Bdi Text="@Ar.FirstRun.Setup.BrandTagline" /></p>
+                </div>
+            </header>
+
+            <h2 class="w-text-section w02-welcome">@Ar.FirstRun.Setup.WelcomeTitle</h2>
+            <p class="w02-body"><Bdi Text="@Ar.FirstRun.Setup.WelcomeBody" /></p>
+
+            <ol class="w02-steps">
+                <li class="w02-step w02-step--done">
+                    <span class="w02-step-mark" aria-hidden="true"><WIcon Name="check" Size="15" /></span>
+                    <div>
+                        <p class="w02-step-title">@Ar.FirstRun.Setup.StepExportTitle</p>
+                        <p class="w02-muted">@Ar.FirstRun.Setup.StepExportDesc</p>
+                    </div>
+                </li>
+                <li class="w02-step w02-step--active">
+                    <span class="w02-step-mark" aria-hidden="true"><bdi>2</bdi></span>
+                    <div>
+                        <p class="w02-step-title">@Ar.FirstRun.Setup.StepChooseTitle</p>
+                        <p class="w02-step-here">@Ar.FirstRun.Setup.StepChooseDesc</p>
+                    </div>
+                </li>
+                <li class="w02-step">
+                    <span class="w02-step-mark" aria-hidden="true"><bdi>3</bdi></span>
+                    <div>
+                        <p class="w02-step-title">@Ar.FirstRun.Setup.StepActivateTitle</p>
+                        <p class="w02-muted">@Ar.FirstRun.Setup.StepActivateDesc</p>
+                    </div>
+                </li>
+            </ol>
+
+            <WCard Variant="WSemanticVariant.Info" Icon="info"
+                   Title="@Ar.FirstRun.Setup.SignedPackageTitle"
+                   Desc="@Ar.FirstRun.Setup.SignedPackageDesc" />
+
+            <p class="w02-help">
+                <WIcon Name="headphones" Size="16" />
+                <span>@Ar.FirstRun.Setup.NeedHelp</span>
+            </p>
+        </section>
+
+        <section class="w02-panel">
+            <WCard Title="@Ar.FirstRun.Setup.CardTitle">
+                <p class="w02-body">@Ar.FirstRun.Setup.CardDesc</p>
+
+                <div class="w02-drop @(_dragging ? "w02-drop--over" : null)"
+                     @ondragenter="() => _dragging = true"
+                     @ondragleave="() => _dragging = false"
+                     @ondrop="() => _dragging = false">
+                    @* The file input covers the whole zone, so one element serves both ways of giving
+                       the program a file: a click opens the machine's own file dialog, and a file
+                       dropped anywhere on the zone lands directly on the input. *@
+                    <InputFile class="w02-drop-input" accept="@SetupInspectionService.Extension"
+                               aria-label="@Ar.FirstRun.Setup.DropZoneLabel" OnChange="ChooseAsync" />
+                    <WIcon Name="upload-cloud" Size="26" />
+                    <p class="w02-drop-title">
+                        <span class="w02-drop-action">@Ar.FirstRun.Setup.DropZoneChoose</span>
+                        <span>@Ar.FirstRun.Setup.DropZoneOrDrag</span>
+                    </p>
+                    <p class="w02-muted"><Bdi Text="@Ar.FirstRun.Setup.DropZoneHint" /></p>
+                </div>
+
+                @if (_chosen is { } file)
+                {
+                    <div class="w02-file">
+                        <WIcon Name="file-check" Size="18" />
+                        <div class="w02-file-text">
+                            <bdi class="w02-file-name">@file.FileName</bdi>
+                            <bdi class="w02-muted">@Ar.FirstRun.Setup.FileMeta(Formats.Date(file.ModifiedAt), Formats.FileSize(file.Size))</bdi>
+                        </div>
+                        <WChip Variant="WChipVariant.Success" Label="@Ar.FirstRun.Setup.FileReady" />
+                        <WButton Variant="WButtonVariant.Icon" Icon="x"
+                                 Tooltip="@Ar.FirstRun.Setup.RemoveFile" OnClick="Clear" />
+                    </div>
+                }
+
+                <WInput Type="WInputType.Password" Required="true"
+                        Label="@Ar.FirstRun.Setup.PasswordLabel"
+                        Hint="@Ar.FirstRun.Setup.PasswordHint"
+                        Error="@_passwordError"
+                        Value="@_password" ValueChanged="OnPasswordChanged" />
+
+                @if (_fileError is { Length: > 0 })
+                {
+                    <WCard Variant="WSemanticVariant.Danger" Icon="alert-circle" Desc="@_fileError" />
+                }
+
+                <div class="w02-actions">
+                    <WButton Icon="shield-check" Label="@Ar.FirstRun.Setup.Inspect"
+                             Loading="_busy" OnClick="InspectAsync" />
+                    <WTooltip Text="@Ar.FirstRun.Setup.WhereIsTheFileTooltip" Placement="TooltipPlacement.Top">
+                        <span class="w02-where">
+                            <WIcon Name="help-circle" Size="16" />
+                            <span>@Ar.FirstRun.Setup.WhereIsTheFile</span>
+                        </span>
+                    </WTooltip>
+                </div>
+            </WCard>
+        </section>
+    </div>
+
+    <footer class="w02-footer">
+        <Bdi Text="@FooterLine" />
+    </footer>
+</div>
+
+@code {
+    private StagedSetupFile? _chosen;
+    private string? _password;
+    private string? _passwordError;
+    private string? _fileError;
+    private bool _busy;
+    private bool _dragging;
+
+    private string FooterLine =>
+        $"{Ar.AppName} {Ar.FirstRun.AppVersion} — {Formats.Date(Time.GetUtcNow())} {Formats.Time(Time.GetUtcNow())}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // The first run belongs to a machine that has none. One that already carries an installation
+        // is sent to its own sign-in screen instead, whichever way this route was reached.
+        if (Login.IsActivated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        // Coming back from W03 keeps the file that is already staged, so «اختيار حزمة أخرى» is the
+        // only thing that ever clears it.
+        _chosen = Inspection.File;
+
+        Drops.Dropped += HandleDropped;
+
+        // A file let go over the window while this screen was still being drawn is waiting here.
+        if (Drops.TakePending() is { } waiting)
+        {
+            await StageFromPathAsync(waiting.Path);
+        }
+    }
+
+    /// <summary>
+    /// A file dragged out of a folder window and let go over الوكيل. The host receives the drop and
+    /// hands over the path; from here on it is the same file the picker would have produced.
+    /// </summary>
+    private void HandleDropped(DroppedFile file) =>
+        _ = InvokeAsync(async () =>
+        {
+            await StageFromPathAsync(file.Path);
+            StateHasChanged();
+        });
+
+    private async Task StageFromPathAsync(string path)
+    {
+        _fileError = null;
+
+        FileInfo info;
+        try
+        {
+            info = new FileInfo(path);
+            if (!info.Exists)
+            {
+                _fileError = Ar.FirstRun.Setup.CannotReadFile;
+                return;
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+                                              or ArgumentException or NotSupportedException)
+        {
+            _fileError = Ar.FirstRun.Setup.CannotReadFile;
+            return;
+        }
+
+        if (SetupInspectionService.Reject(info.Name, info.Length) is { } refusal)
+        {
+            _fileError = refusal;
+            _chosen = null;
+            Inspection.Reset();
+            return;
+        }
+
+        try
+        {
+            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            _chosen = await Inspection.StageAsync(stream, info.Name, new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero));
+        }
+        catch (IOException exception) when (DiskSpace.IsFull(exception))
+        {
+            // Copying the file into the program's own folder is the first thing that can fill a
+            // disk, and it is a state with its own sentence and its own action.
+            _fileError = Ar.FirstRun.Setup.DiskFull;
+            _chosen = null;
+        }
+        catch (IOException)
+        {
+            _fileError = Ar.FirstRun.Setup.CannotReadFile;
+            _chosen = null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _fileError = Ar.FirstRun.Setup.FolderNotWritable;
+            _chosen = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        Drops.Dropped -= HandleDropped;
+        Drops.Clear();
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        _password = value;
+        _passwordError = null;
+    }
+
+    private async Task ChooseAsync(InputFileChangeEventArgs args)
+    {
+        _fileError = null;
+        var file = args.FileCount > 0 ? args.File : null;
+        if (file is null)
+        {
+            return;
+        }
+
+        if (SetupInspectionService.Reject(file.Name, file.Size) is { } refusal)
+        {
+            _fileError = refusal;
+            _chosen = null;
+            Inspection.Reset();
+            return;
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream(SetupInspectionService.MaxFileBytes);
+            _chosen = await Inspection.StageAsync(stream, file.Name, file.LastModified);
+        }
+        catch (IOException exception) when (DiskSpace.IsFull(exception))
+        {
+            _fileError = Ar.FirstRun.Setup.DiskFull;
+            _chosen = null;
+        }
+        catch (IOException)
+        {
+            _fileError = Ar.FirstRun.Setup.CannotReadFile;
+            _chosen = null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _fileError = Ar.FirstRun.Setup.FolderNotWritable;
+            _chosen = null;
+        }
+    }
+
+    private void Clear()
+    {
+        Inspection.Reset();
+        _chosen = null;
+        _fileError = null;
+    }
+
+    private async Task InspectAsync()
+    {
+        _fileError = null;
+        _passwordError = null;
+
+        if (_chosen is null)
+        {
+            _fileError = Ar.FirstRun.Setup.FileRequired;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _passwordError = Ar.FirstRun.Setup.PasswordRequired;
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var password = _password;
+
+            // What this machine expects of a file: nothing on a first run, and the pinned
+            // organisation key, this device and the sequence already applied once there is an
+            // installation to compare against (ARCHITECTURE.md §3).
+            var expectations = await Inspection.ExpectationsAsync();
+
+            // Argon2id over the package password is deliberately expensive; doing it on the UI thread
+            // would freeze the window for a second on every attempt.
+            await Task.Run(() => Inspection.Inspect(password!, expectations));
+        }
+        catch (IOException exception) when (DiskSpace.IsFull(exception))
+        {
+            _fileError = Ar.FirstRun.Setup.DiskFull;
+            return;
+        }
+        catch (IOException)
+        {
+            _fileError = Ar.FirstRun.Setup.CannotReadFile;
+            return;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _fileError = Ar.FirstRun.Setup.FolderNotWritable;
+            return;
+        }
+        finally
+        {
+            _busy = false;
+
+            // Nothing keeps a typed secret on screen longer than the operation that needed it.
+            _password = null;
+        }
+
+        Nav.NavigateTo("/first-run/check");
+    }
+}

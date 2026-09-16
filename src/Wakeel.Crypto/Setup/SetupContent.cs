@@ -23,13 +23,19 @@ public static class SetupSyncScopes
     public static bool IsKnown(string? scope) => scope is Full or Custody;
 }
 
-/// <summary>The names the four entries of a setup file always carry.</summary>
+/// <summary>The names the five entries of a setup file always carry.</summary>
 public static class SetupEntryNames
 {
     public const string Content = "setup.json";
     public const string Logo = "logo.png";
     public const string Guide = "guide.pdf";
     public const string ReportTemplate = "report-template.docx";
+
+    /// <summary>
+    /// The official correspondence template, written and read exactly like
+    /// <see cref="ReportTemplate"/> (AGREEMENT item 57 / ARCHITECTURE §4).
+    /// </summary>
+    public const string LetterTemplate = "letter-template.docx";
 }
 
 /// <summary>
@@ -96,13 +102,13 @@ public sealed record SetupEmployee(string Name, int EmployeeNo, string JobTitle)
 }
 
 /// <summary>
-/// Which of the three optional entries the administrator chose to put in the file. It is
+/// Which of the four optional entries the administrator chose to put in the file. It is
 /// declared rather than inferred, so a stripped entry is a mismatch the reader reports
 /// instead of a file that quietly arrives without a logo.
 /// </summary>
-public sealed record SetupIncludes(bool Logo, bool Guide, bool ReportTemplate)
+public sealed record SetupIncludes(bool Logo, bool Guide, bool ReportTemplate, bool LetterTemplate)
 {
-    public static SetupIncludes None { get; } = new(false, false, false);
+    public static SetupIncludes None { get; } = new(false, false, false, false);
 }
 
 /// <summary>
@@ -180,4 +186,38 @@ public sealed record SetupContent(
     public SetupUnit? OfficeUnit() =>
         Units?.FirstOrDefault(unit =>
             unit is not null && string.Equals(unit.Id, Office?.UnitId, StringComparison.Ordinal));
+}
+
+/// <summary>
+/// Everything about a setup file that is safe to show before the file has passed every
+/// check — the organisation, the structure, the office, the device, the employee and which
+/// optional entries the file claims to carry. This is what W03 renders next to the check
+/// list even for a file a later item refuses (another device, an older export, a revoked
+/// device): a person can still be told whose file this is. Deliberately excludes
+/// <see cref="SetupContent.DeviceSeed"/> and <see cref="SetupContent.OfficeKey"/> — the two
+/// secrets the payload actually carries — and the revocation list, which is judged, never
+/// displayed. <see cref="SetupPackage.Content"/> carries the full record, gated behind the
+/// checks passing.
+/// </summary>
+public sealed record SetupDescription(
+    int FormatVersion,
+    DateTimeOffset ExportedAt,
+    long ExportSeq,
+    SetupOrg Org,
+    IReadOnlyList<SetupUnit> Units,
+    SetupOffice Office,
+    SetupDevice Device,
+    SetupEmployee Employee,
+    SetupIncludes Includes)
+{
+    internal static SetupDescription From(SetupContent content) => new(
+        content.FormatVersion,
+        content.ExportedAt,
+        content.ExportSeq,
+        content.Org,
+        content.Units,
+        content.Office,
+        content.Device,
+        content.Employee,
+        content.Includes);
 }

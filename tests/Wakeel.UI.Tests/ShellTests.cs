@@ -2,6 +2,7 @@ using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Wakeel.Design.Components;
+using Wakeel.Design.Text;
 using Wakeel.UI.Layout;
 using Wakeel.UI.Pages;
 using Wakeel.UI.Services;
@@ -89,6 +90,22 @@ public class ShellTests : WakeelTestContext
         var cut = Render<W08AttentionCenter>();
 
         Assert.Contains("w-table-row--attention", cut.Markup);
+    }
+
+    /// <summary>
+    /// verify-design-split.json (B1-POLISH-DESIGN review) low finding: the «الكل» tab's count badge
+    /// must track <see cref="Ar.AttentionCenter.TodayActionCount"/> rather than a literal that can
+    /// drift from the section header's own count when the sample data changes.
+    /// </summary>
+    [Fact]
+    public void W08AttentionCenter_AllTabBadge_MatchesTodayActionCount()
+    {
+        var cut = Render<W08AttentionCenter>();
+
+        var firstTabBadge = cut.FindAll(".w-tab")[0].QuerySelector(".w-badge");
+
+        Assert.NotNull(firstTabBadge);
+        Assert.Equal(Ar.AttentionCenter.TodayActionCount.ToString(), firstTabBadge!.TextContent);
     }
 
     [Fact]

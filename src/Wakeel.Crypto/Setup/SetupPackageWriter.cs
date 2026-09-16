@@ -23,13 +23,25 @@ public sealed class SetupWriteRequest
 
     public Func<Stream>? ReportTemplate { get; init; }
 
-    /// <summary>
-    /// Argon2id cost for the package password. The default is the product's normal cost; a
-    /// weaker one exists only so the test suite does not spend a minute proving a round trip.
-    /// </summary>
-    public Argon2Params? Kdf { get; init; }
+    /// <summary>The official correspondence template, written exactly like <see cref="ReportTemplate"/>.</summary>
+    public Func<Stream>? LetterTemplate { get; init; }
 
-    /// <summary>Where the payload is staged in the clear while the file is built.</summary>
+    /// <summary>
+    /// Argon2id cost for the package password. Internal, deliberately: the product's own cost
+    /// floor is not something the administration tool may weaken, so every setup file built
+    /// from outside this project gets <see cref="Argon2Params.CreateDefault"/> regardless of
+    /// what a caller would have asked for. The setter exists only so the test suite does not
+    /// spend real Argon2id time proving a round trip, and it reaches this property through the
+    /// same <c>InternalsVisibleTo</c> that lets it see every other internal type here.
+    /// </summary>
+    internal Argon2Params? Kdf { get; init; }
+
+    /// <summary>
+    /// Where the payload is staged in the clear while the file is built. Required: setup.json
+    /// carries the device seed and the office key in the clear once decrypted, so the host must
+    /// point this at its own protected folder rather than let the system temporary folder be
+    /// used by default.
+    /// </summary>
     public string? StagingDirectory { get; init; }
 
     public TimeProvider Time { get; init; } = TimeProvider.System;
@@ -85,7 +97,7 @@ public static class SetupPackageWriter
             Kind = ContainerKind.Setup,
             Producer = producer,
             Signer = request.OrgIdentity,
-            Key = ContainerKeySource.FromPassword(password, request.Kdf),
+            Key = ContainerKeySource.FromPassword(password, request.Kdf ?? Argon2Params.CreateDefault()),
             Entries = sources,
             StagingDirectory = request.StagingDirectory,
             Time = request.Time,
@@ -97,6 +109,11 @@ public static class SetupPackageWriter
         out string password)
     {
         ArgumentNullException.ThrowIfNull(request.OrgIdentity);
+
+        if (string.IsNullOrEmpty(request.StagingDirectory))
+        {
+            throw new CryptoException(ErrorCode.Corrupt, "The setup writer must be given its own protected staging folder.");
+        }
 
         var content = request.Content
             ?? throw new CryptoException(ErrorCode.Corrupt, "A setup file needs its description.");
@@ -137,6 +154,7 @@ public static class SetupPackageWriter
         Add(sources, SetupEntryNames.Logo, content.Includes.Logo, request.Logo);
         Add(sources, SetupEntryNames.Guide, content.Includes.Guide, request.Guide);
         Add(sources, SetupEntryNames.ReportTemplate, content.Includes.ReportTemplate, request.ReportTemplate);
+        Add(sources, SetupEntryNames.LetterTemplate, content.Includes.LetterTemplate, request.LetterTemplate);
 
         Verify(content, producer, request, [.. sources.Select(source => source.Name)]);
         return sources;
@@ -180,7 +198,11 @@ public static class SetupPackageWriter
             producer,
             request.OrgIdentity.SigningPublicKey,
             entryNames,
-            SetupExpectations.FirstRun,
+
+            // SetupChecker.Run never reads StagingDirectory (only SetupPackageReader.Validate
+            // does), so this expectations instance exists only to supply the first-run values —
+            // nothing is pinned yet when the writer checks its own work.
+            new SetupExpectations { StagingDirectory = "n/a" },
             request.Time.GetUtcNow());
 
         checks.Build().EnsureAcceptable();

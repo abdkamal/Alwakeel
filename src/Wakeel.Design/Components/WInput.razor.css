@@ -34,6 +34,13 @@
     unicode-bidi: plaintext;
 }
 
+.w-field-control--adorned {
+    /* Reserves the adornment's track (30px icon/button + 4px inset + 6px gap) so a right-aligned
+       LTR value (unicode-bidi: plaintext on a dd/MM/yyyy date, or a password's masked dots) never
+       renders underneath the calendar/eye icon absolutely positioned over the field. */
+    padding-inline-end: 40px;
+}
+
 .w-field-control::placeholder { color: var(--w-placeholder); }
 .w-field-control:disabled { background: var(--w-disabled-bg); color: var(--w-disabled); }
 .w-field-control:focus-visible { outline: 2px solid var(--w-primary); outline-offset: 1px; }

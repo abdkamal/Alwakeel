@@ -1,0 +1,133 @@
+.w05 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 32px 24px;
+}
+
+.w05-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.w05-logo {
+  inline-size: 56px;
+  block-size: 56px;
+  border-radius: var(--w-radius-lg);
+  object-fit: contain;
+  background: var(--w-surface);
+}
+
+.w05-logo--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--w-primary-fill);
+  color: var(--w-on-fill);
+}
+
+.w05-muted {
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.w05 ::deep > .w-card {
+  inline-size: 440px;
+  max-inline-size: 100%;
+}
+
+.w05 ::deep > .w-card .w-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.w05-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  padding-block-end: 4px;
+}
+
+.w05-name {
+  font-size: var(--w-fs-section);
+  font-weight: 700;
+}
+
+.w05-switch,
+.w05-forgot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: 0;
+  padding: 4px;
+  color: var(--w-primary);
+  font-size: var(--w-fs-meta);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.w05-switch:hover,
+.w05-forgot:hover { color: var(--w-primary-hover); }
+
+.w05-attempts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.w05-attempts-text {
+  color: var(--w-danger);
+  font-size: var(--w-fs-meta);
+  font-weight: 600;
+}
+
+.w05-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.w05-dot {
+  inline-size: 16px;
+  block-size: 5px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-neutral-soft);
+}
+
+.w05-dot--used { background: var(--w-danger-fill); }
+
+.w05-caps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--w-radius);
+  background: var(--w-warning-soft);
+  border: 1px solid var(--w-warning-border);
+  color: var(--w-warning);
+  font-size: var(--w-fs-meta);
+}
+
+.w05 ::deep .w05-submit {
+  inline-size: 100%;
+  justify-content: center;
+}
+
+.w05-clock { margin-block-start: 4px; }
+
+.w05-footer {
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  text-align: center;
+}

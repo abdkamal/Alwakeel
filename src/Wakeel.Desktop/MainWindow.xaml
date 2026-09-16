@@ -10,6 +10,7 @@
         Height="768" Width="1366"
         MinHeight="700" MinWidth="1200"
         FlowDirection="RightToLeft"
+        AllowDrop="True"
         WindowStartupLocation="CenterScreen">
     <Grid>
         <!-- RootComponents is populated in code-behind (not declaratively here) because the WPF XAML

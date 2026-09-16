@@ -4,15 +4,21 @@
 @using Wakeel.UI.Services
 @using Wakeel.Design.Text
 @using Wakeel.Design.Bidi
+@using Wakeel.UI.Pages.Account
+@using Wakeel.Core.Data
 @implements IDisposable
 @inject PageHeaderState HeaderState
 @inject ThemeService Theme
 @inject NavigationManager Nav
+@inject AccountSession Session
+@inject LockService Locks
 
-<div class="w-shell">
+@* Anything the person does anywhere in the shell resets the idle timer W06 measures against. *@
+<div class="w-shell" @onclick="MarkActivity" @onkeydown="MarkActivity" @onpointerdown="MarkActivity">
     <WSidebar SelectedKey="@HeaderState.NavKey" Badges="@SampleBadges" SyncStatusText="@Ar.Footer.Synced" Version="v0.21" OnNavigate="HandleNavigate" />
     <div class="w-shell-main">
-        <WTopBar UserName="@Ar.Sample.UserName" UserRole="@Ar.Sample.UserRole" NotificationCount="@SampleNotificationCount" />
+        <WTopBar UserName="@UserName" UserRole="@UserRole" NotificationCount="@SampleNotificationCount"
+                 OnLock="LockNow" OnSignOut="SignOut" />
         <div class="w-page">
             @if (!string.IsNullOrEmpty(HeaderState.Title))
             {
@@ -36,9 +42,38 @@
         </div>
     </div>
     <WToastHost />
+
+    @* W06: the automatic lock lays itself over whatever screen is open, and draws nothing until it does. *@
+    <W06LockOverlay />
 </div>
 
 @code {
+    /// <summary>Tells the session the person is still here, so the idle timer starts again from now.</summary>
+    private void MarkActivity() => Session.MarkActivity();
+
+    // Who the top bar names: the person actually signed in, and — before anyone is — the fixed
+    // sample identity the design system draws every screen with.
+    private string UserName => Session.Installation?.EmployeeName ?? Ar.Sample.UserName;
+
+    private string UserRole => Session.Installation is { } installation
+        ? installation.Role switch
+        {
+            InstallationRole.Secretary => Ar.FirstRun.Check.RoleSecretary,
+            InstallationRole.Custodian => Ar.FirstRun.Check.RoleCustodian,
+            _ => Ar.FirstRun.Check.RoleManager,
+        }
+        : Ar.Sample.UserRole;
+
+    /// <summary>«قفل الجهاز» from the user menu: the same lock the idle timer performs (W06).</summary>
+    private void LockNow() => Locks.LockNow();
+
+    /// <summary>«تسجيل الخروج»: the database closes, every key is wiped, and W05 asks again.</summary>
+    private void SignOut()
+    {
+        Session.SignOut();
+        Nav.NavigateTo("/login");
+    }
+
     // Fixed sample counts (DESIGN-GUIDE.md's single fixed sample dataset for v0.21 — organization
     // "هيئة تنمية المناطق الريفية" / office "مكتب مدير دائرة التخطيط" / user "أحمد الخطيب") shown
     // across every screen until a page wires live counts from Wakeel.Core.

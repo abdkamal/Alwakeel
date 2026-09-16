@@ -19,7 +19,8 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers the Wakeel.Core services (<see cref="IClock"/>, <see cref="IIdGenerator"/>,
     /// <see cref="IAuditService"/>, <see cref="ISettingsService"/>, <see cref="IOfficialNumberService"/>,
-    /// <see cref="IFinancialCycleService"/>, <see cref="IClockCheckService"/>, <see cref="IErrorMapper"/>)
+    /// <see cref="IFinancialCycleService"/>, <see cref="IClockCheckService"/>,
+    /// <see cref="IInstallationService"/>, <see cref="IErrorMapper"/>)
     /// and <see cref="WakeelPaths"/>. The database-backed services are Scoped and resolve
     /// <see cref="WakeelDb"/> from the container — the host application is responsible for
     /// registering <see cref="WakeelDb"/> itself once a <see cref="DbSession"/> is open (the
@@ -42,6 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOfficialNumberService, OfficialNumberService>();
         services.AddScoped<IFinancialCycleService, FinancialCycleService>();
         services.AddScoped<IClockCheckService, ClockCheckService>();
+        services.AddScoped<IInstallationService, InstallationService>();
 
         return services;
     }

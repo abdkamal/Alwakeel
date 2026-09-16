@@ -1,7 +1,10 @@
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
+using Wakeel.Core.Data;
 using Wakeel.Design;
+using Wakeel.Core.Services;
 using Wakeel.UI.Services;
+using Wakeel.UI.Services.Account;
 
 namespace Wakeel.UI.Tests;
 
@@ -15,6 +18,9 @@ namespace Wakeel.UI.Tests;
 /// </summary>
 public abstract class WakeelTestContext : BunitContext
 {
+    /// <summary>This test's own installation folder, removed again when it finishes.</summary>
+    private readonly string _root;
+
     protected WakeelTestContext()
     {
         // Loose mode lets JS interop calls (theme application, dialog focus trap, etc.) go through with
@@ -24,5 +30,40 @@ public abstract class WakeelTestContext : BunitContext
 
         Services.AddWakeelDesign();
         Services.AddScoped<PageHeaderState>();
+
+        // MainLayout hosts the automatic lock of W06, so rendering the shell at all now wants the
+        // account services behind it. They are registered here exactly as the host registers them.
+        // A context that needs an installation folder of its own (see FirstRunScreenContext)
+        // registers a second set over these; the later registration is the one that answers.
+        //
+        // The folder is a temporary one of this test's own. Left at its default, WakeelPaths would
+        // point every UI test at C:\ProgramData\Wakeel — the operator's real installation — and a
+        // test that so much as asked whether this machine is activated would be reading it.
+        _root = Path.Combine(Path.GetTempPath(), "wakeel-ui-tests", Guid.NewGuid().ToString("N"));
+        Services.AddWakeelCore(options => options.Paths = WakeelPaths.ForRoot(_root));
+        Services.AddWakeelAccount();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (!disposing)
+        {
+            return;
+        }
+
+        try
+        {
+            if (Directory.Exists(_root))
+            {
+                Directory.Delete(_root, recursive: true);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A temporary folder the machine still holds open is the operating system's problem,
+            // never a failed test.
+        }
     }
 }

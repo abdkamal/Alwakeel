@@ -13,11 +13,16 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <!-- The recovery sheet's QR code (W04) and reading one back from a picture (W07). Both versions
+         are already pinned centrally in Directory.Packages.props for exactly this screen. -->
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="ZXing.Net" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Wakeel.Design\Wakeel.Design.csproj" />
     <ProjectReference Include="..\Wakeel.Core\Wakeel.Core.csproj" />
+    <ProjectReference Include="..\Wakeel.Crypto\Wakeel.Crypto.csproj" />
     <ProjectReference Include="..\Wakeel.Sync\Wakeel.Sync.csproj" />
     <ProjectReference Include="..\Wakeel.Ocr\Wakeel.Ocr.csproj" />
     <ProjectReference Include="..\Wakeel.Search\Wakeel.Search.csproj" />

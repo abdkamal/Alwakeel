@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -392,6 +393,119 @@ public sealed class NumberingTests : IDisposable
         }
 
         Assert.Equal(EntityState.Detached, otherDb.Entry(trackedRow).State);
+    }
+
+    [Fact]
+    public async Task Issue_WhenAnotherContextCommitsALaterDateWhileThisOneRaces_TheRetryRefuses_InsteadOfRegressingLastDate()
+    {
+        // Regression test for the single low finding of
+        // docs/build/reviews/B0.5/verify2-core-polish.json: the cross-year MaxAsync watermark
+        // check runs exactly once, BEFORE the retry loop, so it only proves the date was not
+        // backdated at the instant it ran. Interleaving: context B's own watermark read sees
+        // seedDate as the last issued date and is about to issue for seedDate; context A then
+        // commits a number dated laterDate; B's SaveChanges loses the optimistic-concurrency
+        // check on the very same (kind, year) row, B reloads it (last_date now laterDate) — and,
+        // without the in-loop recheck this package adds, would unconditionally overwrite it with
+        // its own earlier seedDate and commit, regressing official_numbers.last_date below an
+        // already-issued number of the same kind.
+        //
+        // A live two-connection race cannot deliver this ordering deterministically: a second
+        // connection's own BeginTransaction blocks on (and eventually times out against) a first
+        // connection's already-open transaction on this database regardless of isolation level or
+        // journal mode — proven separately, and consistent with the similar live-race limitation
+        // documented on Issue_WhenAnotherContextInsertedTheVeryFirstRowFirst_... below (a losing
+        // transaction's stale snapshot cannot be refreshed by retrying within it either, so a real
+        // second transaction could not even supply the later commit this test needs). So "context
+        // A" here is not a second connection at all: it is a same-connection, same-transaction
+        // ExecuteUpdateAsync that lands the later date directly under context B's own transaction,
+        // fired by a DbCommandInterceptor the instant context B's own MaxAsync watermark query has
+        // executed — before B's retry loop ever reads or writes the row — so from B's perspective
+        // this is indistinguishable from another context's commit landing at that exact moment. B's
+        // own tracked row is pinned stale beforehand (exactly as
+        // Issue_WhenAnotherContextIssuedInBetween_IsRetried_AndTheNumbersDiffer pins its stale
+        // copy) so B's first attempt still races and loses on the concurrency token, forcing the
+        // reload the finding describes.
+        var seedDate = new DateTime(2026, 9, 10, 0, 0, 0, DateTimeKind.Utc);
+        var laterDate = new DateTime(2026, 9, 11, 0, 0, 0, DateTimeKind.Utc);
+        var paths = WakeelPaths.ForRoot(_root);
+
+        var seeded = await IssueAsync(InOutDirection.Out, seedDate);
+        Assert.Equal(1, seeded.Sequence);
+
+        using var connection = DbConnectionFactory.Open(paths.DbPath, _key);
+        WakeelDb? otherDbRef = null;
+        var interceptor = new RunOnFirstWatermarkQueryInterceptor(async () =>
+        {
+            var otherDb = otherDbRef ?? throw new InvalidOperationException("otherDb not yet assigned");
+            var affected = await otherDb.OfficialNumbers
+                .Where(n => n.Kind == InOutDirection.Out && n.Year == 2026)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(n => n.LastSeq, 2)
+                    .SetProperty(n => n.LastDate, laterDate));
+            Assert.Equal(1, affected);
+        });
+        var options = new DbContextOptionsBuilder<WakeelDb>()
+            .UseSqlite(connection)
+            .AddInterceptors(interceptor)
+            .Options;
+        using var otherDb = new WakeelDb(options, new SystemClock(TimeProvider.System));
+        otherDbRef = otherDb;
+
+        // Pin context B's tracked row at the state before the later commit lands.
+        var stale = await otherDb.OfficialNumbers.FirstAsync(n => n.Kind == InOutDirection.Out && n.Year == 2026);
+        Assert.Equal(1, stale.LastSeq);
+        Assert.Equal(seedDate, stale.LastDate);
+
+        var losingService = new OfficialNumberService(otherDb, new ClockCheckService(otherDb));
+        await using var transaction = await otherDb.Database.BeginTransactionAsync();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => losingService.IssueAsync(InOutDirection.Out, seedDate, ClockVerdict.Ok));
+        Assert.Contains("date is earlier than the last issued number", ex.Message, StringComparison.Ordinal);
+        await transaction.RollbackAsync();
+
+        // Rolling back B's refused attempt also undoes the interceptor's own same-transaction
+        // stand-in for "another context's later commit" (it necessarily runs inside B's
+        // transaction — see the interceptor's remarks), so the persisted row reverts to exactly
+        // the seeded state: B's earlier date was never written back over anything, and nothing
+        // else was left behind either. The InvalidOperationException assertion above is what
+        // proves the fix — this just confirms the refusal left no partial state.
+        var final = await _session.Db.OfficialNumbers.AsNoTracking()
+            .FirstAsync(n => n.Kind == InOutDirection.Out && n.Year == 2026);
+        Assert.Equal(1, final.LastSeq);
+        Assert.Equal(seedDate, final.LastDate);
+    }
+
+    /// <summary>
+    /// Test-only interceptor for
+    /// <see cref="Issue_WhenAnotherContextCommitsALaterDateWhileThisOneRaces_TheRetryRefuses_InsteadOfRegressingLastDate"/>:
+    /// the moment the watermark query (the <c>MAX(last_date)</c> projection over
+    /// <c>official_numbers</c> that <see cref="OfficialNumberService"/> runs once before its retry
+    /// loop) has executed, runs <paramref name="action"/> before control returns to the caller, so
+    /// the caller's retry loop only reads/writes the row after <paramref name="action"/>'s change
+    /// has landed. Fires at most once, so a later, differently-shaped query against the same table
+    /// (the loop's own row fetch) is never mistaken for the watermark query.
+    /// </summary>
+    private sealed class RunOnFirstWatermarkQueryInterceptor(Func<Task> action) : DbCommandInterceptor
+    {
+        private bool _fired;
+
+        public override async ValueTask<DbDataReader> ReaderExecutedAsync(
+            DbCommand command,
+            CommandExecutedEventData eventData,
+            DbDataReader result,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_fired
+                && command.CommandText.Contains("official_numbers", StringComparison.OrdinalIgnoreCase)
+                && command.CommandText.Contains("MAX", StringComparison.OrdinalIgnoreCase))
+            {
+                _fired = true;
+                await action().ConfigureAwait(false);
+            }
+
+            return await base.ReaderExecutedAsync(command, eventData, result, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>

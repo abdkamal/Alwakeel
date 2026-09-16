@@ -38,6 +38,14 @@ public sealed class WakeelPaths
 
     public string LogsDir => Path.Combine(Root, "logs");
 
+    /// <summary>
+    /// Scratch space for content that is in the clear on its way in or out: a setup file's payload
+    /// while its entries are being read, a container's payload while it is being written. It sits
+    /// inside the installation root rather than in the machine's temporary folder precisely because
+    /// what lands here is readable, and only this installation may read it.
+    /// </summary>
+    public string StagingDir => Path.Combine(Root, "staging");
+
     /// <summary>Default installation root under the machine's ProgramData folder.</summary>
     public static WakeelPaths Default() =>
         new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Wakeel"));
@@ -67,5 +75,6 @@ public sealed class WakeelPaths
         Directory.CreateDirectory(PackagesInboxDir);
         Directory.CreateDirectory(BackupsDir);
         Directory.CreateDirectory(LogsDir);
+        Directory.CreateDirectory(StagingDir);
     }
 }

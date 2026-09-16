@@ -498,6 +498,45 @@ public class ContainerTests
     }
 
     [Fact]
+    public void A_manifest_larger_than_the_product_ever_writes_is_refused_before_it_is_parsed()
+    {
+        using var world = new ContainerWorld();
+        var path = world.Write(
+            ContainerKind.Sync,
+            ContainerKeySource.OfficeKey(RandomBytes.Next(32)),
+            ContainerEntrySource.FromText("records.json", "{}"));
+
+        // A field the schema would silently ignore, padded past the bound: if the size were
+        // only checked after the whole entry is in memory, this would still parse and pass
+        // every later check, so the refusal has to come from the bound itself.
+        var entries = ZipSurgery.ReadAll(path);
+        var text = Encoding.UTF8.GetString(entries[ContainerManifest.FileName]);
+        var padded = text.Insert(1, "\"padding\":\"" + new string('a', 2 * 1024 * 1024) + "\",");
+        entries[ContainerManifest.FileName] = Encoding.UTF8.GetBytes(padded);
+        ZipSurgery.WriteAll(path, entries);
+
+        var error = Assert.Throws<CryptoException>(() => ContainerReader.Open(path, world.Options(ContainerKind.Sync)));
+        Assert.Equal(ErrorCode.Corrupt, error.Code);
+    }
+
+    [Fact]
+    public void A_signature_larger_than_the_product_ever_writes_is_refused_before_it_is_used()
+    {
+        using var world = new ContainerWorld();
+        var path = world.Write(
+            ContainerKind.Sync,
+            ContainerKeySource.OfficeKey(RandomBytes.Next(32)),
+            ContainerEntrySource.FromText("records.json", "{}"));
+
+        var entries = ZipSurgery.ReadAll(path);
+        entries[ContainerManifest.SignatureFileName] = new byte[2 * 1024 * 1024];
+        ZipSurgery.WriteAll(path, entries);
+
+        var error = Assert.Throws<CryptoException>(() => ContainerReader.Open(path, world.Options(ContainerKind.Sync)));
+        Assert.Equal(ErrorCode.Corrupt, error.Code);
+    }
+
+    [Fact]
     public void A_manifest_with_an_unreadable_date_is_reported_as_damaged()
     {
         using var world = new ContainerWorld();

@@ -1,0 +1,186 @@
+.w07-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.w07-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.w07-step--active,
+.w07-step--done { color: var(--w-primary); font-weight: 700; }
+
+.w07-step-mark {
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-neutral-soft);
+  color: var(--w-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.w07-step--active .w07-step-mark {
+  background: var(--w-primary-fill);
+  color: var(--w-on-fill);
+}
+
+.w07-step--done .w07-step-mark {
+  background: var(--w-success-fill);
+  color: var(--w-on-fill);
+}
+
+.w07-rail {
+  flex: 1;
+  block-size: 2px;
+  background: var(--w-success-border);
+  border-radius: var(--w-radius-pill);
+}
+
+.w07-label {
+  font-size: var(--w-fs-meta);
+  font-weight: 600;
+}
+
+.w07-muted {
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.w07-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.w07-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.w07-scan-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px;
+  border: 1px dashed var(--w-primary-border);
+  border-radius: var(--w-radius-lg);
+  background: var(--w-primary-soft);
+  color: var(--w-primary);
+  cursor: pointer;
+  font-size: var(--w-fs-meta);
+}
+
+.w07-scan-zone ::deep .w07-scan-input {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.w07-scan-message {
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.w07-passwords {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block-start: 6px;
+  border-block-start: 1px solid var(--w-border);
+}
+
+.w07-password-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.w07-password-row ::deep .w-field { inline-size: 100%; }
+
+.w07-password-row ::deep .w-field-control { inline-size: 100%; }
+
+.w07-strength {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.w07-meter {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.w07-meter-bar {
+  inline-size: 34px;
+  block-size: 5px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-neutral-soft);
+}
+
+.w07-meter-bar--on { background: var(--w-success-fill); }
+
+.w07-new-sheet {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-block-start: 8px;
+}
+
+.w07-new-qr {
+  inline-size: 72px;
+  block-size: 72px;
+  background: var(--w-white);
+  border-radius: var(--w-radius);
+  border: 1px solid var(--w-border);
+}
+
+.w07-new-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.w07-new-code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.w07-sheet-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-start: 12px;
+}
+
+/* What comes out of the printer is the sheet that is on the screen, never a second rendering of it
+   that could drift (ARCHITECTURE.md §9). The buttons under it and the sign-in screen behind it both
+   carry .w-no-print, so what is left on the paper is the card. */
+@media print {
+  .w07-new-sheet { gap: 20px; }
+  .w07-new-qr { inline-size: 120px; block-size: 120px; }
+  .w07-new-code { font-size: 22px; }
+}
+
+@media (max-width: 720px) {
+  .w07-password-row { grid-template-columns: 1fr; }
+}

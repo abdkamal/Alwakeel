@@ -11,9 +11,10 @@ public class SetupPackageTests
         var logo = RandomBytes.Next(96);
         var guide = Encoding.UTF8.GetBytes("دليل الوكيل");
         var template = RandomBytes.Next(256);
-        var content = world.Content(new SetupIncludes(true, true, true));
+        var letter = RandomBytes.Next(128);
+        var content = world.Content(new SetupIncludes(true, true, true, true));
 
-        var path = world.Write(content, logo, guide, template);
+        var path = world.Write(content, logo, guide, template, letter);
 
         using var inspection = world.Inspect(path);
         var package = inspection.Require();
@@ -31,11 +32,13 @@ public class SetupPackageTests
         Assert.Equal(SetupCheckStatus.Ok, Status(package, SetupCheckItem.Logo));
         Assert.Equal(SetupCheckStatus.Ok, Status(package, SetupCheckItem.Guide));
         Assert.Equal(SetupCheckStatus.Ok, Status(package, SetupCheckItem.ReportTemplate));
+        Assert.Equal(SetupCheckStatus.Ok, Status(package, SetupCheckItem.LetterTemplate));
         Assert.Equal(SetupCheckStatus.Ok, Status(package, SetupCheckItem.Revocation));
 
         Assert.Equal(logo, package.ReadLogo());
         Assert.Equal(guide, package.ReadGuide());
         Assert.Equal(template, package.ReadReportTemplate());
+        Assert.Equal(letter, package.ReadLetterTemplate());
 
         Assert.Equal(SetupWorld.OrgId, package.Content.Org.Id);
         Assert.Equal(SetupWorld.DeviceId, package.Content.Device.Id);
@@ -62,10 +65,12 @@ public class SetupPackageTests
         Assert.Equal(SetupCheckStatus.Absent, Status(package, SetupCheckItem.Logo));
         Assert.Equal(SetupCheckStatus.Absent, Status(package, SetupCheckItem.Guide));
         Assert.Equal(SetupCheckStatus.Absent, Status(package, SetupCheckItem.ReportTemplate));
+        Assert.Equal(SetupCheckStatus.Absent, Status(package, SetupCheckItem.LetterTemplate));
         Assert.Equal(SetupCheckStatus.Absent, Status(package, SetupCheckItem.Revocation));
         Assert.Null(package.ReadLogo());
         Assert.Null(package.ReadGuide());
         Assert.Null(package.ReadReportTemplate());
+        Assert.Null(package.ReadLetterTemplate());
         Assert.Single(package.Manifest.Entries);
         Assert.Equal(SetupEntryNames.Content, package.Manifest.Entries[0].Name);
     }
@@ -74,7 +79,7 @@ public class SetupPackageTests
     public void The_description_carries_exactly_the_fields_the_format_names()
     {
         using var world = new SetupWorld();
-        var json = Encoding.UTF8.GetString(world.Content(new SetupIncludes(true, true, true)).ToCanonicalBytes());
+        var json = Encoding.UTF8.GetString(world.Content(new SetupIncludes(true, true, true, true)).ToCanonicalBytes());
 
         foreach (var field in new[]
         {
@@ -87,7 +92,7 @@ public class SetupPackageTests
             "\"deviceSeed\":", "\"signingSeed\":", "\"agreementSeed\":",
             "\"employee\":", "\"employeeNo\":", "\"jobTitle\":",
             "\"officeKey\":", "\"revocation\":",
-            "\"includes\":", "\"logo\":", "\"guide\":", "\"reportTemplate\":",
+            "\"includes\":", "\"logo\":", "\"guide\":", "\"reportTemplate\":", "\"letterTemplate\":",
         })
         {
             Assert.Contains(field, json, StringComparison.Ordinal);
@@ -158,7 +163,7 @@ public class SetupPackageTests
         Assert.Null(inspection.Package);
         Assert.Equal(SetupCheckStatus.Ok, Status(inspection.Checks, SetupCheckItem.Signature));
         Assert.Equal(ErrorCode.WrongPassword, inspection.Checks.Find(SetupCheckItem.Package)?.Error);
-        Assert.Equal(ErrorCode.WrongPassword, world.OpenError(path, SetupExpectations.FirstRun, wrong));
+        Assert.Equal(ErrorCode.WrongPassword, world.OpenError(path, new SetupExpectations(), wrong));
     }
 
     [Fact]
@@ -299,7 +304,7 @@ public class SetupPackageTests
 
         Assert.Null(inspection.Package);
         Assert.Equal(ErrorCode.FutureDate, inspection.Checks.Find(SetupCheckItem.Package)?.Error);
-        Assert.Equal(ErrorCode.FutureDate, world.OpenError(path, SetupExpectations.FirstRun));
+        Assert.Equal(ErrorCode.FutureDate, world.OpenError(path, new SetupExpectations()));
     }
 
     [Fact]
@@ -634,7 +639,7 @@ public class SetupPackageTests
     {
         using var world = new SetupWorld();
         var logo = RandomBytes.Next(48);
-        var path = world.Write(world.Content(new SetupIncludes(true, false, false)), logo);
+        var path = world.Write(world.Content(new SetupIncludes(true, false, false, false)), logo);
 
         using var inspection = world.Inspect(path);
         var package = inspection.Require();
@@ -646,6 +651,347 @@ public class SetupPackageTests
         Assert.Equal(
             package.Content.ToCanonicalBytes(),
             File.ReadAllBytes(Path.Combine(folder, SetupEntryNames.Content)));
+    }
+
+    [Fact]
+    public void A_tampered_entry_leaves_no_partial_file_at_the_extraction_target()
+    {
+        using var world = new SetupWorld();
+        var logo = RandomBytes.Next(4096);
+        var path = world.Write(world.Content(new SetupIncludes(true, false, false, false)), logo);
+
+        // The manifest still names logo.png, but understates its size, and is re-signed so the
+        // container itself still opens and every check still holds — only the copy inside
+        // ExtractTo notices the mismatch, after it has already written the declared number of
+        // bytes to the target file.
+        var entries = ZipSurgery.ReadAll(path);
+        var text = Encoding.UTF8.GetString(entries[ContainerManifest.FileName]);
+        var nameIndex = text.IndexOf($"\"name\":\"{SetupEntryNames.Logo}\"", StringComparison.Ordinal);
+        const string marker = "\"size\":";
+        var start = text.IndexOf(marker, nameIndex, StringComparison.Ordinal) + marker.Length;
+        var end = text.IndexOfAny([',', '}'], start);
+        var patched = string.Concat(text.AsSpan(0, start), "1", text.AsSpan(end));
+        entries[ContainerManifest.FileName] = Encoding.UTF8.GetBytes(patched);
+        entries[ContainerManifest.SignatureFileName] = world.Org.Sign(ContainerWriter.SigningInput(
+            Sha256.Hash(entries[ContainerManifest.FileName]),
+            Sha256.Hash(entries[ContainerManifest.PayloadFileName])));
+        ZipSurgery.WriteAll(path, entries);
+
+        using var inspection = world.Inspect(path);
+        var package = inspection.Require();
+        var folder = world.Folder.File("partial-extract");
+
+        Assert.Throws<CryptoException>(() => package.ExtractTo(folder));
+
+        Assert.False(File.Exists(Path.Combine(folder, SetupEntryNames.Logo)));
+    }
+
+    [Fact]
+    public void A_letter_template_entry_the_description_never_declared_is_refused()
+    {
+        using var world = new SetupWorld();
+
+        var path = world.WriteRaw(
+            world.Content(),
+            ContainerEntrySource.FromBytes(SetupEntryNames.LetterTemplate, RandomBytes.Next(32)));
+
+        using var inspection = world.Inspect(path);
+
+        Assert.Equal(ErrorCode.Tampered, inspection.Checks.Find(SetupCheckItem.LetterTemplate)?.Error);
+        Assert.False(inspection.IsAcceptable);
+    }
+
+    [Fact]
+    public void The_setup_reader_refuses_to_run_without_its_own_staging_folder()
+    {
+        using var world = new SetupWorld();
+        var path = world.Write(world.Content());
+
+        var inspectError = Assert.Throws<CryptoException>(() => SetupPackageReader.Inspect(
+            path,
+            world.Password,
+            new SetupExpectations(),
+            new FixedClock(SetupWorld.Now)));
+        Assert.Equal(ErrorCode.Corrupt, inspectError.Code);
+
+        var openError = Assert.Throws<CryptoException>(() => SetupPackageReader.Open(
+            path,
+            world.Password,
+            new SetupExpectations { StagingDirectory = "" },
+            new FixedClock(SetupWorld.Now)));
+        Assert.Equal(ErrorCode.Corrupt, openError.Code);
+    }
+
+    [Fact]
+    public void FirstRun_builds_expectations_that_carry_only_the_staging_folder()
+    {
+        var expectations = SetupExpectations.FirstRun(@"C:\staging");
+
+        Assert.Equal(@"C:\staging", expectations.StagingDirectory);
+        Assert.Null(expectations.PinnedOrgSigningPub);
+        Assert.Null(expectations.InstalledDeviceId);
+        Assert.Null(expectations.InstalledExportSeq);
+    }
+
+    [Fact]
+    public void The_setup_writer_refuses_to_run_without_its_own_staging_folder()
+    {
+        using var world = new SetupWorld();
+
+        var error = Assert.Throws<CryptoException>(() => SetupPackageWriter.Write(
+            world.Folder.File("no-staging.wakeel-setup"),
+            new SetupWriteRequest
+            {
+                Content = world.Content(),
+                PackagePassword = world.Password,
+                OrgIdentity = world.Org,
+                Time = new FixedClock(SetupWorld.Now),
+            }));
+        Assert.Equal(ErrorCode.Corrupt, error.Code);
+    }
+
+    [Fact]
+    public void The_writer_uses_the_products_full_argon2_cost_when_no_internal_test_hook_is_supplied()
+    {
+        using var world = new SetupWorld();
+        var path = world.Folder.File("full-cost" + ContainerKinds.Extension(ContainerKind.Setup));
+
+        // No Kdf is supplied: the property is internal precisely so nothing outside this
+        // project (and the test assembly that shares its InternalsVisibleTo) can weaken it, and
+        // every such caller lands on the product's own default cost.
+        var manifest = SetupPackageWriter.Write(path, new SetupWriteRequest
+        {
+            Content = world.Content(),
+            PackagePassword = world.Password,
+            OrgIdentity = world.Org,
+            StagingDirectory = world.Staging,
+            Time = new FixedClock(SetupWorld.Now),
+        });
+
+        Assert.NotNull(manifest.Kdf);
+        Assert.Equal(Argon2Params.DefaultMemoryKb, manifest.Kdf.MemoryKb);
+        Assert.Equal(Argon2Params.DefaultIterations, manifest.Kdf.Iterations);
+        Assert.Equal(Argon2Params.DefaultParallelism, manifest.Kdf.Parallelism);
+    }
+
+    [Fact]
+    public void A_root_certificate_dated_ahead_of_the_clock_is_a_future_dated_package_not_a_bad_signature()
+    {
+        using var world = new SetupWorld();
+
+        // The container itself and the description inside it are both dated now; only the root
+        // certificate's own issuance instant sits ahead of the clock, so the refusal has to come
+        // from the certificate chain's date check and nowhere else.
+        var path = world.WriteWithRootIssuedAt(world.Content(), SetupWorld.Now.AddDays(3));
+
+        using var inspection = world.Inspect(path);
+
+        Assert.Null(inspection.Package);
+        Assert.Equal(SetupCheckStatus.Ok, Status(inspection.Checks, SetupCheckItem.Signature));
+        Assert.Equal(ErrorCode.FutureDate, inspection.Checks.Find(SetupCheckItem.Package)?.Error);
+        Assert.False(inspection.IsAcceptable);
+    }
+
+    [Fact]
+    public void A_device_certificate_dated_ahead_of_the_clock_is_a_future_dated_package_not_a_bad_device()
+    {
+        using var world = new SetupWorld();
+
+        // The container, the description's exportedAt and the root certificate are all dated
+        // now; only the device certificate's own issuance instant sits ahead of the clock, so
+        // the refusal has to come from the certificate chain's date check on the device, and
+        // report the same code the root's own future date already reports.
+        var futureCertificate = DeviceCertificate.Issue(
+            world.Certificate.Body with { IssuedAt = SetupWorld.Now.AddDays(3) },
+            world.Org);
+        var content = world.Content();
+        var path = world.WriteRaw(content with { Device = content.Device with { Certificate = futureCertificate } });
+
+        using var inspection = world.Inspect(path);
+
+        Assert.Equal(SetupCheckStatus.Ok, Status(inspection.Checks, SetupCheckItem.Signature));
+        Assert.Equal(ErrorCode.FutureDate, inspection.Checks.Find(SetupCheckItem.Device)?.Error);
+        Assert.False(inspection.IsAcceptable);
+    }
+
+    [Fact]
+    public void No_entry_may_be_read_out_of_a_file_whose_checks_did_not_all_pass()
+    {
+        using var world = new SetupWorld();
+        var logo = RandomBytes.Next(48);
+        var path = world.Write(world.Content(new SetupIncludes(true, false, false, false)), logo);
+
+        // The device check fails (a file meant for another machine); the container, signature
+        // and password all held, so a SetupPackage exists, but nothing may be taken out of it.
+        using var inspection = world.Inspect(
+            path,
+            new SetupExpectations { InstalledDeviceId = "PC-2", InstalledExportSeq = 1 });
+        var package = Assert.IsType<SetupPackage>(inspection.Package);
+
+        Assert.False(inspection.IsAcceptable);
+        Assert.Throws<CryptoException>(() => package.ReadLogo());
+        Assert.Throws<CryptoException>(() => package.Read(SetupEntryNames.Content));
+        Assert.Throws<CryptoException>(() => package.ExtractTo(world.Folder.File("must-not-extract")));
+        Assert.Throws<CryptoException>(() => package.ReadTo(SetupEntryNames.Logo, new MemoryStream()));
+    }
+
+    [Fact]
+    public void The_device_seed_and_office_key_stay_out_of_reach_of_a_refused_file_while_its_description_does_not()
+    {
+        using var world = new SetupWorld();
+        var path = world.Write(world.Content());
+
+        // The device check fails (a file meant for another machine); the container, signature
+        // and password all held, so a SetupPackage exists. Content carries the secrets —
+        // DeviceSeed and OfficeKey — so it must stay gated exactly like every entry Read hands
+        // out. Description carries none of that and is what a refusal screen actually renders.
+        using var inspection = world.Inspect(
+            path,
+            new SetupExpectations { InstalledDeviceId = "PC-2", InstalledExportSeq = 1 });
+        var package = Assert.IsType<SetupPackage>(inspection.Package);
+
+        Assert.False(inspection.IsAcceptable);
+        Assert.Throws<CryptoException>(() => package.Content);
+
+        Assert.Equal(SetupWorld.OrgId, package.Description.Org.Id);
+        Assert.Equal("هيئة الاختبار", package.Description.Org.Name);
+        Assert.Equal(SetupWorld.DeviceId, package.Description.Device.Id);
+        Assert.Equal(2, package.Description.Employee.EmployeeNo);
+    }
+
+    [Fact]
+    public void A_logo_preview_is_available_even_when_the_file_is_rejected_for_another_reason()
+    {
+        using var world = new SetupWorld();
+        var logo = RandomBytes.Next(64);
+        var path = world.Write(world.Content(new SetupIncludes(true, false, false, false)), logo);
+
+        using var inspection = world.Inspect(
+            path,
+            new SetupExpectations { InstalledDeviceId = "PC-2", InstalledExportSeq = 1 });
+        var package = Assert.IsType<SetupPackage>(inspection.Package);
+
+        Assert.False(inspection.IsAcceptable);
+        Assert.Throws<CryptoException>(() => package.ReadLogo());
+        Assert.Equal(logo, package.ReadLogoPreviewFromRejectedFile());
+    }
+
+    [Fact]
+    public void A_preview_is_null_when_the_rejected_file_carries_no_logo_at_all()
+    {
+        using var world = new SetupWorld();
+        var path = world.Write(world.Content());
+
+        using var inspection = world.Inspect(
+            path,
+            new SetupExpectations { InstalledDeviceId = "PC-2", InstalledExportSeq = 1 });
+        var package = Assert.IsType<SetupPackage>(inspection.Package);
+
+        Assert.Null(package.ReadLogoPreviewFromRejectedFile());
+    }
+
+    [Fact]
+    public void A_preview_is_null_when_the_description_never_declared_a_logo_even_though_one_is_present()
+    {
+        using var world = new SetupWorld();
+
+        // A logo entry sits in the container, but includes.logo is false: the description
+        // never declared it, so the preview must not show an entry the check list has already
+        // refused as Tampered.
+        var path = world.WriteRaw(
+            world.Content(),
+            ContainerEntrySource.FromBytes(SetupEntryNames.Logo, RandomBytes.Next(32)));
+
+        using var inspection = world.Inspect(path);
+        var package = Assert.IsType<SetupPackage>(inspection.Package);
+
+        Assert.False(inspection.IsAcceptable);
+        Assert.Equal(ErrorCode.Tampered, inspection.Checks.Find(SetupCheckItem.Logo)?.Error);
+        Assert.Null(package.ReadLogoPreviewFromRejectedFile());
+    }
+
+    [Fact]
+    public void A_logo_the_manifest_declares_larger_than_the_product_ever_writes_is_refused_by_the_preview()
+    {
+        using var world = new SetupWorld();
+        var logo = RandomBytes.Next(48);
+        var path = world.Write(world.Content(new SetupIncludes(true, false, false, false)), logo);
+
+        // The manifest is edited to declare logo.png past the size the product ever writes,
+        // and re-signed so the container itself still opens; the preview must refuse it without
+        // ever decrypting it.
+        var entries = ZipSurgery.ReadAll(path);
+        var text = Encoding.UTF8.GetString(entries[ContainerManifest.FileName]);
+        var nameIndex = text.IndexOf($"\"name\":\"{SetupEntryNames.Logo}\"", StringComparison.Ordinal);
+        const string marker = "\"size\":";
+        var start = text.IndexOf(marker, nameIndex, StringComparison.Ordinal) + marker.Length;
+        var end = text.IndexOfAny([',', '}'], start);
+        var patched = string.Concat(text.AsSpan(0, start), (SetupPackage.MaxLogoSize + 1).ToString(), text.AsSpan(end));
+        entries[ContainerManifest.FileName] = Encoding.UTF8.GetBytes(patched);
+        entries[ContainerManifest.SignatureFileName] = world.Org.Sign(ContainerWriter.SigningInput(
+            Sha256.Hash(entries[ContainerManifest.FileName]),
+            Sha256.Hash(entries[ContainerManifest.PayloadFileName])));
+        ZipSurgery.WriteAll(path, entries);
+
+        using var inspection = world.Inspect(
+            path,
+            new SetupExpectations { InstalledDeviceId = "PC-2", InstalledExportSeq = 1 });
+        var package = Assert.IsType<SetupPackage>(inspection.Package);
+
+        Assert.False(inspection.IsAcceptable);
+        Assert.Throws<CryptoException>(() => package.ReadLogoPreviewFromRejectedFile());
+    }
+
+    [Fact]
+    public void An_entry_can_be_streamed_without_ever_being_buffered_as_a_single_byte_array()
+    {
+        using var world = new SetupWorld();
+        var guide = RandomBytes.Next(4096);
+        var path = world.Write(world.Content(new SetupIncludes(false, true, false, false)), guide: guide);
+
+        using var inspection = world.Inspect(path);
+        var package = inspection.Require();
+
+        using var destination = new MemoryStream();
+        package.ReadTo(SetupEntryNames.Guide, destination);
+
+        Assert.Equal(guide, destination.ToArray());
+    }
+
+    [Fact]
+    public void Small_entries_stay_cached_but_one_at_the_cache_threshold_or_larger_is_decrypted_again_each_time()
+    {
+        using var world = new SetupWorld();
+        var small = RandomBytes.Next(64);
+        var atThreshold = RandomBytes.Next(SetupPackage.MaxCachedEntrySize);
+        var large = RandomBytes.Next(SetupPackage.MaxCachedEntrySize + 1);
+        var path = world.Write(
+            world.Content(new SetupIncludes(true, true, true, false)),
+            logo: small,
+            guide: atThreshold,
+            reportTemplate: large);
+
+        using var inspection = world.Inspect(path);
+        var package = inspection.Require();
+
+        // A small entry is decrypted once and handed back from the cache every time after.
+        var firstLogo = package.ReadLogo();
+        var secondLogo = package.ReadLogo();
+        Assert.Same(firstLogo, secondLogo);
+
+        // An entry exactly at the cache threshold is never retained either: "at or above" means
+        // the boundary value itself already falls on the uncached side.
+        var firstAtThreshold = package.ReadGuide();
+        var secondAtThreshold = package.ReadGuide();
+        Assert.NotSame(firstAtThreshold, secondAtThreshold);
+        Assert.Equal(firstAtThreshold, secondAtThreshold);
+
+        // An entry above the cache threshold is never retained: each call decrypts it again, so
+        // two reads never come back as the same array, even though the bytes match.
+        var firstTemplate = package.ReadReportTemplate();
+        var secondTemplate = package.ReadReportTemplate();
+        Assert.NotSame(firstTemplate, secondTemplate);
+        Assert.Equal(firstTemplate, secondTemplate);
     }
 
     private static SetupCheckStatus Status(SetupPackage package, SetupCheckItem item) =>
@@ -710,6 +1056,9 @@ public class SetupPackageTests
 
         internal TempFolder Folder { get; }
 
+        /// <summary>The protected staging folder every setup reader and writer call now requires.</summary>
+        internal string Staging => Folder.File("staging");
+
         internal DeviceIdentity Org { get; }
 
         internal DeviceSeeds Seeds { get; }
@@ -750,6 +1099,7 @@ public class SetupPackageTests
             byte[]? logo = null,
             byte[]? guide = null,
             byte[]? reportTemplate = null,
+            byte[]? letterTemplate = null,
             DateTimeOffset? at = null,
             string? password = null,
             string name = "office-device")
@@ -763,7 +1113,9 @@ public class SetupPackageTests
                 Logo = Factory(logo),
                 Guide = Factory(guide),
                 ReportTemplate = Factory(reportTemplate),
+                LetterTemplate = Factory(letterTemplate),
                 Kdf = Kdf,
+                StagingDirectory = Staging,
                 Time = new FixedClock(at ?? Now),
             });
 
@@ -791,6 +1143,30 @@ public class SetupPackageTests
                 Signer = Org,
                 Key = ContainerKeySource.FromPassword(Password, Kdf),
                 Entries = entries,
+                StagingDirectory = Staging,
+                Time = new FixedClock(Now),
+            });
+
+            return path;
+        }
+
+        /// <summary>
+        /// Builds a setup file straight through the container writer, with the organisation
+        /// root certificate dated independently of both the container's own creation instant
+        /// and the description's <c>exportedAt</c> — the one way to reach a root certificate
+        /// whose issuance instant alone sits ahead of the clock.
+        /// </summary>
+        internal string WriteWithRootIssuedAt(SetupContent content, DateTimeOffset rootIssuedAt)
+        {
+            var path = Folder.File("root-dated" + ContainerKinds.Extension(ContainerKind.Setup));
+            ContainerWriter.Write(path, new ContainerWriteRequest
+            {
+                Kind = ContainerKind.Setup,
+                Producer = DeviceCertificate.IssueOrgRoot(content.Org.Id, Org, rootIssuedAt),
+                Signer = Org,
+                Key = ContainerKeySource.FromPassword(Password, Kdf),
+                Entries = [ContainerEntrySource.FromBytes(SetupEntryNames.Content, content.ToCanonicalBytes())],
+                StagingDirectory = Staging,
                 Time = new FixedClock(Now),
             });
 
@@ -805,15 +1181,32 @@ public class SetupPackageTests
             SetupPackageReader.Inspect(
                 path,
                 password ?? Password,
-                expectations ?? SetupExpectations.FirstRun,
+                WithStaging(expectations ?? new SetupExpectations()),
                 new FixedClock(now ?? Now));
 
         internal ErrorCode OpenError(string path, SetupExpectations expectations, string? password = null) =>
             Assert.Throws<CryptoException>(() => SetupPackageReader.Open(
                 path,
                 password ?? Password,
-                expectations,
+                WithStaging(expectations),
                 new FixedClock(Now))).Code;
+
+        /// <summary>
+        /// Every test in this suite builds its own <see cref="SetupExpectations"/> to exercise
+        /// one rule at a time; this fills in the staging folder every one of them now needs,
+        /// the same way a real host would set it once and reuse it for every other field.
+        /// </summary>
+        private SetupExpectations WithStaging(SetupExpectations expectations) =>
+            string.IsNullOrEmpty(expectations.StagingDirectory)
+                ? new SetupExpectations
+                {
+                    PinnedOrgSigningPub = expectations.PinnedOrgSigningPub,
+                    InstalledDeviceId = expectations.InstalledDeviceId,
+                    InstalledExportSeq = expectations.InstalledExportSeq,
+                    MaxFutureSkew = expectations.MaxFutureSkew,
+                    StagingDirectory = Staging,
+                }
+                : expectations;
 
         internal ErrorCode WriteError(SetupContent content) =>
             Assert.Throws<CryptoException>(() => Write(content, name: "refused")).Code;

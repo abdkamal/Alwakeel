@@ -23,13 +23,19 @@ public sealed class SetupExpectations
     public TimeSpan MaxFutureSkew { get; init; } = TimeSpan.FromDays(1);
 
     /// <summary>
-    /// Where the decrypted payload is staged while entries are read. The host points this at
-    /// the product's own protected folder; otherwise the system temporary folder is used.
+    /// Where the decrypted payload is staged while entries are read. Required: the inner zip
+    /// staged here carries <c>setup.json</c> in the clear, and that file holds the device seed
+    /// and the office key, so the host must point this at its own protected folder rather than
+    /// let the system temporary folder be used by default.
     /// </summary>
     public string? StagingDirectory { get; init; }
 
-    /// <summary>A machine that has never been activated: nothing is pinned yet.</summary>
-    public static SetupExpectations FirstRun { get; } = new();
+    /// <summary>
+    /// A machine that has never been activated: nothing is pinned yet. The caller must still
+    /// name its own protected staging folder, exactly as it would for any other machine —
+    /// see <see cref="StagingDirectory"/>.
+    /// </summary>
+    public static SetupExpectations FirstRun(string stagingDirectory) => new() { StagingDirectory = stagingDirectory };
 }
 
 /// <summary>
@@ -40,6 +46,7 @@ public sealed class SetupPackage : IDisposable
 {
     private readonly ContainerReader _reader;
     private readonly ContainerKeySource _key;
+    private readonly SetupContent _content;
     private readonly Dictionary<string, byte[]> _read = new(StringComparer.Ordinal);
     private bool _disposed;
 
@@ -47,12 +54,33 @@ public sealed class SetupPackage : IDisposable
     {
         _reader = reader;
         _key = key;
-        Content = content;
+        _content = content;
+        Description = SetupDescription.From(content);
         Checks = checks;
     }
 
-    /// <summary>Everything <c>setup.json</c> said, already parsed.</summary>
-    public SetupContent Content { get; }
+    /// <summary>
+    /// The parts of <c>setup.json</c> that are safe to show before the file has passed every
+    /// check. Available even on a file a later item refuses, so a first run screen can still
+    /// say whose file this is while it explains the refusal.
+    /// </summary>
+    public SetupDescription Description { get; }
+
+    /// <summary>
+    /// Everything <c>setup.json</c> said, already parsed — including the device seed and the
+    /// office key. Gated behind <see cref="Checks"/> exactly like <see cref="Read"/>: those two
+    /// fields are the decrypted secrets of the payload, and a refused file's secrets must never
+    /// be reachable just because they were already parsed for the check list. Use
+    /// <see cref="Description"/> for everything a screen may show regardless of verdict.
+    /// </summary>
+    public SetupContent Content
+    {
+        get
+        {
+            Checks.EnsureAcceptable();
+            return _content;
+        }
+    }
 
     /// <summary>The verdict of every item the first run screen lists.</summary>
     public SetupCheckResult Checks { get; }
@@ -74,23 +102,70 @@ public sealed class SetupPackage : IDisposable
         _reader.Manifest.Entries.Any(entry => string.Equals(entry.Name, entryName, StringComparison.Ordinal));
 
     /// <summary>
+    /// Below this, a decrypted entry stays cached in memory for the life of the package, so a
+    /// second read of the same entry does not repeat the deliberately expensive Argon2id work
+    /// on the package password. At or above it — the guide and the two templates can run to
+    /// several megabytes — the entry is decrypted again on every call instead of staying
+    /// resident, because a file that size sitting in managed memory until <see cref="Dispose"/>
+    /// is the pressure point a first run screen that opens the guide, the logo and a template
+    /// in one session would otherwise hit. A caller that wants such an entry without ever
+    /// holding the whole thing in memory should use <see cref="ReadTo"/> instead.
+    /// </summary>
+    public const int MaxCachedEntrySize = 1024 * 1024;
+
+    /// <summary>
     /// Reads one entry, checking its recorded size and hash. Nothing is decrypted until it is
     /// asked for — the first run screen shows its verdicts long before anyone wants the guide —
-    /// and each entry is decrypted once, because doing it again would repeat the deliberately
-    /// expensive Argon2id work on the package password.
+    /// and the file must have passed every check before any of its entries can be taken out of
+    /// it: a screen that shows the detail list for a file this installation has just refused
+    /// must not go on to decrypt <c>setup.json</c> out of it. <see cref="ReadLogoPreviewFromRejectedFile"/>
+    /// is the one deliberate exception.
     /// </summary>
     public byte[] Read(string entryName)
     {
         ArgumentException.ThrowIfNullOrEmpty(entryName);
         ObjectDisposedException.ThrowIf(_disposed, this);
+        Checks.EnsureAcceptable();
 
-        if (!_read.TryGetValue(entryName, out var content))
+        if (_read.TryGetValue(entryName, out var cached))
         {
-            content = _reader.ReadEntry(entryName, _key);
+            return cached;
+        }
+
+        var content = DecryptEntry(entryName);
+        if (!ExceedsCacheThreshold(entryName))
+        {
             _read[entryName] = content;
         }
 
         return content;
+    }
+
+    /// <summary>
+    /// Streams one entry straight into <paramref name="destination"/>, decrypting it without
+    /// ever holding the whole thing in memory at once, and without adding it to the cache
+    /// <see cref="Read"/> keeps. Prefer this for the guide and the two templates, which can run
+    /// to several megabytes; subject to the same acceptance gate as <see cref="Read"/>. On a
+    /// <see cref="CryptoException"/> the destination has already received unverified bytes —
+    /// the size or hash check that failed only runs once the copy is done — so the caller must
+    /// discard whatever it wrote rather than trust any part of it.
+    /// </summary>
+    public void ReadTo(string entryName, Stream destination)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(entryName);
+        ArgumentNullException.ThrowIfNull(destination);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Checks.EnsureAcceptable();
+
+        _reader.ReadEntryTo(entryName, _key, destination);
+    }
+
+    private byte[] DecryptEntry(string entryName) => _reader.ReadEntry(entryName, _key);
+
+    private bool ExceedsCacheThreshold(string entryName)
+    {
+        var entry = _reader.Manifest.Entries.FirstOrDefault(e => string.Equals(e.Name, entryName, StringComparison.Ordinal));
+        return entry is not null && entry.Size >= MaxCachedEntrySize;
     }
 
     /// <summary>Reads one optional entry, or returns false when the file does not carry it.</summary>
@@ -116,14 +191,69 @@ public sealed class SetupPackage : IDisposable
     public byte[]? ReadReportTemplate() =>
         TryRead(SetupEntryNames.ReportTemplate, out var bytes) ? bytes : null;
 
+    /// <summary>The official correspondence template, when the file carries one.</summary>
+    public byte[]? ReadLetterTemplate() =>
+        TryRead(SetupEntryNames.LetterTemplate, out var bytes) ? bytes : null;
+
+    /// <summary>
+    /// The largest logo a setup file may declare (A04 caps the uploaded logo at 2 MB). Bounds
+    /// <see cref="ReadLogoPreviewFromRejectedFile"/>, which — unlike every other entry point —
+    /// decrypts an entry before the file's checks have all passed, so it cannot rely on the
+    /// checker having already judged anything about the size.
+    /// </summary>
+    public const int MaxLogoSize = 2 * 1024 * 1024;
+
+    /// <summary>
+    /// Previews the organisation logo from a file whose checks did not all pass. W03 shows the
+    /// organisation's name and logo next to the check list so a person can tell whose file this
+    /// is even when a later item — another device, an older export, a revoked device — is what
+    /// gets refused; by the time a <see cref="SetupPackage"/> exists at all, the signature and
+    /// the package password have already held, so the logo is the one entry this format allows
+    /// out of a file that will otherwise be refused. Nothing else may be read this way: unlike
+    /// every other entry a setup file can hold, the logo carries no secret. Returns null when
+    /// the file's own description never declared a logo (<see cref="SetupContent.Includes"/>),
+    /// even if an entry named <c>logo.png</c> happens to be present, and refuses an entry larger
+    /// than <see cref="MaxLogoSize"/> without decrypting it, the same threat model the manifest
+    /// bound and the Argon2 ceiling exist for.
+    /// </summary>
+    public byte[]? ReadLogoPreviewFromRejectedFile()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!_content.Includes.Logo)
+        {
+            return null;
+        }
+
+        var entry = _reader.Manifest.Entries.FirstOrDefault(
+            e => string.Equals(e.Name, SetupEntryNames.Logo, StringComparison.Ordinal));
+        if (entry is null)
+        {
+            return null;
+        }
+
+        if (entry.Size > MaxLogoSize)
+        {
+            throw new CryptoException(ErrorCode.Corrupt, "The logo is larger than the product ever writes.");
+        }
+
+        return DecryptEntry(SetupEntryNames.Logo);
+    }
+
     /// <summary>
     /// Writes every entry of the file into a folder, hashes checked on the way. It writes
     /// <c>setup.json</c> too, and that carries the device seeds and the office key in the
-    /// clear, so the folder must be one only this installation can read.
+    /// clear, so the folder must be one only this installation can read. Subject to the same
+    /// acceptance gate as <see cref="Read"/>. When one entry fails its size or hash check, the
+    /// file already written for it is deleted before the exception propagates, so a refused
+    /// container never leaves a half written file behind; entries fully written before the
+    /// failing one are left in place, exactly as <see cref="ContainerReader.ExtractTo"/> leaves
+    /// them.
     /// </summary>
     public void ExtractTo(string directory)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        Checks.EnsureAcceptable();
         _reader.ExtractTo(directory, _key);
     }
 
@@ -340,6 +470,11 @@ public static class SetupPackageReader
         {
             throw new CryptoException(ErrorCode.Corrupt, "The accepted clock difference is outside the usable range.");
         }
+
+        if (string.IsNullOrEmpty(expectations.StagingDirectory))
+        {
+            throw new CryptoException(ErrorCode.Corrupt, "The setup reader must be given its own protected staging folder.");
+        }
     }
 
     private static SetupInspection Examine(
@@ -372,6 +507,16 @@ public static class SetupPackageReader
             {
                 checks.Ok(SetupCheckItem.Signature);
                 checks.Failed(SetupCheckItem.Organisation, ErrorCode.Tampered);
+            }
+            else if (chainError == ErrorCode.Expired)
+            {
+                // The chain's only source of "expired" is the root certificate's own issuance
+                // instant sitting too far ahead of this clock, which is the same fact the
+                // container-open path already reports as a future dated package: one code for
+                // one cause, so the screen never says the signature is wrong when the real
+                // fault is a date.
+                checks.Ok(SetupCheckItem.Signature);
+                checks.Failed(SetupCheckItem.Package, ErrorCode.FutureDate);
             }
             else
             {

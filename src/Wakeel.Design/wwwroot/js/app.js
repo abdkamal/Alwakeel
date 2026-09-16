@@ -112,10 +112,12 @@ window.wakeelUi = {
     return el && typeof el.selectionStart === 'number' ? el.selectionStart : 0;
   },
 
-  /// Directly assigns an <input>'s value and caret position from Blazor. Needed when the reformatted
-  /// masked-date string equals the value already bound: Blazor's renderer then sees no change to the
-  /// `value` attribute and never rewrites the DOM, so a keystroke the mask rejected (or a stale
-  /// caret from editing mid-string) would otherwise stick on screen.
+  /// Directly assigns an <input>'s value and caret position from Blazor. Called from WInput's
+  /// OnAfterRenderAsync on every masked-date keystroke, after Blazor has finished re-rendering:
+  /// writing the same string Blazor already rendered is a no-op, but it is what corrects the DOM for
+  /// an unbound field (whose Value parameter never changes, so Blazor's own diff never touches the
+  /// `value` attribute), a rejected character, or the caret after a mid-string digit insertion
+  /// (where Blazor's rewrite, or the browser's own reset, would otherwise bounce it to the end).
   setInputValue(el, value, caret) {
     if (!el) {
       return;

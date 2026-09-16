@@ -36,6 +36,9 @@ public enum SetupCheckItem
     /// <summary>The monthly report template.</summary>
     ReportTemplate,
 
+    /// <summary>The official correspondence template (AGREEMENT item 57).</summary>
+    LetterTemplate,
+
     /// <summary>The signed revocation list the file distributes.</summary>
     Revocation,
 }

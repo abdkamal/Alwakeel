@@ -54,7 +54,7 @@
             <WCard>
                 <WSectionHeader Title="@Ar.AttentionCenter.TodayActionTitle" Count="Ar.AttentionCenter.TodayActionCount" />
                 <WTabs>
-                    <WTabItem Label="@Ar.AttentionCenter.TabAll" Count="9" Active="@(_tab == 0)" OnClick="@(() => _tab = 0)" />
+                    <WTabItem Label="@Ar.AttentionCenter.TabAll" Count="Ar.AttentionCenter.TodayActionCount" Active="@(_tab == 0)" OnClick="@(() => _tab = 0)" />
                     <WTabItem Label="@Ar.AttentionCenter.TabCorrespondence" Count="4" Active="@(_tab == 1)" OnClick="@(() => _tab = 1)" />
                     <WTabItem Label="@Ar.AttentionCenter.TabTasks" Count="3" Active="@(_tab == 2)" OnClick="@(() => _tab = 2)" />
                     <WTabItem Label="@Ar.AttentionCenter.TabCommitments" Count="2" Active="@(_tab == 3)" OnClick="@(() => _tab = 3)" />

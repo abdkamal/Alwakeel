@@ -1,0 +1,356 @@
+@page "/first-run/account"
+@namespace Wakeel.UI.Pages.FirstRun
+@layout Wakeel.UI.Layout.BareLayout
+@inject ActivationService Activation
+@inject SetupInspectionService Inspection
+@inject LoginService Login
+@inject IPrintService Printer
+@inject NavigationManager Nav
+
+<PageTitle>@Ar.FirstRun.Account.StepPassword</PageTitle>
+
+<div class="w04">
+    <header class="w04-bar w-no-print">
+        <div class="w04-bar-org">
+            <span class="w04-bar-logo" aria-hidden="true">
+                @if (Sheet?.LogoDataUrl is { Length: > 0 } logo)
+                {
+                    <img src="@logo" alt="" />
+                }
+                else
+                {
+                    <WIcon Name="landmark" Size="20" />
+                }
+            </span>
+            <div>
+                <p class="w04-bar-name">@(Summary?.OrgName)</p>
+                <bdi class="w04-muted">@($"{Summary?.OfficeName} · {Ar.FirstRun.Account.TopBarSub}")</bdi>
+            </div>
+        </div>
+        <ol class="w04-steps">
+            <li class="w04-chip w04-chip--done">
+                <WIcon Name="check-circle" Size="15" />
+                <span>@Ar.FirstRun.Account.StepCheck</span>
+            </li>
+            <li class="w04-chip w04-chip--active">
+                <span class="w04-chip-no"><bdi>2</bdi></span>
+                <span>@Ar.FirstRun.Account.StepPassword</span>
+            </li>
+            <li class="w04-chip">
+                <span class="w04-chip-no"><bdi>3</bdi></span>
+                <span>@Ar.FirstRun.Account.StepStart</span>
+            </li>
+        </ol>
+    </header>
+
+    <div class="w04-body">
+        <div class="w-no-print">
+            <h1 class="w-text-title">@Ar.FirstRun.Account.Title(FirstName)</h1>
+            <p class="w04-muted w04-sub">@Ar.FirstRun.Account.Sub</p>
+        </div>
+
+        <div class="w04-columns">
+            @* First child, so it is the column on the right: the password comes before the sheet. *@
+            <section class="w04-password w-no-print">
+                <WCard Title="@Ar.FirstRun.Account.PasswordCardTitle">
+                    <p class="w04-muted">@Ar.FirstRun.Account.PasswordCardDesc</p>
+
+                    <div class="w04-identity">
+                        <span class="w04-identity-mark" aria-hidden="true"><WIcon Name="info" Size="16" /></span>
+                        <div>
+                            <p class="w04-identity-name">@(Summary?.EmployeeName)</p>
+                            <bdi class="w04-muted">@IdentityLine</bdi>
+                        </div>
+                    </div>
+
+                    <WInput Type="WInputType.Password" Required="true"
+                            Label="@Ar.FirstRun.Account.PasswordLabel"
+                            Error="@_passwordError"
+                            Value="@_password" ValueChanged="OnPasswordChanged" />
+
+                    <div class="w04-strength">
+                        <div class="w04-strength-head">
+                            <span class="w04-muted">@Ar.FirstRun.Account.StrengthLabel</span>
+                            <span class="w04-strength-label">@PasswordStrength.Describe(_password)</span>
+                        </div>
+                        <div class="w04-meter" role="img" aria-label="@PasswordStrength.Describe(_password)">
+                            @for (var index = 0; index < PasswordStrength.Segments; index++)
+                            {
+                                <span class="w04-meter-bar @(index < FilledSegments ? "w04-meter-bar--on" : null)"></span>
+                            }
+                        </div>
+                        <ul class="w04-rules">
+                            <li class="@RuleClass(Rules.Length)">
+                                <WIcon Name="check-circle" Size="15" /><span>@Ar.FirstRun.Account.RuleLength</span>
+                            </li>
+                            <li class="@RuleClass(Rules.Case)">
+                                <WIcon Name="check-circle" Size="15" /><span>@Ar.FirstRun.Account.RuleCase</span>
+                            </li>
+                            <li class="@RuleClass(Rules.Digit)">
+                                <WIcon Name="check-circle" Size="15" /><span>@Ar.FirstRun.Account.RuleDigit</span>
+                            </li>
+                            <li class="@RuleClass(Rules.Symbol)">
+                                <WIcon Name="check-circle" Size="15" /><span>@Ar.FirstRun.Account.RuleSymbol</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <WInput Type="WInputType.Password" Required="true"
+                            Label="@Ar.FirstRun.Account.ConfirmLabel"
+                            Hint="@ConfirmHint" Error="@ConfirmError"
+                            Value="@_confirm" ValueChanged="OnConfirmChanged" />
+                </WCard>
+            </section>
+
+            <section class="w04-recovery">
+                <WCard Title="@Ar.FirstRun.Account.RecoveryCardTitle">
+                    <p class="w04-muted w-no-print">@Ar.FirstRun.Account.RecoveryCardDesc</p>
+
+                    <div class="w-no-print">
+                        <WCard Variant="WSemanticVariant.Warning" Icon="alert-triangle"
+                               Title="@Ar.FirstRun.Account.OnceWarningTitle"
+                               Desc="@Ar.FirstRun.Account.OnceWarningDesc" />
+                    </div>
+
+                    @if (Sheet is { } sheet)
+                    {
+                        <article class="w04-sheet" id="recovery-sheet">
+                            <header class="w04-sheet-head">
+                                <div>
+                                    <h3 class="w04-sheet-title">
+                                        <WIcon Name="key-round" Size="16" />
+                                        <span>@Ar.FirstRun.Account.SheetTitle</span>
+                                    </h3>
+                                    <bdi class="w04-muted">@($"{sheet.OrgName} · {sheet.OfficeName}")</bdi>
+                                </div>
+                                <bdi class="w04-muted">
+                                    @Ar.FirstRun.Account.SheetIssued(Formats.Date(sheet.IssuedAt), Formats.Time(sheet.IssuedAt))
+                                </bdi>
+                            </header>
+
+                            <div class="w04-sheet-code">
+                                <img class="w04-sheet-qr" src="@sheet.QrDataUrl" alt="@Ar.FirstRun.Account.SheetQrAlt" />
+                                <div class="w04-sheet-code-text">
+                                    <span class="w04-muted">@Ar.FirstRun.Account.SheetCodeLabel</span>
+                                    <bdi class="w04-code">@sheet.CodeDisplay</bdi>
+                                    <bdi class="w04-muted">@Ar.FirstRun.Account.SheetOwner(sheet.EmployeeName, sheet.DeviceNo)</bdi>
+                                    <span class="w04-muted">@Ar.FirstRun.Account.SheetValidity</span>
+                                </div>
+                            </div>
+
+                            <p class="w04-sheet-warning">@Ar.FirstRun.Account.SheetWarning</p>
+                        </article>
+                    }
+
+                    <div class="w04-sheet-actions w-no-print">
+                        <WButton Variant="WButtonVariant.Secondary" Icon="printer"
+                                 Label="@Ar.FirstRun.Account.Print" Disabled="@(!Printer.IsAvailable)"
+                                 OnClick="PrintAsync" />
+                        <WButton Variant="WButtonVariant.Secondary" Icon="file-down"
+                                 Label="@Ar.FirstRun.Account.SavePdf" Disabled="@(!Printer.IsAvailable)"
+                                 OnClick="SaveAsync" />
+                        <span class="w04-spacer"></span>
+                        <span class="w04-muted">@PrintStatus</span>
+                        <Kbd Text="@Ar.FirstRun.Account.PrintShortcut" />
+                    </div>
+
+                    <div class="w-no-print">
+                        <WCheckbox Value="@_confirmedPrinted" ValueChanged="OnConfirmedChanged"
+                                   Label="@Ar.FirstRun.Account.Confirmed" />
+                    </div>
+                </WCard>
+            </section>
+        </div>
+
+        @if (_error is { Length: > 0 })
+        {
+            <div class="w-no-print">
+                <WCard Variant="WSemanticVariant.Danger" Icon="alert-circle" Desc="@_error" />
+            </div>
+        }
+    </div>
+
+    <footer class="w04-footer w-no-print">
+        <div class="w04-footer-main">
+            <WButton Icon="arrow-left" IconPosition="WIconPosition.Leading"
+                     Label="@Ar.FirstRun.Account.Start" Loading="_busy" OnClick="StartAsync" />
+            <span class="w04-muted">@Ar.FirstRun.Account.StartNote</span>
+        </div>
+        <WButton Variant="WButtonVariant.Text" Icon="arrow-right"
+                 Label="@Ar.FirstRun.Account.Back" OnClick="Back" />
+    </footer>
+</div>
+
+@code {
+    private string? _password;
+    private string? _confirm;
+    private string? _passwordError;
+    private string? _error;
+    private bool _confirmedPrinted;
+    private bool _busy;
+    private string _printStatus = Ar.FirstRun.Account.NotPrintedYet;
+
+    private RecoverySheet? Sheet { get; set; }
+
+    private SetupSummary? Summary => Inspection.Summary;
+
+    private PasswordRules Rules => PasswordStrength.Rules(_password);
+
+    private int FilledSegments => PasswordStrength.FilledSegments(_password);
+
+    private string FirstName
+    {
+        get
+        {
+            var name = Summary?.EmployeeName ?? string.Empty;
+            var space = name.IndexOf(' ', StringComparison.Ordinal);
+            return space > 0 ? name[..space] : name;
+        }
+    }
+
+    private string IdentityLine => Summary is null
+        ? string.Empty
+        : Ar.FirstRun.Account.IdentityLine(Summary.JobTitle, Summary.EmployeeNo);
+
+    private bool ConfirmTouched => !string.IsNullOrEmpty(_confirm);
+
+    private bool ConfirmMatches => string.Equals(_password, _confirm, StringComparison.Ordinal);
+
+    private string? ConfirmHint => ConfirmTouched && ConfirmMatches ? Ar.FirstRun.Account.ConfirmMatches : null;
+
+    private string? ConfirmError => ConfirmTouched && !ConfirmMatches ? Ar.FirstRun.Account.ConfirmMismatch : null;
+
+    private string PrintStatus => _printStatus;
+
+    protected override void OnInitialized()
+    {
+        // A machine that already carries an installation never gets as far as producing a recovery
+        // code: the keys standing on it are the only ones that open the account that is there.
+        if (Login.IsActivated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        if (!Activation.CanActivate)
+        {
+            Nav.NavigateTo("/first-run", replace: true);
+            return;
+        }
+
+        Sheet = Activation.Begin();
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        _password = value;
+        _passwordError = null;
+        _error = null;
+    }
+
+    private void OnConfirmChanged(string? value) => _confirm = value;
+
+    private void OnConfirmedChanged(bool value)
+    {
+        _confirmedPrinted = value;
+        _error = null;
+    }
+
+    private async Task PrintAsync()
+    {
+        var outcome = await Printer.PrintAsync();
+        _printStatus = outcome switch
+        {
+            PrintOutcome.Saved => Ar.FirstRun.Account.Printed,
+            PrintOutcome.Unavailable => Ar.FirstRun.Account.NotPrintedYet,
+            _ => Ar.FirstRun.Account.Printed,
+        };
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await Printer.SaveAsPdfAsync(Ar.FirstRun.Account.SheetFileName);
+        _printStatus = result.Outcome switch
+        {
+            PrintOutcome.Saved => Ar.FirstRun.Account.PdfSaved,
+            PrintOutcome.Failed => Ar.FirstRun.Account.PdfFailed,
+            _ => _printStatus,
+        };
+    }
+
+    private async Task StartAsync()
+    {
+        _error = null;
+        _passwordError = null;
+
+        if (!PasswordStrength.IsAcceptable(_password))
+        {
+            _passwordError = Ar.FirstRun.Account.RuleLength;
+            return;
+        }
+
+        if (!ConfirmMatches)
+        {
+            _error = Ar.FirstRun.Account.ConfirmMismatch;
+            return;
+        }
+
+        if (!_confirmedPrinted)
+        {
+            _error = Ar.FirstRun.Account.ConfirmRequired;
+            return;
+        }
+
+        _busy = true;
+        ActivationResult result;
+        try
+        {
+            var password = _password!;
+
+            // Argon2id over the new password, three times over, plus creating the database: far too
+            // much to do on the thread that is drawing the window.
+            result = await Task.Run(() => Activation.ActivateAsync(password));
+        }
+        catch (IOException exception) when (DiskSpace.IsFull(exception))
+        {
+            _error = Ar.FirstRun.Setup.DiskFull;
+            return;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _error = Ar.FirstRun.Account.ActivationFailed;
+            return;
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        // Both typed secrets leave the screen's memory either way, the moment they are no longer
+        // needed. The sheet does not: on the failure path the same recovery code is still the one a
+        // retry would activate with, and a retry must never ask for a code the person can no longer
+        // read or print — «تُعرض مرة واحدة فقط» is a promise to show it, not to take it away early.
+        _password = null;
+        _confirm = null;
+
+        if (!result.Succeeded)
+        {
+            _error = result.Message ?? Ar.FirstRun.Account.ActivationFailed;
+            Sheet = Activation.Sheet;
+            return;
+        }
+
+        Sheet = null;
+
+        Nav.NavigateTo("/w08");
+    }
+
+    private void Back()
+    {
+        Activation.Abandon();
+        Sheet = null;
+        Nav.NavigateTo("/first-run/check");
+    }
+
+    private static string RuleClass(bool satisfied) => satisfied ? "w04-rule w04-rule--on" : "w04-rule";
+}

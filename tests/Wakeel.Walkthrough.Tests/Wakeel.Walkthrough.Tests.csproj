@@ -20,6 +20,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Wakeel.Core\Wakeel.Core.csproj" />
+    <!-- The walkthrough drives the first run end to end, so it needs the account services that
+         live beside the screens, and the setup writer that stands in for the administrator. -->
+    <ProjectReference Include="..\..\src\Wakeel.UI\Wakeel.UI.csproj" />
+    <ProjectReference Include="..\..\src\Wakeel.Crypto\Wakeel.Crypto.csproj" />
     <ProjectReference Include="..\..\src\Wakeel.Sync\Wakeel.Sync.csproj" />
     <ProjectReference Include="..\..\src\Wakeel.Reports\Wakeel.Reports.csproj" />
     <ProjectReference Include="..\..\src\Wakeel.Search\Wakeel.Search.csproj" />

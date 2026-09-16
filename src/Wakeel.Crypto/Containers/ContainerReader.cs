@@ -46,6 +46,14 @@ public sealed class ContainerOpenOptions
 /// </summary>
 public sealed class ContainerReader : IDisposable
 {
+    /// <summary>
+    /// The most <c>manifest.json</c> or <c>signature.bin</c> this reader will ever read: both
+    /// are tiny by construction and neither has been checked against anything yet when they are
+    /// read, so a crafted entry that inflates past this bound is refused outright rather than
+    /// exhausting memory while the file is merely being found out whether it is worth trusting.
+    /// </summary>
+    private const long MaxMetadataEntrySize = 1024 * 1024;
+
     private readonly ZipArchive _archive;
     private readonly Stream? _ownedStream;
     private readonly ContainerOpenOptions _options;
@@ -103,8 +111,8 @@ public sealed class ContainerReader : IDisposable
             var payloadEntry = Require(archive, ContainerManifest.PayloadFileName);
             var signatureEntry = Require(archive, ContainerManifest.SignatureFileName);
 
-            var manifestBytes = ReadAll(manifestEntry);
-            var signature = ReadAll(signatureEntry);
+            var manifestBytes = ReadAll(manifestEntry, MaxMetadataEntrySize);
+            var signature = ReadAll(signatureEntry, MaxMetadataEntrySize);
             var manifest = CanonicalJson.Deserialize<ContainerManifest>(manifestBytes);
 
             // Nothing in the manifest has been checked yet, so its shape is established first:
@@ -219,7 +227,43 @@ public sealed class ContainerReader : IDisposable
         return ReadOne(inner, expected);
     }
 
-    /// <summary>Decrypts every entry straight to disk, without holding the payload in memory.</summary>
+    /// <summary>
+    /// Decrypts one entry straight into <paramref name="destination"/>, checking its recorded
+    /// size and hash on the way, without ever holding the whole entry in memory at once. This
+    /// is how a caller streams a single multi-megabyte item out of a container that also
+    /// carries much smaller ones, instead of paying for a byte array the size of the entry.
+    /// On a <see cref="CryptoException"/> the destination has already received unverified
+    /// bytes — the check only runs once the copy is done — so the caller must discard whatever
+    /// it wrote rather than trust any part of it.
+    /// </summary>
+    public void ReadEntryTo(string name, ContainerKeySource key, Stream destination)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(destination);
+        ThrowIfDisposed();
+
+        var expected = Manifest.Entries.FirstOrDefault(e => string.Equals(e.Name, name, StringComparison.Ordinal))
+            ?? throw new CryptoException(ErrorCode.Corrupt, "The file does not contain that item.");
+
+        using var plain = DecryptPayload(key);
+        using var inner = OpenInner(plain);
+        var entry = inner.GetEntry(expected.Name)
+            ?? throw new CryptoException(ErrorCode.Tampered, "The file is missing one of the contents it lists.");
+
+        using var source = entry.Open();
+        using var hashing = new HashingStream(destination);
+        CopyWithLimit(source, hashing, expected.Size);
+        hashing.Flush();
+        CheckEntry(expected, hashing.BytesWritten, hashing.Hash);
+    }
+
+    /// <summary>
+    /// Decrypts every entry straight to disk, without holding the payload in memory. When one
+    /// entry fails its size or hash check, the file just written for it is deleted before the
+    /// exception propagates, so a refused container never leaves a half written file behind;
+    /// entries fully written before the failing one are left in place.
+    /// </summary>
     public void ExtractTo(string directory, ContainerKeySource key)
     {
         ArgumentException.ThrowIfNullOrEmpty(directory);
@@ -254,13 +298,23 @@ public sealed class ContainerReader : IDisposable
                 Directory.CreateDirectory(parent);
             }
 
-            using (var source = entry.Open())
-            using (var output = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
-            using (var hashing = new HashingStream(output))
+            try
             {
-                CopyWithLimit(source, hashing, expected.Size);
-                hashing.Flush();
-                CheckEntry(expected, hashing.BytesWritten, hashing.Hash);
+                using (var source = entry.Open())
+                using (var output = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var hashing = new HashingStream(output))
+                {
+                    CopyWithLimit(source, hashing, expected.Size);
+                    hashing.Flush();
+                    CheckEntry(expected, hashing.BytesWritten, hashing.Hash);
+                }
+            }
+            catch
+            {
+                // The file handle above is already closed by the time this runs — the using
+                // block unwound before the catch — so the delete below never races the write.
+                TryDelete(target);
+                throw;
             }
         }
     }
@@ -413,11 +467,50 @@ public sealed class ContainerReader : IDisposable
         archive.GetEntry(name)
         ?? throw new CryptoException(ErrorCode.Corrupt, "The file is missing one of its required parts.");
 
-    private static byte[] ReadAll(ZipArchiveEntry entry)
+    /// <summary>
+    /// Removes a partially written extraction target on a best effort basis. The file carries
+    /// no key material — only content that already failed its own check — so a delete that
+    /// itself cannot complete leaves nothing worse than an orphaned file, and must not mask the
+    /// real exception that is already unwinding through the caller.
+    /// </summary>
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Reads a whole entry, refusing as soon as more than <paramref name="limit"/> bytes have
+    /// come out of it. Declared size alone is not a defence here — a hostile entry can under
+    /// state it in the zip's own metadata just as easily as it can over state one the reader
+    /// already trusts — so the bound is enforced while the bytes are still being decompressed.
+    /// </summary>
+    private static byte[] ReadAll(ZipArchiveEntry entry, long limit)
     {
         using var stream = entry.Open();
         using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
+        var chunk = new byte[81920];
+        long total = 0;
+        int read;
+        while ((read = stream.Read(chunk, 0, chunk.Length)) > 0)
+        {
+            total += read;
+            if (total > limit)
+            {
+                throw new CryptoException(ErrorCode.Corrupt, "One of the file's required parts is larger than the product ever writes.");
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
         return buffer.ToArray();
     }
 

@@ -215,6 +215,23 @@ public sealed class OfficialNumberService(WakeelDb db, IClockCheckService clockC
                 db.OfficialNumbers.Add(row);
             }
 
+            // Re-check the watermark against THIS row's own LastDate on every iteration, including
+            // after a reload: the pre-loop MaxAsync check above only proves the date was not
+            // backdated at the instant it ran. A retry only ever happens because another context
+            // raced THIS SAME (kind, year) row (see IsSequenceRaceException — a race on a
+            // different row never lands here at all, since it would not fail this row's
+            // SaveChanges), so the ReloadAsync in the catch below always refreshes row.LastDate to
+            // whatever that other context just committed before control returns here. Without this
+            // recheck, a losing context could reload a row another context just advanced to a
+            // later date and still unconditionally overwrite it with its own earlier `today`,
+            // regressing official_numbers.last_date and issuing a number dated before one already
+            // issued of the same kind — silently bypassing the very invariant the pre-loop check
+            // exists to enforce (review finding, B0.5/verify2-core-polish.json).
+            if (today < row.LastDate.Date)
+            {
+                throw new InvalidOperationException("official numbering refused: date is earlier than the last issued number");
+            }
+
             if (row.LastSeq >= MaxSequence)
             {
                 throw new InvalidOperationException("official numbering refused: the yearly sequence is exhausted");

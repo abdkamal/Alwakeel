@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Components.WebView.Wpf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Wakeel.Core.Services;
+using Wakeel.Crypto;
 using Wakeel.Design;
 using Wakeel.Design.Services;
 using Wakeel.Desktop.Services;
 using Wakeel.UI.Services;
+using Wakeel.UI.Services.Account;
 
 namespace Wakeel.Desktop;
 
@@ -24,9 +27,16 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Read before anything opens a file: --data-folder moves the whole installation, the browser
+        // profile and the log folder somewhere else, and the log folder is chosen two lines below.
+        WakeelPaths.Configure(e.Args);
+
         ConfigureRemoteDebugging(e.Args);
         ConfigureLogging();
         Log.Information("Wakeel desktop host starting up");
+
+        var installation = WakeelPaths.CreateInstallationPaths();
+        MainWindow? window = null;
 
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((_, services) =>
@@ -40,12 +50,25 @@ public partial class App : Application
                 services.AddSingleton<IUiStateStore>(_ => new FileUiStateStore(WakeelPaths.UiStateFilePath));
                 services.AddWakeelDesign();
                 services.AddScoped<PageHeaderState>();
+
+                services.AddWakeelCore(options => options.Paths = installation);
+
+                // The two things only Windows can do, registered before AddWakeelAccount so its
+                // TryAdd leaves them alone: sealing a key to this machine and this account, and
+                // turning what is on screen into paper or a PDF.
+                services.AddSingleton<IPlatformProtector, DpapiPlatformProtector>();
+                services.AddSingleton<IImagePixels, WindowsImagePixels>();
+                services.AddSingleton<IPrintService>(_ => new WebView2PrintService(
+                    () => window?.Engine,
+                    Current.Dispatcher));
+
+                services.AddWakeelAccount();
             })
             .Build();
 
-        var mainWindow = new MainWindow(_host.Services);
-        MainWindow = mainWindow;
-        mainWindow.Show();
+        window = new MainWindow(_host.Services);
+        MainWindow = window;
+        window.Show();
     }
 
     /// <inheritdoc />

@@ -1,0 +1,213 @@
+@page "/first-run/check"
+@namespace Wakeel.UI.Pages.FirstRun
+@layout Wakeel.UI.Layout.BareLayout
+@using Wakeel.Crypto
+@inject SetupInspectionService Inspection
+@inject ActivationService Activation
+@inject LoginService Login
+@inject NavigationManager Nav
+
+<PageTitle>@Ar.FirstRun.Check.Title</PageTitle>
+
+<div class="w03">
+    <header class="w03-head">
+        <span class="w03-mark" aria-hidden="true"><WIcon Name="shield-check" Size="26" /></span>
+        <h1 class="w-text-title">@Ar.FirstRun.Check.Title</h1>
+        <p class="w03-muted">@Ar.FirstRun.Check.Sub</p>
+    </header>
+
+    <div class="w03-columns">
+        @* First child, so it sits on the right: the check list is what this screen is about. *@
+        <section class="w03-results">
+            <WCard>
+                <div class="w03-results-head">
+                    <div class="w03-results-titles">
+                        <h2 class="w-text-section">@Ar.FirstRun.Check.ResultsTitle</h2>
+                        @if (Inspection.CheckedAt is { } at)
+                        {
+                            <bdi class="w03-muted">@Ar.FirstRun.Check.LastCheck(Formats.Time(at), Formats.Date(at))</bdi>
+                        }
+                    </div>
+                    <WChip Variant="@(Inspection.IsAcceptable ? WChipVariant.Success : WChipVariant.Danger)"
+                           Label="@(Inspection.IsAcceptable ? Ar.FirstRun.Check.ReadyChip : Ar.FirstRun.Check.NotReadyChip)" />
+                </div>
+
+                <ul class="w03-list">
+                    @foreach (var line in Inspection.Lines)
+                    {
+                        <li class="w03-line w03-line--@StatusSlug(line.Status)">
+                            <span class="w03-line-icon" aria-hidden="true">
+                                <WIcon Name="@StatusIcon(line.Status)" Size="17" />
+                            </span>
+                            <span class="w03-line-label">@line.Label</span>
+                            <bdi class="w03-line-value">@line.Value</bdi>
+                            <WChip Variant="@StatusChip(line.Status)" Label="@StatusText(line.Status)" />
+                        </li>
+                    }
+                </ul>
+
+                <WProgressBar Percent="@ProgressPercent" Label="@SummaryText" />
+
+                <div class="w03-actions">
+                    <WButton Icon="check" Label="@Ar.FirstRun.Check.Activate"
+                             Disabled="@(!Inspection.IsAcceptable)" Loading="_busy" OnClick="Activate" />
+                    <WButton Variant="WButtonVariant.Secondary" Icon="folder-open"
+                             Label="@Ar.FirstRun.Check.ChooseAnother" OnClick="ChooseAnother" />
+                    <span class="w03-spacer"></span>
+                    <WButton Variant="WButtonVariant.Text" Icon="refresh-cw"
+                             Label="@Ar.FirstRun.Check.Recheck" OnClick="Recheck" />
+                </div>
+            </WCard>
+        </section>
+
+        <section class="w03-org">
+            <WCard>
+                <div class="w03-org-card">
+                    @if (Summary?.LogoDataUrl is { Length: > 0 } logo)
+                    {
+                        <img class="w03-org-logo" src="@logo" alt="@(Summary?.OrgName)" />
+                    }
+                    else
+                    {
+                        <span class="w03-org-logo w03-org-logo--empty" aria-hidden="true">
+                            <WIcon Name="landmark" Size="26" />
+                        </span>
+                    }
+                    <h2 class="w-text-section">@(Summary?.OrgName)</h2>
+                    <p class="w03-muted">@(Summary?.OfficeName)</p>
+
+                    <div class="w03-kv">
+                        <WKvRow Key="@Ar.FirstRun.Check.OrgCardRole" Value="@(Summary?.RoleLabel)" />
+                        <WKvRow Key="@Ar.FirstRun.Check.ItemEmployee" Value="@(Summary?.EmployeeName)" />
+                        <WKvRow Key="@Ar.FirstRun.Check.ItemDevice" Value="@DeviceValue" />
+                        <WKvRow Key="@Ar.FirstRun.Check.ItemOffice" Value="@(Summary?.OfficeCode)" />
+                    </div>
+                    <p class="w03-scope">@(Summary?.ScopeLabel)</p>
+                </div>
+            </WCard>
+
+            <WCard Variant="WSemanticVariant.Info" Icon="info"
+                   Title="@Ar.FirstRun.Check.BindingNoticeTitle"
+                   Desc="@Ar.FirstRun.Check.BindingNoticeDesc" />
+        </section>
+    </div>
+
+    <footer class="w03-footer">
+        <Bdi Text="@FooterLine" />
+    </footer>
+</div>
+
+<WDialog Open="@_showFailure" Kind="WDialogKind.Danger"
+         Title="@Ar.FirstRun.Check.FailureDialogTitle"
+         Desc="@Ar.FirstRun.Check.FailureDialogDesc"
+         ConfirmLabel="@Ar.FirstRun.Check.ChooseAnother" ConfirmIcon="folder-open"
+         CancelLabel="@Ar.FirstRun.Check.Quit" CancelIcon="x"
+         OnConfirm="ChooseAnother" OnCancel="() => _showFailure = false">
+    <WCard Variant="WSemanticVariant.Danger" Icon="alert-circle"
+           Title="@(Inspection.RefusalMessage ?? Ar.FirstRun.Refusal.Unknown)" />
+    <div class="w03-kv">
+        <WKvRow Key="@Ar.FirstRun.Check.FailureFile" Value="@(Inspection.File?.FileName)" />
+        <WKvRow Key="@Ar.FirstRun.Check.FailureOrganisation"
+                Value="@(Summary?.OrgName ?? Ar.FirstRun.Check.FailureUnknownIssuer)" />
+        <WKvRow Key="@Ar.FirstRun.Check.FailureIssuedBy" Value="@IssuedAtValue" />
+    </div>
+</WDialog>
+
+@code {
+    private bool _busy;
+    private bool _showFailure;
+
+    private SetupSummary? Summary => Inspection.Summary;
+
+    private string DeviceValue => Summary is null
+        ? string.Empty
+        : Ar.FirstRun.Check.ValueDevice(Summary.DeviceNo);
+
+    private string IssuedAtValue => Summary is null
+        ? Ar.FirstRun.Check.FailureUnknownIssuer
+        : $"{Formats.Date(Summary.ExportedAt)} {Formats.Time(Summary.ExportedAt)}";
+
+    private string FooterLine => $"{Ar.AppName} — {Ar.FirstRun.AppVersion}";
+
+    private int Passed => Inspection.Lines.Count(line => line.Status != SetupCheckStatus.Failed);
+
+    private int Failed => Inspection.Lines.Count(line => line.Status == SetupCheckStatus.Failed);
+
+    private int ProgressPercent => Inspection.Lines.Count == 0
+        ? 0
+        : (int)Math.Round(Passed * 100d / Inspection.Lines.Count);
+
+    private string SummaryText => Failed == 0
+        ? Ar.FirstRun.Check.Summary(Passed, Inspection.Lines.Count)
+        : Ar.FirstRun.Check.SummaryWithFailures(Passed, Inspection.Lines.Count, Failed);
+
+    protected override void OnInitialized()
+    {
+        // The first run belongs to a machine that has none; one that is already activated is sent
+        // to its own sign-in screen, whichever way this route was reached.
+        if (Login.IsActivated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        if (Inspection.File is null)
+        {
+            // Nothing has been checked; there is nothing on this screen to look at.
+            Nav.NavigateTo("/first-run", replace: true);
+            return;
+        }
+
+        _showFailure = !Inspection.IsAcceptable;
+    }
+
+    private void Activate()
+    {
+        if (!Inspection.IsAcceptable)
+        {
+            _showFailure = true;
+            return;
+        }
+
+        _busy = true;
+        Activation.Begin();
+        Nav.NavigateTo("/first-run/account");
+    }
+
+    private void ChooseAnother()
+    {
+        _showFailure = false;
+        Inspection.Reset();
+        Nav.NavigateTo("/first-run");
+    }
+
+    private void Recheck() => Nav.NavigateTo("/first-run");
+
+    private static string StatusSlug(SetupCheckStatus status) => status switch
+    {
+        SetupCheckStatus.Ok => "ok",
+        SetupCheckStatus.Failed => "failed",
+        _ => "absent",
+    };
+
+    private static string StatusIcon(SetupCheckStatus status) => status switch
+    {
+        SetupCheckStatus.Ok => "check-circle",
+        SetupCheckStatus.Failed => "alert-circle",
+        _ => "minus-circle",
+    };
+
+    private static WChipVariant StatusChip(SetupCheckStatus status) => status switch
+    {
+        SetupCheckStatus.Ok => WChipVariant.Success,
+        SetupCheckStatus.Failed => WChipVariant.Danger,
+        _ => WChipVariant.Neutral,
+    };
+
+    private static string StatusText(SetupCheckStatus status) => status switch
+    {
+        SetupCheckStatus.Ok => Ar.FirstRun.Check.StatusOk,
+        SetupCheckStatus.Failed => Ar.FirstRun.Check.StatusFailed,
+        _ => Ar.FirstRun.Check.StatusAbsent,
+    };
+}

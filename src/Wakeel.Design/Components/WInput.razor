@@ -24,18 +24,18 @@
         <div class="w-field-control-wrap">
             @if (Type == WInputType.Date)
             {
-                <input @ref="_dateRef" id="@_id" class="w-field-control" type="text" inputmode="numeric" maxlength="10"
+                <input @ref="_dateRef" id="@_id" class="@ControlClass" type="text" inputmode="numeric" maxlength="10"
                        placeholder="@ResolvedPlaceholder" disabled="@Disabled"
                        value="@Value" @oninput="OnDateInputAsync" />
             }
             else
             {
-                <input id="@_id" class="w-field-control" type="@ResolvedHtmlType" placeholder="@ResolvedPlaceholder" disabled="@Disabled"
+                <input id="@_id" class="@ControlClass" type="@ResolvedHtmlType" placeholder="@ResolvedPlaceholder" disabled="@Disabled"
                        value="@Value" @oninput="OnInputAsync" />
             }
             @if (Type == WInputType.Password)
             {
-                <button type="button" class="w-field-adornment" @onclick="ToggleReveal" aria-label="@(_revealed ? Ar.Fields.HidePassword : Ar.Fields.ShowPassword)">
+                <button type="button" class="w-field-adornment" @onclick="ToggleReveal" aria-label="@(_revealed ? Ar.Fields.HidePassword : Ar.Fields.ShowPassword)" title="@(_revealed ? Ar.Fields.HidePassword : Ar.Fields.ShowPassword)">
                     <WIcon Name="@(_revealed ? "eye-off" : "eye")" Size="16" />
                 </button>
             }
@@ -66,6 +66,9 @@
     private readonly string _id = $"w-field-{Interlocked.Increment(ref _seq)}";
     private bool _revealed;
     private ElementReference _dateRef;
+    private int? _pendingCaret;
+    private string? _pendingValue;
+    private int _inputSeq;
 
     /// <summary>Which HTML control to render: Text, Password, Number, Date, or Textarea.</summary>
     [Parameter] public WInputType Type { get; set; } = WInputType.Text;
@@ -94,6 +97,14 @@
 
     private bool HasError => !string.IsNullOrEmpty(Error);
 
+    /// <summary>
+    /// Date and Password are the two field types with an absolutely-positioned adornment (the
+    /// calendar icon / eye toggle) overlapping the control, so both need the reserved end-padding
+    /// track from <c>.w-field-control--adorned</c>; every other type renders the bare control class.
+    /// </summary>
+    private string ControlClass
+        => Type is WInputType.Date or WInputType.Password ? "w-field-control w-field-control--adorned" : "w-field-control";
+
     private string ResolvedHtmlType => Type switch
     {
         WInputType.Password => _revealed ? "text" : "password",
@@ -119,47 +130,90 @@
     /// inserts the two separators as soon as enough digits exist for them.
     /// </summary>
     /// <remarks>
-    /// When the reformatted string equals the current <see cref="Value"/> — e.g. a rejected
-    /// character was typed, or a digit was inserted in the middle of an already-formatted string
-    /// and the mask collapses back to the same text — the `value` attribute Blazor would render is
-    /// unchanged, so its diff never touches the DOM and a rejected character (or a stale caret)
-    /// stays on screen. In that case the DOM is corrected directly via JS interop instead of relying
-    /// on the ValueChanged round-trip, with the caret restored to sit after the digit that was just
-    /// typed (derived from how many digits preceded the original caret, so editing the middle of an
-    /// already-typed date does not bounce the caret to the end).
+    /// The caret position that should follow the keystroke is computed from how many digits
+    /// preceded the original caret (so editing the middle of an already-typed date keeps the caret
+    /// next to the digit just typed instead of bouncing to the end). Both the caret and the
+    /// reformatted value are stashed in <see cref="_pendingCaret"/> and <see cref="_pendingValue"/>
+    /// for <see cref="OnAfterRenderAsync"/> to apply, via JS interop, once Blazor has finished
+    /// re-rendering.
+    /// <para>
+    /// <see cref="_inputSeq"/> guards against two keystrokes racing the <c>getSelectionStart</c>
+    /// round-trip out of order: if a newer keystroke's handler already resumed and stashed its own
+    /// pending caret/value by the time this (older) call's await returns, this call must not
+    /// overwrite that newer state with its now-stale pair.
+    /// </para>
+    /// <para>
+    /// Whether Blazor's own diff rewrites the `value` attribute this render depends on whether
+    /// <paramref name="e"/>'s reformatted text differs from the current <see cref="Value"/> — but for
+    /// an unbound field (no @bind-Value/ValueChanged consumer feeding a new <see cref="Value"/> back
+    /// in) that attribute never changes no matter what is typed, so branching on the comparison is
+    /// unreliable. Writing <see cref="_pendingValue"/> to the DOM unconditionally after the render
+    /// sidesteps that: when Blazor already wrote the same string the write is a no-op, and when it
+    /// didn't (unbound field, or a rejected/mid-string keystroke) this is what corrects the DOM.
+    /// </para>
     /// </remarks>
     private async Task OnDateInputAsync(ChangeEventArgs e)
     {
+        var seq = ++_inputSeq;
+
         var raw = e.Value?.ToString() ?? string.Empty;
         var digits = ExtractWesternDigits(raw);
         var formatted = FormatDateMask(digits);
 
-        if (formatted == Value)
+        int caret;
+        try
         {
-            int caret;
-            try
-            {
-                caret = await Js.InvokeAsync<int>("wakeelUi.getSelectionStart", _dateRef);
-            }
-            catch (JSException)
-            {
-                caret = formatted.Length;
-            }
-
-            var newCaret = CaretForDigitCount(formatted, CountDigitsBefore(raw, caret));
-
-            try
-            {
-                await Js.InvokeVoidAsync("wakeelUi.setInputValue", _dateRef, formatted, newCaret);
-            }
-            catch (JSException)
-            {
-                // No interop available (e.g. a bUnit test host without the JS shim); ValueChanged
-                // below still carries the correct value even though the stale DOM text is not fixed.
-            }
+            caret = await Js.InvokeAsync<int>("wakeelUi.getSelectionStart", _dateRef);
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or ObjectDisposedException)
+        {
+            caret = raw.Length;
         }
 
+        if (seq != _inputSeq)
+        {
+            // A later keystroke already resumed and stashed its own pending caret/value; this call's
+            // pair is now stale and must not overwrite that newer state or emit a stale Value.
+            return;
+        }
+
+        _pendingCaret = CaretForDigitCount(formatted, CountDigitsBefore(raw, caret));
+        _pendingValue = formatted;
+
         await ValueChanged.InvokeAsync(formatted);
+    }
+
+    /// <summary>
+    /// Re-applies the value and caret computed in <see cref="OnDateInputAsync"/> after Blazor has
+    /// finished diffing this render, via the value-and-caret <c>wakeelUi.setInputValue</c> helper.
+    /// Doing this here, after Blazor's own render, rather than synchronously inside the input
+    /// handler, is what keeps the caret where the user was typing instead of Blazor's rewrite (or the
+    /// browser's own reset) bouncing it to the end of the field; writing the value here too — rather
+    /// than only the caret — is what fixes an unbound field, where <see cref="Value"/> never changes
+    /// and Blazor's diff therefore never touches the DOM on its own.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingCaret is not int caret)
+        {
+            return;
+        }
+
+        _pendingCaret = null;
+        var value = _pendingValue ?? string.Empty;
+        _pendingValue = null;
+
+        try
+        {
+            await Js.InvokeVoidAsync("wakeelUi.setInputValue", _dateRef, value, caret);
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or ObjectDisposedException)
+        {
+            // No interop available (e.g. a bUnit test host without the JS shim), or the pending write
+            // raced component/renderer teardown (JSDisconnectedException/ObjectDisposedException don't
+            // derive from JSException); the visible DOM text/caret are a presentation nicety and do not
+            // affect the emitted Value.
+        }
     }
 
     private static int CountDigitsBefore(string raw, int caret)

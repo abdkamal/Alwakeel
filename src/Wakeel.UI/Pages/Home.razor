@@ -1,7 +1,12 @@
 @page "/"
+@inject LoginService Login
 @inject NavigationManager Nav
 
 @code {
-    // The desktop host's start route is /gallery for now (no home screen has been built yet).
-    protected override void OnInitialized() => Nav.NavigateTo("/gallery", replace: true);
+    // Where a start with no route of its own lands (SCREENS.md W02 and W05): a machine that carries
+    // no installation has nothing but the first run to show, and one that does asks who is at the
+    // keyboard. The host decides the same way before the window is even drawn; this is what keeps an
+    // in-app navigation to "/" agreeing with it. The component gallery stays at /gallery.
+    protected override void OnInitialized() =>
+        Nav.NavigateTo(Login.IsActivated ? "/login" : "/first-run", replace: true);
 }

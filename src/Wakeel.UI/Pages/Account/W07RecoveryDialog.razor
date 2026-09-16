@@ -1,0 +1,451 @@
+@namespace Wakeel.UI.Pages.Account
+@using Wakeel.Crypto
+@inject RecoveryService Recovery
+@inject QrImageReader QrReader
+@inject IPrintService Printer
+
+@* W07: the second way into the account — the printed sheet. Two steps, exactly as the screen draws
+   them: prove the code, then set a new password. *@
+<WDialog Open="@Open"
+         Title="@Ar.FirstRun.Recovery.DialogTitle"
+         Desc="@DialogDesc"
+         ConfirmLabel="@ConfirmLabel" ConfirmIcon="@ConfirmIcon"
+         CancelLabel="@Ar.Buttons.Cancel"
+         OnConfirm="ConfirmAsync" OnCancel="CloseAsync">
+
+@* Once the new sheet is on screen the recovery itself is finished; nothing of the form is left to
+   fill in, and what remains is the one thing that still has to leave this window — the sheet. *@
+@if (_newSheet is null)
+{
+    <ol class="w07-steps">
+        <li class="w07-step @(CodeVerified ? "w07-step--done" : "w07-step--active")">
+            <span class="w07-step-mark" aria-hidden="true">
+                @if (CodeVerified)
+                {
+                    <WIcon Name="check" Size="13" />
+                }
+                else
+                {
+                    <bdi>1</bdi>
+                }
+            </span>
+            <span>@Ar.FirstRun.Recovery.StepCode</span>
+        </li>
+        <li class="w07-rail" aria-hidden="true"></li>
+        <li class="w07-step @(CodeVerified ? "w07-step--active" : null)">
+            <span class="w07-step-mark" aria-hidden="true"><bdi>2</bdi></span>
+            <span>@Ar.FirstRun.Recovery.StepNewPassword</span>
+        </li>
+    </ol>
+
+    <div class="w07-source">
+        <span class="w07-label">@Ar.FirstRun.Recovery.SourceLabel</span>
+        <WSegmented Options="@SourceOptions" SelectedValue="@_source" SelectedValueChanged="OnSourceChanged" />
+    </div>
+
+    @if (_source == SourceTyped)
+    {
+        <WInput Label="@Ar.FirstRun.Recovery.CodeLabel(RecoveryCode.TotalCharacters)" Required="true"
+                Placeholder="@Ar.FirstRun.Recovery.CodePlaceholder"
+                Hint="@CodeHint" Error="@_codeError"
+                Value="@_code" ValueChanged="OnCodeChanged" />
+    }
+    else
+    {
+        <div class="w07-scan">
+            <p class="w07-muted">@Ar.FirstRun.Recovery.ScanHint</p>
+            @if (QrReader.IsAvailable)
+            {
+                <label class="w07-scan-zone">
+                    <InputFile class="w07-scan-input" accept="image/*"
+                               aria-label="@Ar.FirstRun.Recovery.ScanChooseImage" OnChange="ScanAsync" />
+                    <WIcon Name="qr-code" Size="24" />
+                    <span>@Ar.FirstRun.Recovery.ScanChooseImage</span>
+                </label>
+            }
+            else
+            {
+                <WCard Variant="WSemanticVariant.Warning" Icon="alert-triangle"
+                       Desc="@Ar.FirstRun.Recovery.ScanUnavailable" />
+            }
+            @if (_scanMessage is { Length: > 0 })
+            {
+                <p class="w07-scan-message">@_scanMessage</p>
+            }
+        </div>
+    }
+
+    <div class="w07-passwords">
+        <p class="w07-label">@Ar.FirstRun.Recovery.NewPasswordLabel</p>
+        <div class="w07-password-row">
+            @* First child, so it is the field on the right: the password, then its confirmation. *@
+            <WInput Type="WInputType.Password" Required="true"
+                    Label="@Ar.FirstRun.Recovery.NewPasswordLabel"
+                    Hint="@Ar.FirstRun.Account.RuleLength"
+                    Value="@_password" ValueChanged="OnPasswordChanged" />
+            <WInput Type="WInputType.Password" Required="true"
+                    Label="@Ar.FirstRun.Recovery.ConfirmLabel"
+                    Hint="@ConfirmHint" Error="@ConfirmError"
+                    Value="@_confirm" ValueChanged="OnConfirmChanged" />
+        </div>
+
+        <div class="w07-strength">
+            <span class="w07-muted">@($"{Ar.FirstRun.Account.StrengthLabel}: {PasswordStrength.Describe(_password)}")</span>
+            <span class="w07-meter" aria-hidden="true">
+                @for (var index = 0; index < PasswordStrength.Segments; index++)
+                {
+                    <span class="w07-meter-bar @(index < FilledSegments ? "w07-meter-bar--on" : null)"></span>
+                }
+            </span>
+        </div>
+    </div>
+
+    <WCheckbox Value="@_issueNewSheet" ValueChanged="v => _issueNewSheet = v"
+               Label="@Ar.FirstRun.Recovery.IssueNewSheet" />
+    <p class="w07-muted">@Ar.FirstRun.Recovery.IssueNewSheetHint</p>
+
+    <WCard Variant="WSemanticVariant.Info" Icon="info"
+           Title="@Ar.FirstRun.Recovery.LogNoticeTitle"
+           Desc="@Ar.FirstRun.Recovery.LogNoticeDesc" />
+
+    @if (_error is { Length: > 0 })
+    {
+        <WCard Variant="WSemanticVariant.Danger" Icon="alert-circle" Desc="@_error" />
+    }
+}
+else if (_newSheet is { } sheet)
+{
+    <WCard Variant="WSemanticVariant.Success" Icon="check-circle"
+           Title="@Ar.FirstRun.Recovery.NewSheetTitle"
+           Desc="@Ar.FirstRun.Recovery.NewSheetDesc">
+        <div class="w07-new-sheet">
+            <img class="w07-new-qr" src="@sheet.QrDataUrl" alt="@Ar.FirstRun.Account.SheetQrAlt" />
+            <div class="w07-new-lines">
+                <bdi class="w07-new-code">@sheet.CodeDisplay</bdi>
+                <bdi class="w07-muted">@Ar.FirstRun.Account.SheetIssued(Formats.Date(sheet.IssuedAt), Formats.Time(sheet.IssuedAt))</bdi>
+                <bdi class="w07-muted">@Ar.FirstRun.Account.SheetOwner(sheet.EmployeeName, sheet.DeviceNo)</bdi>
+            </div>
+        </div>
+    </WCard>
+
+    @* The same two ways out of the screen that W04's sheet has, so nobody has to copy twenty-one
+       characters by hand off a window that is about to close. *@
+    <div class="w07-sheet-actions w-no-print">
+        <WButton Variant="WButtonVariant.Secondary" Icon="printer"
+                 Label="@Ar.FirstRun.Recovery.NewSheetPrint"
+                 Tooltip="@Ar.FirstRun.Recovery.NewSheetPrint"
+                 Disabled="@(!Printer.IsAvailable)" OnClick="PrintAsync" />
+        <WButton Variant="WButtonVariant.Secondary" Icon="file-down"
+                 Label="@Ar.FirstRun.Recovery.NewSheetSavePdf"
+                 Tooltip="@Ar.FirstRun.Recovery.NewSheetSavePdf"
+                 Disabled="@(!Printer.IsAvailable)" OnClick="SaveAsync" />
+        <span class="w07-muted">@_printStatus</span>
+    </div>
+}
+</WDialog>
+
+@code {
+    private const string SourceTyped = "typed";
+    private const string SourceScanned = "scanned";
+
+    private static readonly IReadOnlyList<(string Value, string Label)> SourceOptions =
+    [
+        (SourceTyped, Ar.FirstRun.Recovery.SourceType),
+        (SourceScanned, Ar.FirstRun.Recovery.SourceScan),
+    ];
+
+    /// <summary>Whether the dialog is shown.</summary>
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>Raised when the dialog is dismissed without recovering anything.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>Raised once a new password is in place and the session is open behind it.</summary>
+    [Parameter] public EventCallback OnRecovered { get; set; }
+
+    private string _source = SourceTyped;
+    private string? _code;
+    private string? _password;
+    private string? _confirm;
+    private string? _codeError;
+    private string? _error;
+    private string? _scanMessage;
+    private bool _issueNewSheet;
+    private bool _busy;
+    private bool _verifying;
+
+    /// <summary>The text that arrived while a check was running, waiting its turn.</summary>
+    private string? _pendingCode;
+
+    private bool _hasPendingCode;
+
+    /// <summary>
+    /// Set when the new password is already in force but the workspace did not open behind it: the
+    /// new sheet is still shown and printed, and closing the dialog goes back to the sign-in screen
+    /// rather than into a workspace that is not open.
+    /// </summary>
+    private bool _recoveredWithoutSession;
+
+    private RecoverySheet? _newSheet;
+    private string _printStatus = Ar.FirstRun.Account.NotPrintedYet;
+
+    private bool CodeVerified { get; set; }
+
+    private string? CodeHint => _verifying
+        ? Ar.FirstRun.Recovery.Verifying
+        : CodeVerified ? Ar.FirstRun.Recovery.CodeVerified : null;
+
+    private string DialogDesc => _newSheet is null
+        ? Ar.FirstRun.Recovery.DialogDesc
+        : Ar.FirstRun.Recovery.NewSheetDesc;
+
+    private string ConfirmLabel => _newSheet is null
+        ? Ar.FirstRun.Recovery.Submit
+        : Ar.FirstRun.Recovery.NewSheetDone;
+
+    private string ConfirmIcon => _newSheet is null ? "key-round" : "check";
+
+    private int FilledSegments => PasswordStrength.FilledSegments(_password);
+
+    private bool ConfirmTouched => !string.IsNullOrEmpty(_confirm);
+
+    private bool ConfirmMatches => string.Equals(_password, _confirm, StringComparison.Ordinal);
+
+    private string? ConfirmHint => ConfirmTouched && ConfirmMatches ? Ar.FirstRun.Account.ConfirmMatches : null;
+
+    private string? ConfirmError => ConfirmTouched && !ConfirmMatches ? Ar.FirstRun.Account.ConfirmMismatch : null;
+
+    private void OnSourceChanged(string value)
+    {
+        _source = value;
+        _scanMessage = null;
+    }
+
+    private async Task OnCodeChanged(string? value)
+    {
+        _code = value;
+        _codeError = null;
+        _error = null;
+        await VerifyAsync();
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        _password = value;
+        _error = null;
+    }
+
+    private void OnConfirmChanged(string? value) => _confirm = value;
+
+    /// <summary>
+    /// Checks the code as it is typed, so the first step turns green the moment the last character
+    /// lands rather than only when the whole dialog is submitted.
+    /// </summary>
+    /// <remarks>
+    /// Verifying a code costs one full password derivation, which is deliberately expensive, so it
+    /// goes off the thread that draws the window exactly as every other derivation in this package
+    /// does. Only one runs at a time, and a result whose text has been typed over in the meantime is
+    /// thrown away rather than shown against a code the person has already changed.
+    /// </remarks>
+    private async Task VerifyAsync()
+    {
+        CodeVerified = false;
+        if (_verifying)
+        {
+            // A check is already running against older text; hand this one over to it instead of
+            // dropping it, or a code completed while the previous check ran would never go green.
+            _pendingCode = _code;
+            _hasPendingCode = true;
+            return;
+        }
+
+        var code = _code;
+        _verifying = true;
+        try
+        {
+            while (true)
+            {
+                RecoveryOutcome? outcome = RecoveryCode.Normalize(code).Length < RecoveryCode.TotalCharacters
+                    ? null
+                    : await Task.Run(() => Recovery.Verify(code));
+
+                if (_hasPendingCode)
+                {
+                    // Typed over while that ran: this verdict belongs to text nobody can see any more.
+                    code = _pendingCode;
+                    _pendingCode = null;
+                    _hasPendingCode = false;
+                    continue;
+                }
+
+                CodeVerified = outcome == RecoveryOutcome.Success;
+                _codeError = outcome is null or RecoveryOutcome.Success ? null : Recovery.Explain(outcome.Value);
+                return;
+            }
+        }
+        finally
+        {
+            _verifying = false;
+            _pendingCode = null;
+            _hasPendingCode = false;
+        }
+    }
+
+    private async Task ScanAsync(InputFileChangeEventArgs args)
+    {
+        _scanMessage = null;
+        var file = args.FileCount > 0 ? args.File : null;
+        if (file is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream(8L * 1024 * 1024);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+
+            var text = QrReader.TryRead(buffer.ToArray());
+            if (text is null)
+            {
+                _scanMessage = Ar.FirstRun.Recovery.ScanFailed;
+                return;
+            }
+
+            _code = text;
+            _scanMessage = Ar.FirstRun.Recovery.ScanSucceeded;
+            await VerifyAsync();
+        }
+        catch (IOException)
+        {
+            _scanMessage = Ar.FirstRun.Recovery.ScanFailed;
+        }
+    }
+
+    /// <summary>
+    /// The dialog's one confirming button does two different things, because the dialog has two
+    /// states: while the form is up it performs the recovery, and once the new sheet is on screen it
+    /// is the «حفظتُ الورقة الجديدة» that closes it.
+    /// </summary>
+    private Task ConfirmAsync() => _newSheet is null ? SubmitAsync() : CloseAsync();
+
+    private async Task PrintAsync()
+    {
+        var outcome = await Printer.PrintAsync();
+        _printStatus = outcome switch
+        {
+            PrintOutcome.Saved => Ar.FirstRun.Account.Printed,
+            PrintOutcome.Unavailable => Ar.FirstRun.Account.NotPrintedYet,
+            _ => Ar.FirstRun.Account.Printed,
+        };
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await Printer.SaveAsPdfAsync(Ar.FirstRun.Account.SheetFileName);
+        _printStatus = result.Outcome switch
+        {
+            PrintOutcome.Saved => Ar.FirstRun.Account.PdfSaved,
+            PrintOutcome.Failed => Ar.FirstRun.Account.PdfFailed,
+            _ => _printStatus,
+        };
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _error = null;
+
+        if (!CodeVerified)
+        {
+            _codeError = Ar.FirstRun.Recovery.CodeIncomplete;
+            return;
+        }
+
+        if (!PasswordStrength.IsAcceptable(_password))
+        {
+            _error = Ar.FirstRun.Account.RuleLength;
+            return;
+        }
+
+        if (!ConfirmMatches)
+        {
+            _error = Ar.FirstRun.Account.ConfirmMismatch;
+            return;
+        }
+
+        _busy = true;
+        RecoveryResult result;
+        try
+        {
+            var code = _code;
+            var password = _password!;
+            var issue = _issueNewSheet;
+            result = await Task.Run(() => Recovery.RecoverAsync(code, password, issue));
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        // The one outcome that is neither a plain success nor a failure: the new password and the new
+        // sheet are already on disk, so the secrets leave the dialog and the sheet is shown to be
+        // printed, but the workspace is not open and the dialog must not pretend it is.
+        _recoveredWithoutSession = result.Outcome == RecoveryOutcome.RecoveredNotSignedIn;
+
+        if (!result.Succeeded && !_recoveredWithoutSession)
+        {
+            _error = result.Message;
+            return;
+        }
+
+        // Neither the old code nor the new password stays in the dialog once they have done their job.
+        _code = null;
+        _password = null;
+        _confirm = null;
+        _newSheet = result.NewSheet;
+
+        if (_recoveredWithoutSession)
+        {
+            // The sentence stays on screen — with or without a sheet beside it — until the person
+            // closes the dialog themselves and signs in with the password they have just set.
+            _error = result.Message;
+            return;
+        }
+
+        if (_newSheet is null)
+        {
+            await OnRecovered.InvokeAsync();
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        // Only a recovery that ended inside an open session leads on to the workspace.
+        var recovered = _newSheet is not null && !_recoveredWithoutSession;
+        _recoveredWithoutSession = false;
+
+        _code = null;
+        _password = null;
+        _confirm = null;
+        _codeError = null;
+        _error = null;
+        _scanMessage = null;
+        _newSheet = null;
+        _printStatus = Ar.FirstRun.Account.NotPrintedYet;
+        CodeVerified = false;
+
+        if (recovered)
+        {
+            await OnRecovered.InvokeAsync();
+            return;
+        }
+
+        await OnClose.InvokeAsync();
+    }
+}

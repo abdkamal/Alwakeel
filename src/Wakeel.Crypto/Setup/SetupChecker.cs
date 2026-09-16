@@ -44,6 +44,12 @@ internal static class SetupChecker
             content.Includes.ReportTemplate,
             entryNames,
             SetupEntryNames.ReportTemplate);
+        Optional(
+            checks,
+            SetupCheckItem.LetterTemplate,
+            content.Includes.LetterTemplate,
+            entryNames,
+            SetupEntryNames.LetterTemplate);
 
         if (content.Revocation is null)
         {
@@ -72,7 +78,7 @@ internal static class SetupChecker
             return ErrorCode.Corrupt;
         }
 
-        // A setup file carries these four names and nothing else. Anything extra would be
+        // A setup file carries these five names and nothing else. Anything extra would be
         // written into the installation folder by a host that extracts the file wholesale,
         // and on a first run there is no pinned key yet to say who put it there.
         foreach (var name in entryNames)
@@ -80,7 +86,8 @@ internal static class SetupChecker
             if (name is not (SetupEntryNames.Content
                 or SetupEntryNames.Logo
                 or SetupEntryNames.Guide
-                or SetupEntryNames.ReportTemplate))
+                or SetupEntryNames.ReportTemplate
+                or SetupEntryNames.LetterTemplate))
             {
                 return ErrorCode.Tampered;
             }
@@ -241,7 +248,12 @@ internal static class SetupChecker
 
         if (!CertificateChain.TryVerify(certificate, orgSigningKey, revocations, now, out var error))
         {
-            return error;
+            // The chain's only source of "expired" for a device certificate is the same fact
+            // the root's own date check reports as a future dated package: the certificate's
+            // issuance instant sits ahead of this clock. One code for one cause, the same
+            // translation Examine already applies to the root, so the screen never says the
+            // device is wrong when the real fault is a date.
+            return error == ErrorCode.Expired ? ErrorCode.FutureDate : error;
         }
 
         if (certificate.Body.Kind != DeviceKind.Pc)

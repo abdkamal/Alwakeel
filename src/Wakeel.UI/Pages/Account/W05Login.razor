@@ -1,0 +1,289 @@
+@page "/login"
+@namespace Wakeel.UI.Pages.Account
+@layout Wakeel.UI.Layout.BareLayout
+@using Wakeel.Core.Data
+@using Wakeel.Core.Data.Entities
+@using Wakeel.Core.Services
+@inject LoginService Login
+@inject AccountSession Session
+@inject AccountOptions AccountSettings
+@inject NavigationManager Nav
+@inject TimeProvider Time
+
+<PageTitle>@Ar.FirstRun.Login.SignIn</PageTitle>
+
+@* While the recovery dialog is up, the sign-in screen behind it stays off the paper: the one thing
+   worth printing from here is the new recovery sheet the dialog may be showing. *@
+<div class="w05 @(_showRecovery ? "w-no-print" : null)">
+    <header class="w05-brand">
+        @if (_profile.LogoDataUrl is { Length: > 0 } logo)
+        {
+            <img class="w05-logo" src="@logo" alt="@_profile.OrgName" />
+        }
+        else
+        {
+            <span class="w05-logo w05-logo--empty" aria-hidden="true"><WIcon Name="landmark" Size="28" /></span>
+        }
+        <h1 class="w-text-title">@OrgName</h1>
+        <p class="w05-muted">@_profile.OfficeName</p>
+    </header>
+
+    <WCard>
+        @* A machine that cannot open its own sealed card — a folder restored onto another computer,
+           a rebuilt Windows profile, a deleted card — knows nothing about who works here. It then
+           shows the product's own branding and asks for the password anyway, rather than drawing an
+           empty name and «الموظف رقم 0» it has not actually read. *@
+        @if (_profile.HasIdentity)
+        {
+            <div class="w05-identity">
+                <WAvatar Name="@_profile.EmployeeName" Size="62" />
+                <p class="w05-name">@_profile.EmployeeName</p>
+                <bdi class="w05-muted">@IdentityLine</bdi>
+                <button type="button" class="w05-switch" @onclick="() => _showOneAccount = true">
+                    <WIcon Name="users" Size="15" />
+                    <span>@Ar.FirstRun.Login.NotYou</span>
+                </button>
+            </div>
+        }
+
+        <WInput Type="WInputType.Password" Required="true"
+                Label="@Ar.FirstRun.Login.PasswordLabel"
+                Hint="@Ar.FirstRun.Login.PasswordHint"
+                Error="@_error"
+                Value="@_password" ValueChanged="OnPasswordChanged" />
+
+        @if (_result?.AttemptLine is { Length: > 0 } attempts)
+        {
+            <div class="w05-attempts">
+                <span class="w05-attempts-text">@attempts</span>
+                <span class="w05-dots" aria-hidden="true">
+                    @for (var index = 0; index < _result.MaxAttempts; index++)
+                    {
+                        <span class="w05-dot @(index < _result.Attempt ? "w05-dot--used" : null)"></span>
+                    }
+                </span>
+            </div>
+        }
+
+        @if (_result?.Outcome == SignInOutcome.LockedOut)
+        {
+            <WCard Variant="WSemanticVariant.Danger" Icon="lock" Desc="@_result.Message" />
+        }
+
+        @if (_capsLock)
+        {
+            <div class="w05-caps">
+                <WIcon Name="keyboard" Size="15" />
+                <Bdi Text="@Ar.FirstRun.Login.CapsLockHint" />
+            </div>
+        }
+
+        <WButton Icon="log-in" Label="@Ar.FirstRun.Login.SignIn"
+                 Loading="_busy" Disabled="@_lockedOut" Class="w05-submit" OnClick="SignInAsync" />
+
+        <button type="button" class="w05-forgot" @onclick="() => _showRecovery = true">
+            <WIcon Name="key-round" Size="15" />
+            <span>@Ar.FirstRun.Login.ForgotPassword</span>
+        </button>
+    </WCard>
+
+    <div class="w05-clock">
+        <WChip Variant="@ClockChipVariant" Label="@ClockLine" />
+    </div>
+    <footer class="w05-footer">
+        <Bdi Text="@FooterLine" />
+    </footer>
+</div>
+
+<WDialog Open="@_showOneAccount"
+         Title="@Ar.FirstRun.Login.OneAccountTitle"
+         Desc="@Ar.FirstRun.Login.OneAccountDesc"
+         ConfirmLabel="@Ar.Buttons.Close" ConfirmIcon="check"
+         CancelLabel="@Ar.Buttons.Cancel"
+         OnConfirm="() => _showOneAccount = false" OnCancel="() => _showOneAccount = false" />
+
+<W07RecoveryDialog Open="@_showRecovery"
+                   OnClose="() => _showRecovery = false"
+                   OnRecovered="OnRecovered" />
+
+@code {
+    private SignInProfile _profile = new();
+    private string? _password;
+    private string? _error;
+    private bool _busy;
+    private bool _capsLock;
+    private bool _showRecovery;
+    private bool _showOneAccount;
+    private SignInResult? _result;
+    private ClockVerdict _clock = ClockVerdict.Ok;
+
+    private bool _lockedOut => _result?.Outcome == SignInOutcome.LockedOut;
+
+    private string OrgName => string.IsNullOrWhiteSpace(_profile.OrgName) ? Ar.AppName : _profile.OrgName;
+
+    private string IdentityLine =>
+        Ar.FirstRun.Login.IdentityLine(_profile.JobTitle, _profile.EmployeeNo, _profile.DeviceNo);
+
+    private string ClockLine
+    {
+        get
+        {
+            var now = Time.GetUtcNow();
+            var verdict = _clock switch
+            {
+                ClockVerdict.Bad => Ar.FirstRun.Login.ClockBad,
+                ClockVerdict.Suspect => Ar.FirstRun.Login.ClockSuspect,
+                _ => Ar.FirstRun.Login.ClockOk,
+            };
+            return Ar.FirstRun.Login.ClockLine(verdict, Formats.Weekday(now), Formats.Date(now), Formats.Time(now));
+        }
+    }
+
+    private WChipVariant ClockChipVariant => _clock switch
+    {
+        ClockVerdict.Bad => WChipVariant.Danger,
+        ClockVerdict.Suspect => WChipVariant.Warning,
+        _ => WChipVariant.Success,
+    };
+
+    private string FooterLine => _profile.DeviceNo > 0
+        ? Ar.FirstRun.Login.FooterLine(Ar.FirstRun.AppVersion, _profile.DeviceNo)
+        : Ar.FirstRun.Login.FooterLineWithoutDevice(Ar.FirstRun.AppVersion);
+
+    protected override void OnInitialized()
+    {
+        if (!Login.IsActivated)
+        {
+            Nav.NavigateTo("/first-run", replace: true);
+            return;
+        }
+
+        _profile = Login.Profile();
+        _clock = PreCheckClock();
+
+        if (Login.LockedUntil() is { } until)
+        {
+            var minutes = (int)Math.Ceiling(Math.Max((until - Time.GetUtcNow()).TotalMinutes, 0));
+            _result = new SignInResult
+            {
+                Outcome = SignInOutcome.LockedOut,
+                Message = Ar.FirstRun.Login.LockedOut(minutes),
+                MaxAttempts = AccountOptions.DefaultMaxAttempts,
+                LockMinutes = minutes,
+                LockedUntil = until,
+            };
+        }
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        _password = value;
+        _error = null;
+
+        // The pause this screen announced is a wait, not a state it stays in: the moment the wait has
+        // run out the button comes back by itself, without closing الوكيل and opening it again.
+        if (_lockedOut && Login.LockedUntil() is null)
+        {
+            _result = null;
+        }
+
+        // The one hint that catches the commonest cause of a wrong password on an Arabic keyboard:
+        // a Latin password typed with the shift lock on.
+        _capsLock = value is { Length: > 0 } text
+            && text.Any(char.IsUpper)
+            && !text.Any(char.IsLower);
+    }
+
+    private async Task SignInAsync()
+    {
+        if (string.IsNullOrEmpty(_password))
+        {
+            _error = Ar.FirstRun.Login.PasswordRequired;
+            return;
+        }
+
+        if (_lockedOut && Login.LockedUntil() is null)
+        {
+            _result = null;
+        }
+
+        _busy = true;
+        SignInResult result;
+        try
+        {
+            var password = _password;
+
+            // Argon2id is deliberately slow; the window must keep drawing while it runs.
+            result = await Task.Run(() => Login.SignInAsync(password));
+        }
+        finally
+        {
+            _busy = false;
+            _password = null;
+        }
+
+        _result = result;
+        _error = result.Succeeded ? null : result.Message;
+
+        if (result.Succeeded)
+        {
+            await RunClockCheckAsync();
+            Nav.NavigateTo("/w08");
+        }
+    }
+
+    private void OnRecovered()
+    {
+        _showRecovery = false;
+        _error = null;
+        _result = null;
+        Nav.NavigateTo("/w08");
+    }
+
+    /// <summary>
+    /// The clock check this screen can actually perform before anything is unlocked, so the line
+    /// under the card reports a verdict it has reached rather than stating as fact something it has
+    /// not looked at (AGREEMENT item 20). It knows two things without the database: this build
+    /// cannot have been made after the present moment, and the last successful sign-in cannot lie in
+    /// the future. <see cref="ClockCheckService"/> then runs the full check — against the whole
+    /// history of the installation — the moment the database opens, and records it.
+    /// </summary>
+    private ClockVerdict PreCheckClock()
+    {
+        var now = Time.GetUtcNow();
+
+        if (now < AccountSettings.BuildDate)
+        {
+            return ClockVerdict.Bad;
+        }
+
+        return _profile.LastSignInAt is { } last && now < last - ClockCheckService.BackwardTolerance
+            ? ClockVerdict.Bad
+            : ClockVerdict.Ok;
+    }
+
+    /// <summary>
+    /// AGREEMENT item 20: the clock is checked at every start, and the result is what the line under
+    /// the card reports. The full check needs the database, so it runs the moment one opens — after
+    /// which the verdict is also written to <c>clock_checks</c>.
+    /// </summary>
+    private async Task RunClockCheckAsync()
+    {
+        if (!Session.IsOpen)
+        {
+            return;
+        }
+
+        try
+        {
+            var service = new ClockCheckService(Session.Db);
+            var check = await service.CheckAsync(Time.GetUtcNow().UtcDateTime);
+            _clock = check.Verdict;
+        }
+        catch (Exception exception) when (exception is Microsoft.Data.Sqlite.SqliteException
+                                              or InvalidOperationException)
+        {
+            // A clock check that cannot be recorded never stops anybody from working.
+        }
+    }
+}

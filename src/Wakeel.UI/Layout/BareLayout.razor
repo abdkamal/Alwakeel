@@ -1,0 +1,14 @@
+@namespace Wakeel.UI.Layout
+@inherits LayoutComponentBase
+@inject ThemeService Theme
+
+@* The first run and the sign-in screen have no sidebar and no top bar: there is nothing to navigate
+   to yet, and nothing but this one decision on the screen (SCREENS.md W02–W05, W07). *@
+<div class="w-bare">
+    @Body
+    <WToastHost />
+</div>
+
+@code {
+    protected override Task OnInitializedAsync() => Theme.InitializeAsync();
+}

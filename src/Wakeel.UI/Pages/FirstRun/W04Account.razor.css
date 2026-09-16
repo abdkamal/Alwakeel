@@ -1,0 +1,302 @@
+.w04 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100vh;
+}
+
+.w04-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 28px;
+  background: var(--w-surface);
+  border-block-end: 1px solid var(--w-border);
+}
+
+.w04-bar-org {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.w04-bar-logo {
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: var(--w-radius);
+  background: var(--w-primary-fill);
+  color: var(--w-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex: none;
+}
+
+.w04-bar-logo img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  background: var(--w-surface);
+}
+
+.w04-bar-name { font-weight: 700; }
+
+.w04-muted {
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.w04-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.w04-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--w-radius-pill);
+  border: 1px solid var(--w-border);
+  background: var(--w-surface);
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.w04-chip--done {
+  border-color: var(--w-success-border);
+  background: var(--w-success-soft);
+  color: var(--w-success);
+}
+
+.w04-chip--active {
+  border-color: var(--w-primary);
+  background: var(--w-primary-fill);
+  color: var(--w-on-fill);
+  font-weight: 700;
+}
+
+.w04-chip-no {
+  inline-size: 18px;
+  block-size: 18px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-neutral-soft);
+  color: var(--w-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.w04-chip--active .w04-chip-no {
+  background: var(--w-white);
+  color: var(--w-primary);
+}
+
+.w04-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 28px;
+  max-width: 1320px;
+  inline-size: 100%;
+  margin-inline: auto;
+}
+
+.w04-sub { margin-block-start: 4px; }
+
+.w04-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.w04-columns ::deep .w-card { inline-size: 100%; }
+
+.w04-columns ::deep .w-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.w04-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--w-radius);
+  background: var(--w-primary-soft);
+  border: 1px solid var(--w-primary-border);
+}
+
+.w04-identity-mark {
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-primary-fill);
+  color: var(--w-on-fill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.w04-identity-name { font-weight: 700; }
+
+.w04-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.w04-strength-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.w04-strength-label {
+  color: var(--w-success);
+  font-size: var(--w-fs-meta);
+  font-weight: 700;
+}
+
+.w04-meter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.w04-meter-bar {
+  block-size: 5px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-neutral-soft);
+}
+
+.w04-meter-bar--on { background: var(--w-success-fill); }
+
+.w04-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+  margin-block-start: 2px;
+}
+
+.w04-rule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.w04-rule--on { color: var(--w-success); }
+
+.w04-sheet {
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-lg);
+  background: var(--w-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.w04-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-block-end: 1px solid var(--w-border);
+  padding-block-end: 10px;
+}
+
+.w04-sheet-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--w-fs-body);
+  font-weight: 700;
+  color: var(--w-primary);
+}
+
+.w04-sheet-code {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.w04-sheet-qr {
+  inline-size: 84px;
+  block-size: 84px;
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius);
+  background: var(--w-white);
+  flex: none;
+}
+
+.w04-sheet-code-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-inline-size: 0;
+}
+
+.w04-code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--w-text);
+}
+
+.w04-sheet-warning {
+  color: var(--w-danger);
+  font-size: var(--w-fs-meta);
+}
+
+.w04-sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.w04-spacer { flex: 1; }
+
+.w04-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 28px;
+  background: var(--w-surface);
+  border-block-start: 1px solid var(--w-border);
+}
+
+.w04-footer-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Printing and saving to PDF both go through the page itself, so what comes out of the printer is
+   the very sheet that is on the screen — never a second rendering of it that could drift. */
+@media print {
+  .w04-body { padding: 0; }
+  .w04-columns { display: block; }
+  .w04-sheet { border: 0; padding: 0; }
+  .w04-recovery ::deep .w-card { border: 0; box-shadow: none; }
+  .w04-recovery ::deep .w-card-title { display: none; }
+}
+
+@media (max-width: 1100px) {
+  .w04-columns { grid-template-columns: 1fr; }
+  .w04-rules { grid-template-columns: 1fr; }
+}

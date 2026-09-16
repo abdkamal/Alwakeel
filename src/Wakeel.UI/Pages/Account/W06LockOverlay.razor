@@ -1,0 +1,109 @@
+@namespace Wakeel.UI.Pages.Account
+@implements IDisposable
+@inject AccountSession Session
+@inject LockService Locks
+@inject NavigationManager Nav
+
+@* W06: the session locks itself after the inactivity the settings name, and this lays itself over
+   whatever screen was open — the work underneath is untouched, and every draft was already saved. *@
+@if (Session.IsLocked)
+{
+    <div class="w06-scrim" role="presentation">
+        <div class="w06-card" role="dialog" aria-modal="true" aria-labelledby="w06-title">
+            <span class="w06-mark" aria-hidden="true"><WIcon Name="lock" Size="26" /></span>
+            <h2 id="w06-title" class="w-text-title">@Ar.FirstRun.Lock.Title</h2>
+            <p class="w06-desc">@LockDescription</p>
+
+            <div class="w06-identity">
+                <WAvatar Name="@EmployeeName" Size="40" />
+                <div class="w06-identity-text">
+                    <p class="w06-identity-name">@EmployeeName</p>
+                    <bdi class="w06-muted">@IdentityLine</bdi>
+                </div>
+                <WButton Variant="WButtonVariant.Text" Label="@Ar.FirstRun.Lock.SwitchUser" OnClick="SignOut" />
+            </div>
+
+            <WInput Type="WInputType.Password" Required="true"
+                    Label="@Ar.FirstRun.Login.PasswordLabel"
+                    Error="@_error"
+                    Value="@_password" ValueChanged="OnPasswordChanged" />
+
+            <p class="w06-enter">
+                <span>@Ar.FirstRun.Lock.EnterHint</span>
+                <Kbd Text="@Ar.FirstRun.Lock.EnterKey" />
+            </p>
+
+            <WButton Icon="log-in" Label="@Ar.FirstRun.Lock.Continue"
+                     Loading="_busy" Class="w06-submit" OnClick="UnlockAsync" />
+
+            <WCard Variant="WSemanticVariant.Info" Icon="save"
+                   Title="@Ar.FirstRun.Lock.DraftsTitle"
+                   Desc="@Ar.FirstRun.Lock.DraftsDesc" />
+        </div>
+    </div>
+}
+
+@code {
+    private string? _password;
+    private string? _error;
+    private bool _busy;
+
+    private string EmployeeName => Session.Installation?.EmployeeName ?? Ar.AppName;
+
+    private string IdentityLine => Session.Installation is { } installation
+        ? Ar.FirstRun.Login.IdentityLine(
+            SetupRefusals.RoleOf(installation.Role),
+            installation.EmployeeNo,
+            installation.DeviceNo)
+        : string.Empty;
+
+    private string LockDescription => Ar.FirstRun.Lock.Desc(
+        Session.AutoLockMinutes,
+        Formats.Time(Session.LockedAtUtc ?? DateTime.UtcNow));
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += HandleChanged;
+        Locks.Start();
+    }
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnPasswordChanged(string? value)
+    {
+        _password = value;
+        _error = null;
+    }
+
+    private async Task UnlockAsync()
+    {
+        if (string.IsNullOrEmpty(_password))
+        {
+            _error = Ar.FirstRun.Login.PasswordRequired;
+            return;
+        }
+
+        _busy = true;
+        SignInResult result;
+        try
+        {
+            var password = _password;
+            result = await Task.Run(() => Locks.UnlockAsync(password));
+        }
+        finally
+        {
+            _busy = false;
+            _password = null;
+        }
+
+        _error = result.Succeeded ? null : result.Message;
+    }
+
+    private void SignOut()
+    {
+        Session.SignOut();
+        Nav.NavigateTo("/login");
+    }
+
+    public void Dispose() => Session.Changed -= HandleChanged;
+}
