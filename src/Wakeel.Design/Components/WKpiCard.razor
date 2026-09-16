@@ -1,0 +1,29 @@
+@namespace Wakeel.Design.Components
+
+<div class="w-kpi">
+    <div class="w-kpi-head">
+        <span class="w-kpi-label">@Label</span>
+        <span class="w-kpi-icon" aria-hidden="true">
+            <WIcon Name="@Icon" Size="18" />
+        </span>
+    </div>
+    <bdi class="w-kpi-value">@Value</bdi>
+    @if (!string.IsNullOrEmpty(Sub))
+    {
+        <span class="w-kpi-sub">@Sub</span>
+    }
+</div>
+
+@code {
+    /// <summary>Metric name (e.g. "متأخر").</summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+
+    /// <summary>Lucide icon name shown at the top-start of the card.</summary>
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+
+    /// <summary>The number itself, rendered as a Latin numeral inside a bdi isolate.</summary>
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+
+    /// <summary>Secondary line under the value (e.g. "تجاوز موعد الاستحقاق").</summary>
+    [Parameter] public string? Sub { get; set; }
+}

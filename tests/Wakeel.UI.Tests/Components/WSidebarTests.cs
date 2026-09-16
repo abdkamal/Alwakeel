@@ -1,7 +1,7 @@
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
-using Wakeel.UI.Components;
-using Wakeel.UI.Services;
+using Wakeel.Design.Components;
+using Wakeel.Design.Services;
 
 namespace Wakeel.UI.Tests.Components;
 

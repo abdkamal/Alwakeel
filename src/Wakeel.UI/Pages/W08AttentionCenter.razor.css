@@ -77,6 +77,13 @@
 }
 
 .w08-due--danger { color: var(--w-danger); font-weight: 600; }
+.w08-due--warning { color: var(--w-warning); font-weight: 600; }
+
+.w08-row-meta {
+    margin-top: 2px;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
 
 .w08-chevron-cell {
     width: 1%;

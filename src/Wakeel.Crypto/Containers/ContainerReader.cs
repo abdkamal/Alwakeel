@@ -147,6 +147,14 @@ public sealed class ContainerReader : IDisposable
                     options.IssuerCertificate);
             }
 
+            // The organisation root exists to sign the one file the organisation itself makes.
+            // Letting it stand as the producer of a sync or message packet would hand whoever
+            // holds the root key a second, unaudited identity inside an office it never joined.
+            if (manifest.Producer.Body.Kind == DeviceKind.Org && manifest.Type != ContainerKind.Setup)
+            {
+                throw new CryptoException(ErrorCode.BadSignature, "Only a setup file may be produced by the organisation itself.");
+            }
+
             if (options.ExpectedKind is { } expected && manifest.Type != expected)
             {
                 throw new CryptoException(ErrorCode.UnknownKind, "This file is not of the kind the operation expects.");

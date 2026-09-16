@@ -1,7 +1,7 @@
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Wakeel.UI.Components;
+using Wakeel.Design.Components;
 using Wakeel.UI.Layout;
 using Wakeel.UI.Pages;
 using Wakeel.UI.Services;
@@ -101,5 +101,39 @@ public class ShellTests : WakeelTestContext
 
         Assert.Equal("مركز الانتباه", headerState.Title);
         Assert.Equal(WSidebar.Keys.Attention, headerState.NavKey);
+    }
+
+    /// <summary>
+    /// Regression for the B0-closeout review's expenses-table finding: header and body column counts
+    /// must agree (5 each: الموظف/البيان/التاريخ/المبلغ plus a visually-hidden actions label), and
+    /// dates must be isolated in &lt;bdi&gt; per AGREEMENT item 55.
+    /// </summary>
+    [Fact]
+    public void W08AttentionCenter_ExpensesTable_HasFiveMatchingHeaderAndBodyColumns()
+    {
+        var cut = Render<W08AttentionCenter>();
+
+        var table = cut.FindAll(".w-table").Last(t => t.QuerySelector(".w08-expense-meta") is not null);
+
+        var headerCells = table.QuerySelectorAll("thead th");
+        Assert.Equal(5, headerCells.Length);
+        Assert.Equal("الموظف", headerCells[0].TextContent.Trim());
+        Assert.Equal("البيان", headerCells[1].TextContent.Trim());
+        Assert.Equal("التاريخ", headerCells[2].TextContent.Trim());
+        Assert.Equal("المبلغ", headerCells[3].TextContent.Trim());
+        Assert.Contains("إجراءات الموافقة", headerCells[4].QuerySelector(".w-visually-hidden")!.TextContent);
+
+        var bodyRows = table.QuerySelectorAll("tbody tr");
+        Assert.Equal(2, bodyRows.Length);
+        foreach (var row in bodyRows)
+        {
+            Assert.Equal(5, row.QuerySelectorAll("td").Length);
+        }
+
+        var firstRowDate = bodyRows[0].QuerySelectorAll("td")[2];
+        Assert.Equal("11/09/2026", firstRowDate.QuerySelector("bdi")!.TextContent);
+
+        var secondRowDate = bodyRows[1].QuerySelectorAll("td")[2];
+        Assert.Equal("10/09/2026", secondRowDate.QuerySelector("bdi")!.TextContent);
     }
 }

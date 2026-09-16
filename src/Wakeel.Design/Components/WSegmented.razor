@@ -1,0 +1,27 @@
+@namespace Wakeel.Design.Components
+
+<div class="w-segmented" role="tablist">
+    @foreach (var option in Options)
+    {
+        <button type="button" role="tab" class="w-segmented-item @(IsSelected(option.Value) ? "w-segmented-item--selected" : null)"
+                aria-selected="@(IsSelected(option.Value) ? "true" : "false")"
+                @onclick="() => SelectAsync(option.Value)">
+            @option.Label
+        </button>
+    }
+</div>
+
+@code {
+    /// <summary>Ordered (Value, Label) options.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<(string Value, string Label)> Options { get; set; } = Array.Empty<(string, string)>();
+
+    /// <summary>The currently selected option's value.</summary>
+    [Parameter] public string? SelectedValue { get; set; }
+
+    /// <summary>Raised with the newly selected value (use with @bind-SelectedValue).</summary>
+    [Parameter] public EventCallback<string> SelectedValueChanged { get; set; }
+
+    private bool IsSelected(string value) => string.Equals(SelectedValue, value, StringComparison.Ordinal);
+
+    private Task SelectAsync(string value) => SelectedValueChanged.InvokeAsync(value);
+}

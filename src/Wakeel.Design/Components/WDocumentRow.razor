@@ -1,0 +1,28 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Bidi
+
+<button type="button" class="w-doc-row" @onclick="HandleClickAsync">
+    <span class="w-doc-row-icon" aria-hidden="true">
+        <WIcon Name="@Icon" Size="20" />
+    </span>
+    <span class="w-doc-row-text">
+        <bdi class="w-doc-row-name">@FileName</bdi>
+        <span class="w-doc-row-meta">@Meta</span>
+    </span>
+</button>
+
+@code {
+    /// <summary>File name with extension, isolated with a bdi (e.g. «عقد_2026.pdf»).</summary>
+    [Parameter, EditorRequired] public string FileName { get; set; } = string.Empty;
+
+    /// <summary>Secondary line (size, date, uploader).</summary>
+    [Parameter] public string? Meta { get; set; }
+
+    /// <summary>Lucide icon reflecting the file type. Defaults to a generic document icon.</summary>
+    [Parameter] public string Icon { get; set; } = "file-text";
+
+    /// <summary>Raised when the row is clicked (opens the document).</summary>
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private Task HandleClickAsync() => OnClick.InvokeAsync();
+}

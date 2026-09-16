@@ -4,11 +4,15 @@ namespace Wakeel.Crypto;
 public sealed class ContainerEntrySource
 {
     /// <summary>
-    /// Characters a single path segment must not contain, beyond '\', ':' and the control
-    /// characters already rejected for the whole name — these are the extra characters Windows
-    /// itself refuses in one file or folder name.
+    /// Characters a single path segment must not contain: the platform's own list of the
+    /// characters that are illegal inside one file or folder name, minus the two separators,
+    /// which the whole name rules already handle ('/' separates the segments and '\' is refused
+    /// outright). Deriving the set from <see cref="Path.GetInvalidFileNameChars"/> instead of
+    /// writing it out keeps the predicate in step with the platform rather than with a list that
+    /// happened to be right on one machine on one day.
     /// </summary>
-    private static readonly char[] SegmentInvalidChars = ['"', '<', '>', '|', '*', '?'];
+    private static readonly char[] SegmentInvalidChars =
+        [.. Path.GetInvalidFileNameChars().Where(character => character is not ('/' or '\\'))];
 
     /// <summary>DOS device names Windows reserves, whatever extension follows them.</summary>
     private static readonly HashSet<string> ReservedDeviceNames = new(StringComparer.OrdinalIgnoreCase)
@@ -98,6 +102,17 @@ public sealed class ContainerEntrySource
 
     public static ContainerEntrySource FromText(string name, string content) =>
         FromBytes(name, System.Text.Encoding.UTF8.GetBytes(content ?? string.Empty));
+
+    /// <summary>
+    /// An entry whose bytes come from a stream the caller opens on demand. The factory is
+    /// called once, while the payload is being staged, and the stream is closed straight after,
+    /// so a large attachment never has to be held in memory next to the rest of the file.
+    /// </summary>
+    public static ContainerEntrySource FromStream(string name, Func<Stream> open)
+    {
+        ArgumentNullException.ThrowIfNull(open);
+        return new ContainerEntrySource(name, open);
+    }
 
     public static ContainerEntrySource FromFile(string name, string path)
     {

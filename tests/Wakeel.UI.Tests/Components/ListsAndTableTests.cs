@@ -1,5 +1,5 @@
 using Bunit;
-using Wakeel.UI.Components;
+using Wakeel.Design.Components;
 
 namespace Wakeel.UI.Tests.Components;
 
@@ -147,8 +147,8 @@ public class ListsAndTableTests : WakeelTestContext
             new("عرض", "eye", default),
         }));
 
-        Assert.Equal(Wakeel.UI.Text.Ar.Menu.MoreActions, cut.Find(".w-menu-trigger").GetAttribute("aria-label"));
-        Assert.Contains(Wakeel.UI.Text.Ar.Menu.MoreActions, cut.Find(".w-tooltip-bubble").TextContent);
+        Assert.Equal(Wakeel.Design.Text.Ar.Menu.MoreActions, cut.Find(".w-menu-trigger").GetAttribute("aria-label"));
+        Assert.Contains(Wakeel.Design.Text.Ar.Menu.MoreActions, cut.Find(".w-tooltip-bubble").TextContent);
     }
 
     [Fact]

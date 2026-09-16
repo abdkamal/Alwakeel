@@ -1,0 +1,145 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Text
+@implements IAsyncDisposable
+@inject IJSRuntime Js
+
+@if (Open)
+{
+    <div class="w-dialog-scrim" @onclick="HandleScrimClickAsync">
+        <div class="w-dialog" role="@(Kind == WDialogKind.Danger ? "alertdialog" : "dialog")" aria-modal="true" aria-labelledby="@_titleId" @onclick:stopPropagation="true" @ref="_dialogRef">
+            <div class="w-dialog-head">
+                <h2 id="@_titleId" class="w-dialog-title">@Title</h2>
+                <button type="button" class="w-dialog-close" aria-label="@Ar.Buttons.Close" @onclick="RequestCloseAsync">
+                    <WIcon Name="x" Size="18" />
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(Desc))
+            {
+                <p class="w-dialog-desc">@Desc</p>
+            }
+            @if (ChildContent is not null)
+            {
+                <div class="w-dialog-body">@ChildContent</div>
+            }
+            <div class="w-dialog-actions">
+                <WButton Variant="@(Kind == WDialogKind.Danger ? WButtonVariant.Danger : WButtonVariant.Primary)"
+                         Icon="@ResolvedConfirmIcon" Label="@ConfirmLabel" OnClick="HandleConfirmAsync" />
+                <WButton Variant="WButtonVariant.Secondary" Icon="@ResolvedCancelIcon" Label="@CancelLabel" OnClick="RequestCloseAsync" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private static int _seq;
+    private readonly string _titleId = $"w-dialog-title-{Interlocked.Increment(ref _seq)}";
+    private ElementReference _dialogRef;
+    private DotNetObjectReference<WDialog>? _dotNetRef;
+    private bool _wasOpen;
+
+    /// <summary>Whether the dialog is currently shown.</summary>
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>Normal (primary confirm) or Danger (irreversible action: confirm renders as WButtonVariant.Danger).</summary>
+    [Parameter] public WDialogKind Kind { get; set; } = WDialogKind.Normal;
+
+    /// <summary>Dialog title.</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>Explanatory paragraph under the title.</summary>
+    [Parameter] public string? Desc { get; set; }
+
+    /// <summary>Extra body content (forms, lists) below the description.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Confirm button label.</summary>
+    [Parameter] public string ConfirmLabel { get; set; } = Ar.Buttons.Confirm;
+
+    /// <summary>Cancel button label.</summary>
+    [Parameter] public string CancelLabel { get; set; } = Ar.Buttons.Cancel;
+
+    /// <summary>
+    /// Confirm button icon. Defaults to a check mark, or a "no entry" glyph for the Danger kind's
+    /// irreversible confirm (e.g. «حذف نهائيًا»), matching design/exports W92.
+    /// </summary>
+    [Parameter] public string? ConfirmIcon { get; set; }
+
+    /// <summary>Cancel button icon. Defaults to an x mark.</summary>
+    [Parameter] public string? CancelIcon { get; set; }
+
+    private string ResolvedConfirmIcon => ConfirmIcon ?? (Kind == WDialogKind.Danger ? "ban" : "check");
+
+    private string ResolvedCancelIcon => CancelIcon ?? "x";
+
+    /// <summary>Raised when the confirm button is clicked.</summary>
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    /// <summary>Raised when the dialog is dismissed: cancel button, close (X) button, Esc, or a click on the scrim.</summary>
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    /// <summary>When true (default), clicking the scrim behind the dialog closes it like Cancel.</summary>
+    [Parameter] public bool CloseOnScrimClick { get; set; } = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Open && !_wasOpen)
+        {
+            _wasOpen = true;
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            try
+            {
+                await Js.InvokeVoidAsync("wakeelUi.trapDialog", _dialogRef, _dotNetRef);
+            }
+            catch (JSException)
+            {
+                // No interop available (e.g. a bUnit test host without the JS shim); focus trap/Esc are then inert.
+            }
+        }
+        else if (!Open && _wasOpen)
+        {
+            _wasOpen = false;
+            try
+            {
+                await Js.InvokeVoidAsync("wakeelUi.releaseDialog");
+            }
+            catch (JSException)
+            {
+                // No interop available (e.g. a bUnit test host without the JS shim).
+            }
+        }
+    }
+
+    /// <summary>Invoked from JS when the user presses Esc while the dialog is open.</summary>
+    [JSInvokable]
+    public Task HandleEscapeAsync() => RequestCloseAsync();
+
+    private Task HandleConfirmAsync(MouseEventArgs args) => OnConfirm.InvokeAsync();
+
+    private Task RequestCloseAsync() => OnCancel.InvokeAsync();
+
+    private Task HandleScrimClickAsync() => CloseOnScrimClick ? RequestCloseAsync() : Task.CompletedTask;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotNetRef is not null)
+        {
+            if (_wasOpen)
+            {
+                try
+                {
+                    await Js.InvokeVoidAsync("wakeelUi.releaseDialog");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // The WebView/circuit is already gone; there is nothing left to release.
+                }
+                catch (JSException)
+                {
+                    // No interop available (e.g. a bUnit test host without the JS shim).
+                }
+            }
+
+            _dotNetRef.Dispose();
+        }
+    }
+}

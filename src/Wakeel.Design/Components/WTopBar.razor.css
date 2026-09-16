@@ -1,0 +1,74 @@
+.w-topbar {
+    height: 56px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-inline: 20px;
+    background: var(--w-surface);
+    border-bottom: 1px solid var(--w-border);
+}
+
+.w-topbar-search { width: 360px; max-width: 40vw; }
+.w-topbar-search ::deep .w-search { width: 100%; }
+
+.w-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.w-topbar-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 40px;
+    padding-inline: 8px;
+    border-radius: var(--w-radius);
+    flex-shrink: 0;
+}
+
+.w-topbar-user-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1px;
+    text-align: end;
+    width: 128px;
+    min-width: 0;
+}
+
+.w-topbar-user-name,
+.w-topbar-user-role {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.w-topbar-user-name {
+    font-size: var(--w-fs-body);
+    font-weight: 700;
+    color: var(--w-text);
+}
+
+.w-topbar-user-role {
+    font-size: 11px;
+    color: var(--w-muted);
+}
+
+.w-topbar-bell {
+    position: relative;
+    display: inline-flex;
+}
+
+.w-topbar-bell-badge {
+    position: absolute;
+    top: 2px;
+    inset-inline-end: 2px;
+    pointer-events: none;
+}

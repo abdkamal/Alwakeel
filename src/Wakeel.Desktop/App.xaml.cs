@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Components.WebView.Wpf;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Wakeel.Design;
+using Wakeel.Design.Services;
 using Wakeel.Desktop.Services;
 using Wakeel.UI.Services;
 
@@ -33,9 +35,10 @@ public partial class App : Application
 #if DEBUG
                 services.AddBlazorWebViewDeveloperTools();
 #endif
+                // Registered before AddWakeelDesign() so its TryAdd leaves this durable, file-backed
+                // store in place instead of the design system's default in-memory one.
                 services.AddSingleton<IUiStateStore>(_ => new FileUiStateStore(WakeelPaths.UiStateFilePath));
-                services.AddScoped<ThemeService>();
-                services.AddScoped<IToastService, ToastService>();
+                services.AddWakeelDesign();
                 services.AddScoped<PageHeaderState>();
             })
             .Build();

@@ -28,7 +28,7 @@
 
 | جدول | الأعمدة الرئيسية | ملاحظات |
 |---|---|---|
-| `installation` | صف واحد: `org_id`, `org_name`, `logo_document_id`, `office_id`, `office_name`, `office_unit_id`, `office_code`, `device_id`, `device_no` (1–9), `employee_no` (1–9), `employee_name`, `role` (director/secretary/custodian), `sync_scope` (full/custody), `cycle_start_day` (1–28), `numbering_format`, `setup_version`, `activated_at`, `app_version`, `build_date`, `org_x25519_pub`, `org_ed25519_pub` | يُملأ من `.wakeel-setup`؛ للقراءة فقط في الوكيل |
+| `installation` | صف واحد: `org_id`, `org_name`, `logo_document_id`, `office_id`, `office_name`, `office_unit_id`, `office_code`, `device_id`, `device_no` (1–9), `employee_no` (1–9), `employee_name`, `role` (manager/secretary/custodian), `sync_scope` (full/custody), `cycle_start_day` (1–28), `numbering_format`, `setup_version`, `activated_at`, `app_version`, `build_date`, `org_x25519_pub`, `org_ed25519_pub` | يُملأ من `.wakeel-setup`؛ للقراءة فقط في الوكيل |
 | `org_units` | `id`, `parent_id`, `level` (org/department/section/unit), `name`, `head_name`, `head_title`, `office_code`, `sort_order`, `x25519_pub` | الهيكلية كاملة من ملف الإعداد؛ الدليل الداخلي مشتق منها |
 | `devices` | `id`, `unit_id`, `device_no`, `employee_no`, `employee_name`, `role`, `kind` (pc/phone), `ed25519_pub`, `x25519_pub`, `certificate` (BLOB)، `issued_at`, `revoked_at`, `paired_at`, `last_sync_at`, `sync_scope` | أجهزة المكتب والهيئة المعروفة + الهواتف المقترنة |
 | `account` | صف واحد: `employee_id`, `display_name`, `photo_document_id`, `password_changed_at`, `failed_attempts`, `locked_until`, `auto_lock_minutes` (افتراضي 10) | الأغلفة نفسها في `keys\installation.key` لا في القاعدة |

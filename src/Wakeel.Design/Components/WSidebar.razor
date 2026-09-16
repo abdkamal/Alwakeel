@@ -1,0 +1,159 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Text
+@inject Wakeel.Design.Services.IUiStateStore StateStore
+
+<aside class="w-sidebar">
+    <div class="w-sidebar-org">
+        @* TODO(B2): replace this generic "building" glyph with the approved brand mark once it is
+           vendored from design/exports/brand (AGREEMENT item 54). *@
+        <span class="w-sidebar-org-icon" aria-hidden="true">
+            <WIcon Name="building" Size="20" Mirror="false" />
+        </span>
+        <span class="w-sidebar-org-text">
+            <bdi class="w-sidebar-org-name">@OrgName</bdi>
+            <span class="w-sidebar-office">@OfficeName</span>
+        </span>
+    </div>
+
+    <nav class="w-sidebar-nav" aria-label="@Ar.Nav.MainNavigationLabel">
+        @foreach (var group in Groups)
+        {
+            var expanded = !IsCollapsed(group.Key);
+            <div class="w-sidebar-group">
+                <WTooltip Text="@(expanded ? Ar.Nav.CollapseGroup : Ar.Nav.ExpandGroup)">
+                    <button type="button" class="w-sidebar-group-header" aria-expanded="@(expanded ? "true" : "false")" @onclick="() => ToggleGroup(group.Key)">
+                        <span class="w-sidebar-group-label">@group.Label</span>
+                        @if (GroupBadge(group.Key) is > 0 and var gCount)
+                        {
+                            <WBadge Count="gCount" Kind="WBadgeKind.Group" />
+                        }
+                        <WIcon Name="chevron-down" Size="14" Class="@("w-sidebar-chevron" + (expanded ? "" : " w-sidebar-chevron--collapsed"))" Mirror="false" />
+                    </button>
+                </WTooltip>
+                @if (expanded)
+                {
+                    <div class="w-sidebar-items">
+                        @foreach (var item in group.Items)
+                        {
+                            var selected = string.Equals(item.Key, SelectedKey, StringComparison.Ordinal);
+                            <button type="button" class="w-sidebar-item @(selected ? "w-sidebar-item--selected" : null)"
+                                    aria-current="@(selected ? "page" : null)" @onclick="() => NavigateAsync(item.Key)">
+                                <WIcon Name="@item.Icon" Size="18" />
+                                <span class="w-sidebar-item-label">@item.Label</span>
+                                @if (ItemBadge(item.Key) is > 0 and var iCount)
+                                {
+                                    <WBadge Count="iCount" />
+                                }
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </nav>
+
+    <div class="w-sidebar-footer">
+        <div class="w-sidebar-sync">
+            <WTooltip Text="@Ar.Buttons.Refresh">
+                <button type="button" class="w-sidebar-sync-refresh" aria-label="@Ar.Buttons.Refresh" @onclick="HandleRefreshAsync">
+                    <WIcon Name="refresh-cw" Size="14" />
+                </button>
+            </WTooltip>
+            <span class="w-sidebar-sync-status">
+                <span class="w-sidebar-sync-dot" aria-hidden="true"></span>
+                @SyncStatusText
+            </span>
+        </div>
+        <bdi class="w-sidebar-version">@Ar.Footer.VersionLine(Version)</bdi>
+    </div>
+</aside>
+
+@code {
+    private const string StoreKeyPrefix = "sidebar.group.";
+
+    /// <summary>Ordered collapsible groups making up the whole sidebar (fixed per DESIGN-GUIDE.md).</summary>
+    [Parameter] public IReadOnlyList<WSidebarGroup> Groups { get; set; } = DefaultGroups;
+
+    /// <summary>Key of the currently active nav item (see <see cref="WSidebarItem.Key"/>).</summary>
+    [Parameter] public string? SelectedKey { get; set; }
+
+    /// <summary>Optional pending-item counts keyed by item or group key; absent/zero keys show no badge.</summary>
+    [Parameter] public IReadOnlyDictionary<string, int>? Badges { get; set; }
+
+    /// <summary>Raised with the clicked item's key.</summary>
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+
+    /// <summary>Raised when the sync-status refresh button is clicked.</summary>
+    [Parameter] public EventCallback OnRefreshSync { get; set; }
+
+    /// <summary>Organization name shown at the top of the sidebar.</summary>
+    [Parameter] public string OrgName { get; set; } = Ar.Sample.OrgName;
+
+    /// <summary>Office name shown under the organization name.</summary>
+    [Parameter] public string OfficeName { get; set; } = Ar.Sample.OfficeName;
+
+    /// <summary>Footer sync-status text (e.g. Ar.Footer.Synced).</summary>
+    [Parameter] public string SyncStatusText { get; set; } = Ar.Footer.Synced;
+
+    /// <summary>Product version shown in the footer (e.g. "v0.21").</summary>
+    [Parameter] public string Version { get; set; } = "v0.21";
+
+    private int GroupBadge(string key) => Badges is not null && Badges.TryGetValue(key, out var count) ? count : 0;
+
+    private int ItemBadge(string key) => Badges is not null && Badges.TryGetValue(key, out var count) ? count : 0;
+
+    private bool IsCollapsed(string groupKey) => StateStore.GetBool(StoreKeyPrefix + groupKey, defaultValue: false);
+
+    private void ToggleGroup(string groupKey) => StateStore.SetBool(StoreKeyPrefix + groupKey, !IsCollapsed(groupKey));
+
+    private Task NavigateAsync(string key) => OnNavigate.InvokeAsync(key);
+
+    private Task HandleRefreshAsync() => OnRefreshSync.InvokeAsync();
+
+    /// <summary>The fixed navigation tree for الوكيل v0.21 (DESIGN-GUIDE.md "هيكل" — Sidebar/Nav.Group/Nav.Item).</summary>
+    public static readonly IReadOnlyList<WSidebarGroup> DefaultGroups = new List<WSidebarGroup>
+    {
+        new(Keys.GroupDailyWork, Ar.Groups.DailyWork, new List<WSidebarItem>
+        {
+            new(Keys.Attention, Ar.Nav.AttentionCenter, "layout-grid"),
+            new(Keys.Correspondence, Ar.Nav.Correspondence, "mail"),
+            new(Keys.Tasks, Ar.Nav.TasksAndFollowUp, "check-square"),
+            new(Keys.Meetings, Ar.Nav.Meetings, "users"),
+            new(Keys.Calendar, Ar.Nav.Calendar, "calendar"),
+            new(Keys.Cases, Ar.Nav.Cases, "folder-open"),
+        }),
+        new(Keys.GroupRecords, Ar.Groups.Records, new List<WSidebarItem>
+        {
+            new(Keys.Documents, Ar.Nav.Documents, "file-text"),
+            new(Keys.Parties, Ar.Nav.Parties, "building"),
+            new(Keys.Employees, Ar.Nav.Employees, "id-card"),
+            new(Keys.Assets, Ar.Nav.AssetsAndCustody, "package"),
+        }),
+        new(Keys.GroupFinanceReports, Ar.Groups.FinanceAndReports, new List<WSidebarItem>
+        {
+            new(Keys.Finance, Ar.Nav.Finance, "wallet"),
+            new(Keys.Reports, Ar.Nav.Reports, "bar-chart-3"),
+        }),
+    };
+
+    /// <summary>Stable nav-item/group keys used for selection, badges, and the persisted collapse-state store.</summary>
+    public static class Keys
+    {
+        public const string GroupDailyWork = "daily-work";
+        public const string GroupRecords = "records";
+        public const string GroupFinanceReports = "finance-reports";
+
+        public const string Attention = "attention";
+        public const string Correspondence = "correspondence";
+        public const string Tasks = "tasks";
+        public const string Meetings = "meetings";
+        public const string Calendar = "calendar";
+        public const string Cases = "cases";
+        public const string Documents = "documents";
+        public const string Parties = "parties";
+        public const string Employees = "employees";
+        public const string Assets = "assets";
+        public const string Finance = "finance";
+        public const string Reports = "reports";
+    }
+}

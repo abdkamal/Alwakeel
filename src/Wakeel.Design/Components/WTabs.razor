@@ -1,0 +1,10 @@
+@namespace Wakeel.Design.Components
+
+<div class="w-tabs" role="tablist">
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>WTabItem children.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

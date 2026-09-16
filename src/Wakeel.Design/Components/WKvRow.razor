@@ -1,0 +1,25 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Bidi
+
+<div class="w-kv-row">
+    <span class="w-kv-key">@Key</span>
+    @if (ValueContent is not null)
+    {
+        <span class="w-kv-value">@ValueContent</span>
+    }
+    else
+    {
+        <bdi class="w-kv-value">@Value</bdi>
+    }
+</div>
+
+@code {
+    /// <summary>The key/field name label (right column).</summary>
+    [Parameter, EditorRequired] public string Key { get; set; } = string.Empty;
+
+    /// <summary>Plain-text value, isolated with &lt;bdi&gt; so any embedded Latin/numeric token stays put (e.g. a file name, a reference number).</summary>
+    [Parameter] public string? Value { get; set; }
+
+    /// <summary>Rich value content, used instead of Value when the value needs its own markup (e.g. a WChip).</summary>
+    [Parameter] public RenderFragment? ValueContent { get; set; }
+}

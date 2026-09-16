@@ -105,6 +105,31 @@ public static class CertificateChain
 
         switch (certificate.Body.Kind)
         {
+            case DeviceKind.Org:
+                // The root certifies itself, so its own signature proves nothing by itself. What
+                // makes it trustworthy is that the key inside it IS the organisation key the
+                // verifier is holding: on a machine that has already pinned one, a root carrying
+                // any other key is refused right here; on a machine opening its first setup file
+                // the caller passes the key out of this very certificate, and what is then being
+                // proved is that the producer really holds the private half of the key it shows.
+                if (!string.Equals(certificate.Body.DeviceId, certificate.Body.OrgId, StringComparison.Ordinal)
+                    || !string.Equals(certificate.Body.IssuerId, certificate.Body.OrgId, StringComparison.Ordinal))
+                {
+                    throw new CryptoException(ErrorCode.BadSignature, "An organisation certificate must name the organisation itself.");
+                }
+
+                if (!certificate.SigningPublicKey.AsSpan().SequenceEqual(orgSigningPublicKey))
+                {
+                    throw new CryptoException(ErrorCode.Tampered, "The organisation certificate carries a different key than the one trusted here.");
+                }
+
+                if (!certificate.VerifySignature(orgSigningPublicKey))
+                {
+                    throw new CryptoException(ErrorCode.BadSignature, "The organisation certificate is not signed by its own key.");
+                }
+
+                break;
+
             case DeviceKind.Pc:
                 if (!string.Equals(certificate.Body.IssuerId, certificate.Body.OrgId, StringComparison.Ordinal))
                 {
@@ -182,11 +207,19 @@ public static class CertificateChain
         }
 
         if (string.IsNullOrWhiteSpace(body.OrgId)
-            || string.IsNullOrWhiteSpace(body.OfficeId)
             || string.IsNullOrWhiteSpace(body.DeviceId)
             || string.IsNullOrWhiteSpace(body.IssuerId))
         {
             throw new CryptoException(ErrorCode.Corrupt, "The certificate is missing one of its identifiers.");
+        }
+
+        // The organisation belongs to no office, and a certificate that claims one would let the
+        // root be read as a device of that office; every other kind must name its office.
+        if (body.Kind == DeviceKind.Org
+            ? !string.IsNullOrEmpty(body.OfficeId)
+            : string.IsNullOrWhiteSpace(body.OfficeId))
+        {
+            throw new CryptoException(ErrorCode.Corrupt, "The certificate names its office incorrectly.");
         }
 
         if (!Base64Url.TryDecode(body.Ed25519Pub, out var signing) || signing.Length != DeviceIdentity.PublicKeySize)

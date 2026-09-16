@@ -1,0 +1,66 @@
+@namespace Wakeel.Design.Components
+
+<div class="w-table-wrap">
+    @if (IsEmpty)
+    {
+        <div class="w-table-empty">
+            @EmptyState
+        </div>
+    }
+    else
+    {
+        <div class="w-table-scroll">
+            <table class="w-table">
+                <thead>
+                    <tr>@HeaderRow</tr>
+                </thead>
+                <tbody>
+                    @ChildContent
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (!IsEmpty && (!string.IsNullOrEmpty(FooterText) || PageCount > 1))
+    {
+        <div class="w-table-footer">
+            <span class="w-table-footer-text">@FooterText</span>
+            @if (PageCount > 1)
+            {
+                <WPager Page="Page" PageCount="PageCount" PageChanged="PageChanged" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Cells for the single header row (a sequence of &lt;th&gt; elements). Rendered inside a
+    /// sticky &lt;thead&gt;&lt;tr&gt;.
+    /// </summary>
+    [Parameter] public RenderFragment? HeaderRow { get; set; }
+
+    /// <summary>
+    /// Body rows (&lt;tr&gt; elements). A row that needs attention should add the
+    /// <c>w-table-row--attention</c> class (3px danger edge + attention-tinted background, per
+    /// DESIGN-GUIDE.md's "بنية الشاشة القياسية").
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>When true, renders <see cref="EmptyState"/> instead of the table (e.g. a WStateCard for "no results").</summary>
+    [Parameter] public bool IsEmpty { get; set; }
+
+    /// <summary>Content shown instead of the table when <see cref="IsEmpty"/> is true.</summary>
+    [Parameter] public RenderFragment? EmptyState { get; set; }
+
+    /// <summary>Footer range text, e.g. «عرض 1–20 من 128» (build with Ar.Table.ShowingRange).</summary>
+    [Parameter] public string? FooterText { get; set; }
+
+    /// <summary>1-based current page number for the footer pager.</summary>
+    [Parameter] public int Page { get; set; } = 1;
+
+    /// <summary>Total page count; the footer pager only renders when this is greater than 1.</summary>
+    [Parameter] public int PageCount { get; set; } = 1;
+
+    /// <summary>Raised with the newly chosen page number.</summary>
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+}

@@ -116,7 +116,13 @@ public sealed class DateTimeConverterTests : IDisposable
             session.Db.SaveChanges();
             WriteRawCreatedAt(paths, key, party.Id, corrupt);
 
-            Assert.Empty(logger.Warnings);
+            // Not Assert.Empty(logger.Warnings): DataIntegrityLog.Reported is a static,
+            // process-wide event and WakeelDb subscribes to it for as long as this session is
+            // open, so a concurrently running xunit test class that reports an unrelated
+            // unreadable timestamp would also reach this logger and make an unfiltered
+            // precondition flake. Filter by the unique corrupt text instead, matching every other
+            // assertion in this file.
+            Assert.DoesNotContain(logger.Warnings, w => w.Contains(corrupt, StringComparison.Ordinal));
             _ = session.Db.Parties.AsNoTracking().Single(p => p.Id == party.Id);
 
             var warning = Assert.Single(logger.Warnings, w => w.Contains(corrupt, StringComparison.Ordinal));

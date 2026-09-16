@@ -1,0 +1,24 @@
+@namespace Wakeel.Design.Components
+
+<div class="w-progress">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <div class="w-progress-head">
+            <span class="w-progress-label">@Label</span>
+            <bdi class="w-progress-percent">@ClampedPercent%</bdi>
+        </div>
+    }
+    <div class="w-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@ClampedPercent">
+        <div class="w-progress-fill" style="width:@(ClampedPercent)%"></div>
+    </div>
+</div>
+
+@code {
+    /// <summary>Percentage complete, 0-100 (values outside the range are clamped).</summary>
+    [Parameter] public int Percent { get; set; }
+
+    /// <summary>Optional label shown above the track alongside the percentage (e.g. "من 10 بنود مكتملة 8").</summary>
+    [Parameter] public string? Label { get; set; }
+
+    private int ClampedPercent => Math.Clamp(Percent, 0, 100);
+}

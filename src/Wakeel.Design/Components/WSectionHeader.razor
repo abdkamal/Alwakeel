@@ -1,0 +1,47 @@
+@namespace Wakeel.Design.Components
+
+<div class="w-section-header">
+    <div class="w-section-header-text">
+        <div class="w-section-header-title-row">
+            <h2 class="w-section-header-title w-text-section">@Title</h2>
+            @if (Count is not null)
+            {
+                <WBadge Count="Count.Value" />
+            }
+        </div>
+        @if (!string.IsNullOrEmpty(Sub))
+        {
+            <p class="w-section-header-sub">@Sub</p>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(ActionLabel))
+    {
+        <WButton Variant="WButtonVariant.Text" Label="@ActionLabel" OnClick="HandleActionAsync" />
+    }
+    else if (ActionContent is not null)
+    {
+        @ActionContent
+    }
+</div>
+
+@code {
+    /// <summary>Section heading.</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>Optional explanatory line under the title.</summary>
+    [Parameter] public string? Sub { get; set; }
+
+    /// <summary>Optional count badge shown after the title, which puts it to the title's LEFT under RTL (e.g. the "6" on "مصروفات الهاتف بانتظار التأكيد").</summary>
+    [Parameter] public int? Count { get; set; }
+
+    /// <summary>Label for a simple trailing text-button action (e.g. "عرض المزيد").</summary>
+    [Parameter] public string? ActionLabel { get; set; }
+
+    /// <summary>Raised when the simple text-button action is clicked.</summary>
+    [Parameter] public EventCallback OnAction { get; set; }
+
+    /// <summary>Custom action content, used instead of ActionLabel when richer controls are needed.</summary>
+    [Parameter] public RenderFragment? ActionContent { get; set; }
+
+    private Task HandleActionAsync(MouseEventArgs args) => OnAction.InvokeAsync();
+}

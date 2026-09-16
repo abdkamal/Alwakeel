@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Wakeel.Design\Wakeel.Design.csproj" />
     <ProjectReference Include="..\Wakeel.Core\Wakeel.Core.csproj" />
     <ProjectReference Include="..\Wakeel.Crypto\Wakeel.Crypto.csproj" />
   </ItemGroup>

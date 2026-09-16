@@ -1,0 +1,37 @@
+@namespace Wakeel.Design.Components
+
+<button type="button" class="w-cal-day @(IsToday ? "w-cal-day--today" : null) @(IsSelected ? "w-cal-day--selected" : null) @(IsOutsideMonth ? "w-cal-day--outside" : null)"
+        disabled="@IsOutsideMonth" @onclick="HandleClickAsync">
+    <bdi class="w-cal-day-num">@DayNumber</bdi>
+    @if (Events.Count > 0)
+    {
+        <span class="w-cal-day-events">
+            @foreach (var eventText in Events.Take(2))
+            {
+                <span class="w-cal-day-event">@eventText</span>
+            }
+        </span>
+    }
+</button>
+
+@code {
+    /// <summary>Day-of-month number (Western numeral, per DESIGN-GUIDE.md RTL rules).</summary>
+    [Parameter] public int DayNumber { get; set; }
+
+    /// <summary>Up to two short event labels shown under the day number.</summary>
+    [Parameter] public IReadOnlyList<string> Events { get; set; } = Array.Empty<string>();
+
+    /// <summary>Highlights this cell as the current date.</summary>
+    [Parameter] public bool IsToday { get; set; }
+
+    /// <summary>Highlights this cell as the user's current selection.</summary>
+    [Parameter] public bool IsSelected { get; set; }
+
+    /// <summary>Dims and disables a cell that belongs to the previous/next month's leading/trailing days.</summary>
+    [Parameter] public bool IsOutsideMonth { get; set; }
+
+    /// <summary>Raised when the day cell is clicked.</summary>
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private Task HandleClickAsync() => OnClick.InvokeAsync();
+}

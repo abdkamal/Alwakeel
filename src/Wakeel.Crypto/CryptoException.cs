@@ -26,6 +26,15 @@ public enum ErrorCode
 
     /// <summary>The structure could not be parsed at all.</summary>
     Corrupt,
+
+    /// <summary>A setup file was prepared for a different device than the one installed here.</summary>
+    OtherDevice,
+
+    /// <summary>A setup file carries an export sequence older than the one already installed.</summary>
+    Older,
+
+    /// <summary>A setup file is dated further into the future than the clock allows.</summary>
+    FutureDate,
 }
 
 /// <summary>

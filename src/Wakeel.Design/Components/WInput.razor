@@ -1,0 +1,241 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Text
+@inject IJSRuntime Js
+
+<div class="w-field @(HasError ? "w-field--error" : null)">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="w-field-label" for="@_id">
+            @Label
+            @if (Required)
+            {
+                <span class="w-field-required" aria-hidden="true">*</span>
+            }
+        </label>
+    }
+
+    @if (Type == WInputType.Textarea)
+    {
+        <textarea id="@_id" class="w-field-control w-field-textarea" placeholder="@Placeholder" disabled="@Disabled"
+                  value="@Value" @oninput="OnInputAsync" rows="4"></textarea>
+    }
+    else
+    {
+        <div class="w-field-control-wrap">
+            @if (Type == WInputType.Date)
+            {
+                <input @ref="_dateRef" id="@_id" class="w-field-control" type="text" inputmode="numeric" maxlength="10"
+                       placeholder="@ResolvedPlaceholder" disabled="@Disabled"
+                       value="@Value" @oninput="OnDateInputAsync" />
+            }
+            else
+            {
+                <input id="@_id" class="w-field-control" type="@ResolvedHtmlType" placeholder="@ResolvedPlaceholder" disabled="@Disabled"
+                       value="@Value" @oninput="OnInputAsync" />
+            }
+            @if (Type == WInputType.Password)
+            {
+                <button type="button" class="w-field-adornment" @onclick="ToggleReveal" aria-label="@(_revealed ? Ar.Fields.HidePassword : Ar.Fields.ShowPassword)">
+                    <WIcon Name="@(_revealed ? "eye-off" : "eye")" Size="16" />
+                </button>
+            }
+            else if (Type == WInputType.Date)
+            {
+                <span class="w-field-adornment w-field-adornment--static" aria-hidden="true">
+                    <WIcon Name="calendar" Size="16" />
+                </span>
+            }
+        </div>
+    }
+
+    @if (HasError)
+    {
+        <span class="w-field-hint w-field-hint--error">
+            <WIcon Name="alert-circle" Size="13" />
+            @Error
+        </span>
+    }
+    else if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="w-field-hint">@Hint</span>
+    }
+</div>
+
+@code {
+    private static int _seq;
+    private readonly string _id = $"w-field-{Interlocked.Increment(ref _seq)}";
+    private bool _revealed;
+    private ElementReference _dateRef;
+
+    /// <summary>Which HTML control to render: Text, Password, Number, Date, or Textarea.</summary>
+    [Parameter] public WInputType Type { get; set; } = WInputType.Text;
+
+    /// <summary>Field label shown above the control.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>Shows a required-field asterisk next to the label.</summary>
+    [Parameter] public bool Required { get; set; }
+
+    /// <summary>Current text value.</summary>
+    [Parameter] public string? Value { get; set; }
+
+    /// <summary>Raised on every input (use with @bind-Value).</summary>
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter] public string? Placeholder { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Helper text shown under the control when there is no error.</summary>
+    [Parameter] public string? Hint { get; set; }
+
+    /// <summary>Arabic error message. When set, replaces the hint and switches the control to its error style.</summary>
+    [Parameter] public string? Error { get; set; }
+
+    private bool HasError => !string.IsNullOrEmpty(Error);
+
+    private string ResolvedHtmlType => Type switch
+    {
+        WInputType.Password => _revealed ? "text" : "password",
+        WInputType.Number => "number",
+        _ => "text",
+    };
+
+    /// <summary>
+    /// ARCHITECTURE.md §12 requires dates displayed as dd/MM/yyyy with Western digits rather than the
+    /// native HTML date input's locale-dependent placeholder (e.g. "yyyy-mm-dd"), so Date renders a
+    /// masked text field with its own default placeholder instead of falling back to <see cref="Placeholder"/>'s absence.
+    /// </summary>
+    private string? ResolvedPlaceholder
+        => Type == WInputType.Date && string.IsNullOrEmpty(Placeholder) ? Ar.Fields.DatePlaceholder : Placeholder;
+
+    private void ToggleReveal() => _revealed = !_revealed;
+
+    private Task OnInputAsync(ChangeEventArgs e) => ValueChanged.InvokeAsync(e.Value?.ToString());
+
+    /// <summary>
+    /// Reformats free-typed input into the dd/MM/yyyy mask on every keystroke: normalizes any
+    /// Arabic-indic digits to Western digits (ARCHITECTURE.md §12), drops everything else, and
+    /// inserts the two separators as soon as enough digits exist for them.
+    /// </summary>
+    /// <remarks>
+    /// When the reformatted string equals the current <see cref="Value"/> — e.g. a rejected
+    /// character was typed, or a digit was inserted in the middle of an already-formatted string
+    /// and the mask collapses back to the same text — the `value` attribute Blazor would render is
+    /// unchanged, so its diff never touches the DOM and a rejected character (or a stale caret)
+    /// stays on screen. In that case the DOM is corrected directly via JS interop instead of relying
+    /// on the ValueChanged round-trip, with the caret restored to sit after the digit that was just
+    /// typed (derived from how many digits preceded the original caret, so editing the middle of an
+    /// already-typed date does not bounce the caret to the end).
+    /// </remarks>
+    private async Task OnDateInputAsync(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? string.Empty;
+        var digits = ExtractWesternDigits(raw);
+        var formatted = FormatDateMask(digits);
+
+        if (formatted == Value)
+        {
+            int caret;
+            try
+            {
+                caret = await Js.InvokeAsync<int>("wakeelUi.getSelectionStart", _dateRef);
+            }
+            catch (JSException)
+            {
+                caret = formatted.Length;
+            }
+
+            var newCaret = CaretForDigitCount(formatted, CountDigitsBefore(raw, caret));
+
+            try
+            {
+                await Js.InvokeVoidAsync("wakeelUi.setInputValue", _dateRef, formatted, newCaret);
+            }
+            catch (JSException)
+            {
+                // No interop available (e.g. a bUnit test host without the JS shim); ValueChanged
+                // below still carries the correct value even though the stale DOM text is not fixed.
+            }
+        }
+
+        await ValueChanged.InvokeAsync(formatted);
+    }
+
+    private static int CountDigitsBefore(string raw, int caret)
+    {
+        var limit = Math.Min(caret, raw.Length);
+        var count = 0;
+        for (var i = 0; i < limit; i++)
+        {
+            if (raw[i] is (>= '0' and <= '9') or (>= '٠' and <= '٩'))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static int CaretForDigitCount(string formatted, int digitCount)
+    {
+        if (digitCount <= 0)
+        {
+            return 0;
+        }
+
+        var seen = 0;
+        for (var i = 0; i < formatted.Length; i++)
+        {
+            if (formatted[i] is >= '0' and <= '9')
+            {
+                seen++;
+                if (seen == digitCount)
+                {
+                    return i + 1;
+                }
+            }
+        }
+
+        return formatted.Length;
+    }
+
+    private static string ExtractWesternDigits(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+        {
+            return string.Empty;
+        }
+
+        var digits = new char[raw.Length];
+        var count = 0;
+        foreach (var ch in raw)
+        {
+            if (ch is >= '0' and <= '9')
+            {
+                digits[count++] = ch;
+            }
+            else if (ch is >= '٠' and <= '٩') // Arabic-indic digits (U+0660..U+0669)
+            {
+                digits[count++] = (char)('0' + (ch - '٠'));
+            }
+        }
+
+        return new string(digits, 0, count);
+    }
+
+    private static string FormatDateMask(string digits)
+    {
+        if (digits.Length > 8)
+        {
+            digits = digits[..8];
+        }
+
+        return digits.Length switch
+        {
+            <= 2 => digits,
+            <= 4 => $"{digits[..2]}/{digits[2..]}",
+            _ => $"{digits[..2]}/{digits[2..4]}/{digits[4..]}",
+        };
+    }
+}

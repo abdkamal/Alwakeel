@@ -1,5 +1,5 @@
 using Bunit;
-using Wakeel.UI.Components;
+using Wakeel.Design.Components;
 
 namespace Wakeel.UI.Tests.Components;
 

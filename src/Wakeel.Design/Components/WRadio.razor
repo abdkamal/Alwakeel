@@ -1,0 +1,34 @@
+@namespace Wakeel.Design.Components
+
+<label class="w-radio @(Disabled ? "w-radio--disabled" : null)">
+    <input type="radio" name="@GroupName" checked="@Checked" disabled="@Disabled" @onchange="OnChangeAsync" />
+    <span class="w-radio-dot" aria-hidden="true"></span>
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <span class="w-radio-label">@Label</span>
+    }
+</label>
+
+@code {
+    /// <summary>Shared HTML radio-group name so only one option in the group can be selected.</summary>
+    [Parameter, EditorRequired] public string GroupName { get; set; } = string.Empty;
+
+    /// <summary>The value this option represents within the group.</summary>
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+
+    /// <summary>Currently selected value for the whole group (compared against <see cref="Value"/>).</summary>
+    [Parameter] public string? SelectedValue { get; set; }
+
+    /// <summary>Raised with this option's <see cref="Value"/> when the user selects it (use with @bind-SelectedValue on each option).</summary>
+    [Parameter] public EventCallback<string> SelectedValueChanged { get; set; }
+
+    /// <summary>Arabic label shown next to the dot.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    private bool Checked => string.Equals(SelectedValue, Value, StringComparison.Ordinal);
+
+    private Task OnChangeAsync(ChangeEventArgs e)
+        => (bool)(e.Value ?? false) ? SelectedValueChanged.InvokeAsync(Value) : Task.CompletedTask;
+}

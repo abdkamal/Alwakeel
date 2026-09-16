@@ -1,0 +1,81 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Text
+@using Wakeel.Design.Bidi
+
+<header class="w-topbar">
+    <div class="w-topbar-actions">
+        <WMenu Items="UserMenuItems">
+            <TriggerContent>
+                <span class="w-topbar-user">
+                    <span class="w-topbar-user-text">
+                        <bdi class="w-topbar-user-name">@UserName</bdi>
+                        <span class="w-topbar-user-role">@UserRole</span>
+                    </span>
+                    <WAvatar Name="@UserName" PhotoUrl="@AvatarUrl" Size="36" />
+                </span>
+            </TriggerContent>
+        </WMenu>
+        <span class="w-topbar-bell">
+            <WButton Variant="WButtonVariant.Icon" Icon="bell" Tooltip="@Ar.TopBar.NotificationsTooltip" OnClick="HandleBellAsync" />
+            @if (NotificationCount > 0)
+            {
+                <span class="w-topbar-bell-badge"><WBadge Count="NotificationCount" /></span>
+            }
+        </span>
+        <WButton Variant="WButtonVariant.Icon" Icon="calendar" Tooltip="@Ar.TopBar.CalendarTooltip" OnClick="HandleCalendarAsync" />
+    </div>
+    <div class="w-topbar-search">
+        <WSearch Value="@SearchValue" ValueChanged="SearchValueChanged" Placeholder="@Ar.TopBar.GlobalSearchPlaceholder"
+                 ShowShortcutHint="false" BindGlobalShortcut="false" />
+    </div>
+</header>
+
+@code {
+    /// <summary>Current global-search text.</summary>
+    [Parameter] public string? SearchValue { get; set; }
+
+    /// <summary>Raised on every keystroke in the global search box.</summary>
+    [Parameter] public EventCallback<string?> SearchValueChanged { get; set; }
+
+    /// <summary>Unread notification count shown as a badge on the bell button.</summary>
+    [Parameter] public int NotificationCount { get; set; }
+
+    /// <summary>Raised when the bell button is clicked.</summary>
+    [Parameter] public EventCallback OnBellClick { get; set; }
+
+    /// <summary>Raised when the calendar button is clicked.</summary>
+    [Parameter] public EventCallback OnCalendarClick { get; set; }
+
+    /// <summary>Signed-in user's full name.</summary>
+    [Parameter, EditorRequired] public string UserName { get; set; } = string.Empty;
+
+    /// <summary>Signed-in user's role/title (e.g. «مدير المكتب»).</summary>
+    [Parameter] public string? UserRole { get; set; }
+
+    /// <summary>Optional photo URL for the avatar; falls back to the name's initial.</summary>
+    [Parameter] public string? AvatarUrl { get; set; }
+
+    /// <summary>Raised when "الإعدادات" is chosen from the user menu.</summary>
+    [Parameter] public EventCallback OnSettings { get; set; }
+
+    /// <summary>Raised when "المساعدة" is chosen from the user menu.</summary>
+    [Parameter] public EventCallback OnHelp { get; set; }
+
+    /// <summary>Raised when "قفل الجهاز" is chosen from the user menu.</summary>
+    [Parameter] public EventCallback OnLock { get; set; }
+
+    /// <summary>Raised when "تسجيل الخروج" is chosen from the user menu.</summary>
+    [Parameter] public EventCallback OnSignOut { get; set; }
+
+    private IReadOnlyList<WMenuItem> UserMenuItems => new List<WMenuItem>
+    {
+        new(Ar.UserMenu.Settings, "settings", OnSettings),
+        new(Ar.UserMenu.Help, "help-circle", OnHelp),
+        new(Ar.UserMenu.Lock, "lock", OnLock),
+        new(Ar.UserMenu.SignOut, "log-out", OnSignOut, Danger: true),
+    };
+
+    private Task HandleBellAsync(Microsoft.AspNetCore.Components.Web.MouseEventArgs args) => OnBellClick.InvokeAsync();
+
+    private Task HandleCalendarAsync(Microsoft.AspNetCore.Components.Web.MouseEventArgs args) => OnCalendarClick.InvokeAsync();
+}

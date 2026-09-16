@@ -1,5 +1,5 @@
 using Bunit;
-using Wakeel.UI.Components;
+using Wakeel.Design.Components;
 
 namespace Wakeel.UI.Tests.Components;
 
@@ -90,10 +90,16 @@ public class WButtonTests : WakeelTestContext
 
         Assert.Equal(1, runCount);
 
-        tcs.SetResult();
+        // Completing the TCS through the renderer's own dispatcher (rather than directly from the test
+        // thread) is what made this deterministic: WButton's finally block (_busy = false) and the
+        // ensuing re-render both need to actually finish before the next click, and only work
+        // scheduled via InvokeAsync is guaranteed to be flushed by the time it returns — completing
+        // the TCS directly left that continuation to run whenever bUnit's dispatcher next happened to
+        // pump it, which was the source of this test's intermittent failure.
+        await cut.InvokeAsync(tcs.SetResult);
         cut.WaitForState(() => !cut.Find("button").HasAttribute("disabled"));
 
-        button.Click();
+        cut.Find("button").Click();
 
         Assert.Equal(2, runCount);
     }

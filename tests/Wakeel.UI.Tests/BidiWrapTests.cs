@@ -1,4 +1,4 @@
-using static Wakeel.UI.Bidi.Bidi;
+using static Wakeel.Design.Bidi.Bidi;
 
 namespace Wakeel.UI.Tests;
 

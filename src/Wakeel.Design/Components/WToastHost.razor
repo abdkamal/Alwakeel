@@ -1,0 +1,50 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Services
+@implements IDisposable
+@inject IToastService ToastService
+
+<div class="w-toast-host">
+    @foreach (var toast in ToastService.Toasts)
+    {
+        <WToast Text="@toast.Text" Variant="toast.Variant" OnClose="() => ToastService.Dismiss(toast.Id)" />
+    }
+</div>
+
+@code {
+    /// <summary>Milliseconds before a toast auto-dismisses. Set to 0 to disable auto-dismiss.</summary>
+    [Parameter] public int AutoDismissMs { get; set; } = 4000;
+
+    private readonly HashSet<Guid> _scheduled = new();
+
+    protected override void OnInitialized()
+    {
+        ToastService.Changed += HandleChanged;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (AutoDismissMs <= 0)
+        {
+            return;
+        }
+
+        foreach (var toast in ToastService.Toasts)
+        {
+            if (_scheduled.Add(toast.Id))
+            {
+                _ = ScheduleDismissAsync(toast.Id);
+            }
+        }
+    }
+
+    private async Task ScheduleDismissAsync(Guid id)
+    {
+        await Task.Delay(AutoDismissMs);
+        ToastService.Dismiss(id);
+        _scheduled.Remove(id);
+    }
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ToastService.Changed -= HandleChanged;
+}

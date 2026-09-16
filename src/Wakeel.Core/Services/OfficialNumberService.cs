@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Wakeel.Core.Data;
 using Wakeel.Core.Data.Entities;
@@ -30,7 +31,31 @@ public sealed record OfficialNumberResult(string Number, int Sequence, bool Near
 /// number, which the AGREEMENT item 37 sequence-integrity check would later flag.
 /// <c>official_numbers.last_seq</c> is an optimistic-concurrency token, so a write from a context
 /// holding a value another context has already moved on affects no row; the service reloads that
-/// row and retries, and two contexts over the same database never issue the same number.
+/// row and retries. The very first number of a (kind, year) races differently: two contexts can
+/// both find no row yet and both try to insert one, so the loser's INSERT fails on the row's
+/// UNIQUE/PRIMARY KEY constraint instead of losing a concurrency check, there being no existing
+/// row to lose one against; the service detects that failure too — but ONLY when the failing
+/// SQLite extended error code names a primary-key or unique violation AND the exception's own
+/// <c>Entries</c> name this method's own <c>OfficialNumber</c> row as one of the offenders, since
+/// the SaveChanges this method calls also flushes every other change the caller has tracked on
+/// the same context, and an unrelated NOT NULL, FOREIGN KEY or CHECK violation on one of those
+/// (or even a PRIMARY KEY/UNIQUE violation on a different entity entirely) must propagate as-is
+/// rather than being misread as this race — and reloads and retries exactly as it would for the
+/// ordinary case, detaching the row first if the reload finds it still absent (a re-query, not a
+/// reload, since the row was never actually inserted) so the next attempt cannot collide with its
+/// own stale Added instance. The row the loser just tried (and failed) to insert then reloads into
+/// the winner's now-existing row, so two contexts over the same database never issue the same
+/// number, whether the row already existed or not. Either failure that survives every retry is
+/// thrown as <see cref="OfficialNumberConcurrencyException"/> — wrapping the original
+/// <see cref="DbUpdateConcurrencyException"/> or <see cref="DbUpdateException"/> unchanged as its
+/// <see cref="Exception.InnerException"/> — rather than escaping as a raw
+/// <see cref="DbUpdateException"/>, or being pre-mapped through an <see cref="IErrorMapper"/> here
+/// (which would mint a reference nothing logs and mint a second, different one when the caller
+/// maps the escaping exception, and would also be indistinguishable from the
+/// <see cref="InvalidOperationException"/>s this method throws for user-actionable business
+/// refusals). Callers should catch <see cref="OfficialNumberConcurrencyException"/> and map its
+/// <see cref="Exception.InnerException"/> through their own <see cref="IErrorMapper"/> exactly
+/// once.
 /// </remarks>
 public interface IOfficialNumberService
 {
@@ -65,11 +90,46 @@ public sealed class OfficialNumberService(WakeelDb db, IClockCheckService clockC
     public const int WarningThreshold = 900;
 
     /// <summary>
+    /// SQLite's primary result code for ANY constraint violation — UNIQUE, PRIMARY KEY, NOT NULL,
+    /// FOREIGN KEY and CHECK all report this same primary code, distinguished only by the more
+    /// specific <see cref="SqliteException.SqliteExtendedErrorCode"/> (see
+    /// <see cref="SqlitePrimaryKeyConstraint"/> and <see cref="SqliteUniqueConstraint"/> below).
+    /// The primary code alone is therefore not sufficient to identify the sequence-insert race.
+    /// </summary>
+    private const int SqliteConstraintErrorCode = 19;
+
+    /// <summary>SQLite's extended result code for a PRIMARY KEY constraint violation.</summary>
+    private const int SqlitePrimaryKeyConstraint = 1555;
+
+    /// <summary>SQLite's extended result code for a UNIQUE constraint violation.</summary>
+    private const int SqliteUniqueConstraint = 2067;
+
+    /// <summary>
     /// How many times the read-modify-write of <c>official_numbers.last_seq</c> is retried after
-    /// another context wins the race. Each attempt reloads the row, so a handful is plenty: the
-    /// only contenders are the few contexts open over one office database.
+    /// another context wins the race — either by updating the row first (a lost optimistic-
+    /// concurrency check) or by inserting it first (a lost UNIQUE/PRIMARY KEY race on the row's
+    /// very first insert). Each attempt re-reads the row, so a handful is plenty: the only
+    /// contenders are the few contexts open over one office database.
     /// </summary>
     private const int MaxConcurrencyAttempts = 5;
+
+    /// <summary>
+    /// Test-only override of <see cref="MaxConcurrencyAttempts"/> (negative means "use the
+    /// production default"), set only by the internal test constructor below. Lets a test drive
+    /// the bounded retry to exhaustion deterministically — with this at 1, a single genuine,
+    /// engineered race is enough — instead of having to force <see cref="MaxConcurrencyAttempts"/>
+    /// consecutive real races through actual thread interleaving.
+    /// </summary>
+    private readonly int maxConcurrencyAttemptsOverride = -1;
+
+    /// <summary>Test-only constructor: see <see cref="maxConcurrencyAttemptsOverride"/>.</summary>
+    internal OfficialNumberService(WakeelDb db, IClockCheckService clockCheckService, int maxConcurrencyAttemptsForTests)
+        : this(db, clockCheckService)
+    {
+        maxConcurrencyAttemptsOverride = maxConcurrencyAttemptsForTests;
+    }
+
+    private int EffectiveMaxConcurrencyAttempts => maxConcurrencyAttemptsOverride < 0 ? MaxConcurrencyAttempts : maxConcurrencyAttemptsOverride;
 
     public async Task<OfficialNumberResult> IssueAsync(InOutDirection kind, DateTime now, CancellationToken cancellationToken = default)
     {
@@ -134,8 +194,18 @@ public sealed class OfficialNumberService(WakeelDb db, IClockCheckService clockC
 
         // Read-modify-write of last_seq, guarded by the concurrency token on that column: if
         // another context issued a number since this one read the row, the UPDATE matches no row
-        // and EF throws; the row is then reloaded and the whole step repeated against the fresh
-        // value, so the same number is never handed out twice.
+        // and EF throws DbUpdateConcurrencyException; if another context inserted the row for the
+        // very first time since this one read it, the INSERT hits the row's UNIQUE/PRIMARY KEY
+        // constraint and EF throws a plain DbUpdateException wrapping that SqliteException instead
+        // (there being no existing row to lose a concurrency check against). Either way, reloading
+        // the entry re-queries by (kind, year) and refreshes it (and, for the INSERT case, flips
+        // its state from Added to Unchanged once the query proves a row now exists) so the next
+        // attempt updates the real row instead of trying to insert a second one — the same number
+        // is never handed out twice, whether it was the row's first insert or a later update that
+        // raced. IsSequenceRaceException below only recognises a concurrency conflict or a PRIMARY
+        // KEY/UNIQUE failure that names this row's own entry, so an unrelated concurrency conflict
+        // or constraint violation on some other entity the caller has tracked on this context is
+        // never caught here at all — it propagates immediately.
         for (var attempt = 1; ; attempt++)
         {
             var row = await db.OfficialNumbers.FirstOrDefaultAsync(n => n.Kind == kind && n.Year == year, cancellationToken).ConfigureAwait(false);
@@ -160,15 +230,58 @@ public sealed class OfficialNumberService(WakeelDb db, IClockCheckService clockC
             {
                 await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
-            catch (DbUpdateConcurrencyException) when (attempt < MaxConcurrencyAttempts)
+            catch (DbUpdateException ex) when (IsSequenceRaceException(ex, row))
             {
+                if (attempt >= EffectiveMaxConcurrencyAttempts)
+                {
+                    throw new OfficialNumberConcurrencyException(
+                        $"official numbering failed after {attempt} attempts racing another context over the same (kind, year) row",
+                        ex);
+                }
+
                 await db.Entry(row).ReloadAsync(cancellationToken).ConfigureAwait(false);
+
+                // The row was Added (this context's own first-ever insert for this (kind, year))
+                // and the reload still found no matching row in the database — the failure was
+                // therefore never actually this row's own INSERT colliding with a winner's row
+                // (that would have flipped the reload to Unchanged), so leaving it tracked as
+                // Added would make the next attempt's Add(...) above throw an untranslated EF
+                // identity-conflict InvalidOperationException instead of retrying. Detach it so
+                // the next attempt re-adds a fresh, untracked row instead.
+                if (db.Entry(row).State == EntityState.Added)
+                {
+                    db.Entry(row).State = EntityState.Detached;
+                }
+
                 continue;
             }
 
             return new OfficialNumberResult(number, sequence, sequence >= WarningThreshold);
         }
     }
+
+    /// <summary>
+    /// True for either way another context can win the race on THIS <paramref name="row"/>'s
+    /// (kind, year) slot: an optimistic-concurrency loss on an existing row's <c>last_seq</c>
+    /// (<see cref="DbUpdateConcurrencyException"/>), or a PRIMARY KEY/UNIQUE violation on the
+    /// INSERT when the row did not exist yet and two contexts both tried to create it. BOTH cases
+    /// are deliberately narrowed the same way: <see cref="DbUpdateException.Entries"/> must name
+    /// this exact <paramref name="row"/> instance as one of the entities SaveChanges failed on —
+    /// otherwise a concurrency conflict or constraint violation on some other entity the caller
+    /// has tracked on this same context (SaveChangesAsync flushes those together with this row)
+    /// would be misattributed to this (kind, year) row's race. For the INSERT case specifically,
+    /// the SQLite failure must also be a PRIMARY KEY or UNIQUE violation (its
+    /// <see cref="SqliteException.SqliteExtendedErrorCode"/>), not merely SQLite's shared primary
+    /// <see cref="SqliteConstraintErrorCode"/> — that primary code also covers NOT NULL, FOREIGN
+    /// KEY and CHECK violations. Without either check, an unrelated failure would be misclassified
+    /// as this race, and reloading a row whose own write never actually failed would leave it in a
+    /// broken state (see the Detached handling at the call site).
+    /// </summary>
+    private static bool IsSequenceRaceException(DbUpdateException exception, OfficialNumber row)
+        => exception.Entries.Any(e => ReferenceEquals(e.Entity, row))
+            && (exception is DbUpdateConcurrencyException
+                || (exception.InnerException is SqliteException { SqliteErrorCode: SqliteConstraintErrorCode } sqlite
+                    && sqlite.SqliteExtendedErrorCode is SqlitePrimaryKeyConstraint or SqliteUniqueConstraint));
 
     private static string Format(string format, int deviceNo, int employeeNo, DateTime date, int sequence)
         => format
@@ -177,3 +290,21 @@ public sealed class OfficialNumberService(WakeelDb db, IClockCheckService clockC
             .Replace("D", deviceNo.ToString())
             .Replace("E", employeeNo.ToString());
 }
+
+/// <summary>
+/// Thrown by <see cref="OfficialNumberService"/> when the bounded retry of the read-modify-write
+/// of an <c>official_numbers</c> row is exhausted without winning the race against another
+/// context. Distinct from the <see cref="InvalidOperationException"/>s this service throws for
+/// user-actionable business refusals (clock check, exhausted yearly sequence, backdated date,
+/// missing installation), so a caller can tell an infrastructure failure from those; distinct
+/// from a raw <see cref="DbUpdateException"/> so a caller is not left to reverse-engineer this
+/// specific meaning out of a generic EF exception; and never pre-mapped through an
+/// <see cref="IErrorMapper"/> by this service itself, so the caller who does map it gets exactly
+/// one reference for the failure rather than the mapper minting a fresh one here (which would go
+/// unlogged) and a second, different one when the caller maps the exception it actually sees. The
+/// original <see cref="DbUpdateConcurrencyException"/> or <see cref="DbUpdateException"/> is
+/// preserved, unchanged, as <see cref="Exception.InnerException"/> so <see cref="IErrorMapper"/>'s
+/// own unwrap logic still reaches the underlying <see cref="SqliteException"/>.
+/// </summary>
+public sealed class OfficialNumberConcurrencyException(string message, DbUpdateException innerException)
+    : Exception(message, innerException);

@@ -1,4 +1,6 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Wakeel.Core.Data;
 using Wakeel.Core.Data.Entities;
 using Wakeel.Core.Services;
@@ -217,6 +219,222 @@ public sealed class NumberingTests : IDisposable
         Assert.Equal(1, first.Sequence);
         Assert.Equal(3, third.Sequence);
         Assert.Equal(3, new[] { first.Number, second.Number, third.Number }.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public async Task Issue_WhenAnotherContextInsertedTheVeryFirstRowFirst_IsRetried_AndTheNumbersDiffer()
+    {
+        // Regression test for the INSERT race (verify-core.json B0-closeout, low finding 1):
+        // when the (kind, year) row does not exist yet, two contexts can both take the
+        // "row is null" branch and both try to insert it; the loser does not lose an
+        // optimistic-concurrency check (there is no existing row to lose one against) but hits the
+        // row's UNIQUE/PRIMARY KEY constraint instead — a plain DbUpdateException wrapping a
+        // SqliteException, not a DbUpdateConcurrencyException, so it needs its own catch.
+        //
+        // A live two-connection race cannot reach that constraint on this database: SQLite (WAL)
+        // resolves it earlier, as a "database is locked" busy error the moment the losing
+        // transaction — its read snapshot now stale relative to the winner's commit — tries to
+        // write at all (proven separately: even a plain read-only transaction on one context,
+        // still open, makes a second context's own write attempt fail this way, regardless of
+        // isolation level, and retrying inside that same transaction never recovers, since no
+        // amount of retrying refreshes a transaction's snapshot). So the exact failure this test
+        // needs is engineered without any live overlap: it tracks a new row on otherSession
+        // exactly as this context's own first attempt would (Added, unsaved), then lets a second,
+        // ordinary context fully insert and commit the real row first. Once otherSession opens its
+        // own transaction afterwards, its snapshot is current, so its query returns that real row —
+        // but identity resolution hands back the already-tracked (Added) instance instead of a
+        // fresh one, so the service still tries to insert it, and this time the row really is
+        // there: a genuine UNIQUE-constraint DbUpdateException, exactly as the review describes.
+        var date = new DateTime(2026, 9, 11, 0, 0, 0, DateTimeKind.Utc);
+        var paths = WakeelPaths.ForRoot(_root);
+        using var otherSession = DbSession.Open(paths, _key);
+        otherSession.Db.OfficialNumbers.Add(new OfficialNumber { Kind = InOutDirection.Out, Year = 2026, LastSeq = 0, LastDate = date });
+
+        var winner = await IssueAsync(InOutDirection.Out, date);
+
+        var losingService = new OfficialNumberService(otherSession.Db, new ClockCheckService(otherSession.Db));
+        await using var transaction = await otherSession.Db.Database.BeginTransactionAsync();
+        var loser = await losingService.IssueAsync(InOutDirection.Out, date, ClockVerdict.Ok);
+        await transaction.CommitAsync();
+
+        Assert.Equal(1, winner.Sequence);
+        Assert.Equal(2, loser.Sequence);
+        Assert.NotEqual(winner.Number, loser.Number);
+    }
+
+    [Fact]
+    public async Task Issue_WhenAnotherTrackedEntityViolatesAnUnrelatedConstraint_PropagatesTheOriginalException_NotMisreadAsARace()
+    {
+        // Regression test for the review finding on IsSequenceRaceException (B0.5-CORE-POLISH):
+        // it must be scoped to THIS official-numbers row and to the constraint's extended error
+        // code, not just SQLite's primary "constraint failed" code 19 — that primary code also
+        // covers NOT NULL, FOREIGN KEY and CHECK violations on ANY entity the caller has tracked
+        // on this context, since IssueAsync's own SaveChangesAsync call flushes every other
+        // tracked change too (see the class remarks). Here a second, unrelated Setting row with
+        // its required Value column left null (via the null-forgiving operator, purely to
+        // engineer the constraint violation) is tracked alongside the very first IssueAsync for a
+        // (kind, year) row that does not exist yet. That NOT NULL violation must propagate
+        // as-is — not be swallowed as a supposed insert race, and not corrupt the Added row so a
+        // retry crashes with an untranslated EF identity-conflict message.
+        //
+        // Uses the explicit-verdict overload (via the three-argument IssueAsync helper) rather
+        // than the two-argument one: the two-argument overload's clock check
+        // (ClockCheckService.CheckAsync) calls SaveChangesAsync on this same context BEFORE
+        // IssueCoreAsync's own numbering SaveChanges ever runs, so the invalid Setting would be
+        // flushed and throw there instead — before any OfficialNumber row is even tracked, and
+        // before IsSequenceRaceException is reached at all, which would make this test pass
+        // regardless of how narrow (or broad) that method is.
+        var date = new DateTime(2026, 9, 11, 0, 0, 0, DateTimeKind.Utc);
+        _session.Db.Settings.Add(new Setting
+        {
+            Key = "b0.5-core-polish-unrelated-constraint-test",
+            Value = null!,
+            UpdatedAt = date,
+        });
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => IssueAsync(InOutDirection.Out, date, ClockVerdict.Ok));
+
+        // Non-vacuous proof that the failure was actually seen by IssueCoreAsync's numbering
+        // catch and correctly rejected as NOT this row's race: the failed Setting is among the
+        // entries EF reports, the OfficialNumber row is not, and — since the transaction the
+        // IssueAsync helper opened was never committed (the exception propagated instead) — no
+        // number was left committed either.
+        Assert.Contains(ex.Entries, e => e.Entity is Setting);
+        Assert.DoesNotContain(ex.Entries, e => e.Entity is OfficialNumber);
+        Assert.True(ContainsSqliteException(ex), "expected the SqliteException to still be reachable via InnerException");
+        Assert.Empty(_session.Db.OfficialNumbers.AsNoTracking());
+    }
+
+    [Fact]
+    public async Task Issue_WhenRetriesAreExhausted_ThrowsOfficialNumberConcurrencyException_PreservingTheSqliteException()
+    {
+        // Regression test for the review finding that the exhausted-retry path was untested and
+        // mapped its exception through IErrorMapper only to splice away the reference, using the
+        // same type (InvalidOperationException) as this service's own business refusals
+        // (B0.5-CORE-POLISH). Drives the bounded retry to exhaustion via the internal
+        // maxConcurrencyAttempts test seam (1 attempt), reusing the same proven insert-race setup
+        // as Issue_WhenAnotherContextInsertedTheVeryFirstRowFirst_IsRetried_AndTheNumbersDiffer so
+        // the single attempt hits a genuine PRIMARY KEY race and is exhausted immediately. Asserts
+        // that what escapes is the dedicated OfficialNumberConcurrencyException — not a raw
+        // DbUpdateException, and not the InvalidOperationException this service throws for
+        // business refusals — and that its InnerException chain still reaches the SqliteException
+        // so a caller's IErrorMapper can map it.
+        var date = new DateTime(2026, 9, 11, 0, 0, 0, DateTimeKind.Utc);
+        var paths = WakeelPaths.ForRoot(_root);
+        using var otherSession = DbSession.Open(paths, _key);
+        otherSession.Db.OfficialNumbers.Add(new OfficialNumber { Kind = InOutDirection.Out, Year = 2026, LastSeq = 0, LastDate = date });
+
+        var winner = await IssueAsync(InOutDirection.Out, date);
+        Assert.Equal(1, winner.Sequence);
+
+        var losingService = new OfficialNumberService(otherSession.Db, new ClockCheckService(otherSession.Db), maxConcurrencyAttemptsForTests: 1);
+        await using var transaction = await otherSession.Db.Database.BeginTransactionAsync();
+
+        var ex = await Assert.ThrowsAsync<OfficialNumberConcurrencyException>(
+            () => losingService.IssueAsync(InOutDirection.Out, date, ClockVerdict.Ok));
+
+        Assert.True(ContainsSqliteException(ex), "expected the SqliteException to still be reachable via InnerException");
+    }
+
+    [Fact]
+    public async Task Issue_WhenTheConflictingRowVanishesBeforeTheReload_DetachesTheStaleAddedEntry_AndTheRetrySucceeds()
+    {
+        // Regression test for the review finding that the Detached-recovery branch in
+        // OfficialNumberService.cs (immediately after ReloadAsync in the catch) was executed by
+        // no test (B0.5-CORE-POLISH). Neither existing INSERT-race test reaches it:
+        // Issue_WhenAnotherContextInsertedTheVeryFirstRowFirst_... reloads straight into the
+        // winner's still-committed row, so the entry flips to Unchanged, not Detached; and
+        // Issue_WhenRetriesAreExhausted_... uses maxConcurrencyAttemptsForTests: 1, so it throws
+        // before any reload runs at all. This test needs attempt 1's own insert to genuinely fail
+        // against a real committed row (a real PRIMARY KEY violation — nothing about
+        // IsSequenceRaceException's classification is faked), and then that row to be gone by the
+        // time the service's own ReloadAsync runs one line later, in the same method call. A live
+        // two-connection race cannot deliver that ordering deterministically (see the INSERT-race
+        // test above for why SQLite/WAL turns real overlap into a "database is locked" busy error
+        // instead), so it is engineered with a SaveChangesInterceptor that deletes the just-raced
+        // row — via the SAME connection and transaction the failing SaveChanges is using, so nothing
+        // needs its own competing write lock — the instant that SaveChanges fails, before the
+        // service's catch block ever calls ReloadAsync.
+        var date = new DateTime(2026, 9, 11, 0, 0, 0, DateTimeKind.Utc);
+        var paths = WakeelPaths.ForRoot(_root);
+
+        var winner = await IssueAsync(InOutDirection.Out, date);
+        Assert.Equal(1, winner.Sequence);
+
+        var interceptor = new DeleteRowOnFirstSaveFailureInterceptor(InOutDirection.Out, 2026);
+        using var connection = DbConnectionFactory.Open(paths.DbPath, _key);
+        var options = new DbContextOptionsBuilder<WakeelDb>()
+            .UseSqlite(connection)
+            .AddInterceptors(interceptor)
+            .Options;
+        using var otherDb = new WakeelDb(options, new SystemClock(TimeProvider.System));
+
+        // The exact same setup the proven INSERT-race test above uses: a tracked, unsaved Added
+        // row for a (kind, year) that has no committed row of its own yet on THIS context's
+        // snapshot — except here the winner's row genuinely exists, so this insert really does
+        // collide with it.
+        var trackedRow = new OfficialNumber { Kind = InOutDirection.Out, Year = 2026, LastSeq = 0, LastDate = date };
+        otherDb.OfficialNumbers.Add(trackedRow);
+
+        var losingService = new OfficialNumberService(otherDb, new ClockCheckService(otherDb), maxConcurrencyAttemptsForTests: 2);
+        await using (var transaction = await otherDb.Database.BeginTransactionAsync())
+        {
+            var loser = await losingService.IssueAsync(InOutDirection.Out, date, ClockVerdict.Ok);
+            await transaction.CommitAsync();
+
+            // Attempt 1 raced the winner's row and lost (a genuine PRIMARY KEY violation); the
+            // interceptor then deleted that row before ReloadAsync ran, so attempt 1's reload
+            // found nothing and had to detach rather than adopt an existing row. Attempt 2 found
+            // the slot empty again and inserted its own row fresh, from sequence 1 — proving the
+            // retry recovered rather than throwing EF's untranslated identity-conflict
+            // InvalidOperationException for re-adding an already-tracked instance.
+            Assert.Equal(1, loser.Sequence);
+        }
+
+        Assert.Equal(EntityState.Detached, otherDb.Entry(trackedRow).State);
+    }
+
+    /// <summary>
+    /// Test-only interceptor for
+    /// <see cref="Issue_WhenTheConflictingRowVanishesBeforeTheReload_DetachesTheStaleAddedEntry_AndTheRetrySucceeds"/>:
+    /// the moment a SaveChanges on <paramref name="kind"/>/<paramref name="year"/>'s context fails
+    /// (for any reason — this only ever fires once, on the engineered PRIMARY KEY race), deletes
+    /// that (kind, year) row through the SAME <see cref="WakeelDb"/>/connection/transaction that
+    /// just failed, before control returns to the service's own catch block. EF Core rolls back
+    /// the failed SaveChanges to its internal savepoint before dispatching this interceptor, so
+    /// the delete lands in the still-open outer (caller-owned) transaction rather than being
+    /// undone along with the failed insert.
+    /// </summary>
+    private sealed class DeleteRowOnFirstSaveFailureInterceptor(InOutDirection kind, int year) : SaveChangesInterceptor
+    {
+        private bool _deleted;
+
+        public override async Task SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken = default)
+        {
+            if (_deleted || eventData.Context is not WakeelDb context)
+            {
+                return;
+            }
+
+            _deleted = true;
+            await context.OfficialNumbers
+                .Where(n => n.Kind == kind && n.Year == year)
+                .ExecuteDeleteAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private static bool ContainsSqliteException(Exception exception)
+    {
+        for (var current = exception.InnerException; current is not null; current = current.InnerException)
+        {
+            if (current is SqliteException)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // The following two tests use the explicit-verdict overload directly: they isolate

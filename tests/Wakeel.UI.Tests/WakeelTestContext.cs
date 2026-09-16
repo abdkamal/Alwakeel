@@ -1,14 +1,17 @@
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
+using Wakeel.Design;
 using Wakeel.UI.Services;
 
 namespace Wakeel.UI.Tests;
 
 /// <summary>
 /// Shared bUnit context that registers the DI services every Wakeel.UI component expects to find
-/// (mirroring what Wakeel.Desktop's App.xaml.cs registers): an in-memory IUiStateStore, ThemeService,
-/// IToastService, and PageHeaderState. IJSRuntime and NavigationManager are already provided by bUnit
-/// itself (Loose-mode JSInterop returns defaults for calls this test suite does not explicitly set up).
+/// (mirroring what Wakeel.Desktop's App.xaml.cs registers): the Wakeel.Design UI services
+/// (in-memory IUiStateStore, ThemeService, IToastService — see AddWakeelDesign) plus the
+/// application-specific PageHeaderState. IJSRuntime and NavigationManager are already provided by
+/// bUnit itself (Loose-mode JSInterop returns defaults for calls this test suite does not explicitly
+/// set up).
 /// </summary>
 public abstract class WakeelTestContext : BunitContext
 {
@@ -19,9 +22,7 @@ public abstract class WakeelTestContext : BunitContext
         // assert against it (see Gallery_ThemeToggle_ChangesDataThemeViaJsInterop).
         JSInterop.Mode = Bunit.JSRuntimeMode.Loose;
 
-        Services.AddSingleton<IUiStateStore, InMemoryUiStateStore>();
-        Services.AddScoped<ThemeService>();
-        Services.AddScoped<IToastService, ToastService>();
+        Services.AddWakeelDesign();
         Services.AddScoped<PageHeaderState>();
     }
 }

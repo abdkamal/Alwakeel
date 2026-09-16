@@ -1,5 +1,5 @@
 @page "/w08"
-@using Wakeel.UI.Text
+@using Wakeel.Design.Text
 @using Wakeel.UI.Services
 @implements IDisposable
 @inject PageHeaderState HeaderState
@@ -52,7 +52,7 @@
 
         <div class="w08-col-main">
             <WCard>
-                <WSectionHeader Title="@Ar.AttentionCenter.TodayActionTitle" />
+                <WSectionHeader Title="@Ar.AttentionCenter.TodayActionTitle" Count="Ar.AttentionCenter.TodayActionCount" />
                 <WTabs>
                     <WTabItem Label="@Ar.AttentionCenter.TabAll" Count="9" Active="@(_tab == 0)" OnClick="@(() => _tab = 0)" />
                     <WTabItem Label="@Ar.AttentionCenter.TabCorrespondence" Count="4" Active="@(_tab == 1)" OnClick="@(() => _tab = 1)" />
@@ -63,7 +63,10 @@
                 <WTable HeaderRow="@ActionTableHeader" FooterText="@Ar.Table.ShowingRange(1, 3, 3)">
                     <tr class="w-table-row w-table-row--attention">
                         <td><WChip Variant="WChipVariant.Info" Label="@Ar.AttentionCenter.TypeMessage" /></td>
-                        <td>@Ar.AttentionCenter.ActionRow1Subject</td>
+                        <td>
+                            <span>@Ar.AttentionCenter.ActionRow1Subject</span>
+                            <div class="w08-row-meta"><bdi>@Ar.AttentionCenter.ActionRow1Meta</bdi></div>
+                        </td>
                         <td>@Ar.AttentionCenter.ActionRow1Assignee</td>
                         <td><bdi class="w08-due w08-due--danger">@Ar.AttentionCenter.ActionRow1Due</bdi></td>
                         <td class="w08-chevron-cell">
@@ -73,9 +76,12 @@
                     </tr>
                     <tr class="w-table-row">
                         <td><WChip Variant="WChipVariant.Primary" Label="@Ar.AttentionCenter.TypeTask" /></td>
-                        <td>@Ar.AttentionCenter.ActionRow2Subject</td>
+                        <td>
+                            <span>@Ar.AttentionCenter.ActionRow2Subject</span>
+                            <div class="w08-row-meta"><bdi>@Ar.AttentionCenter.ActionRow2Meta</bdi></div>
+                        </td>
                         <td>@Ar.AttentionCenter.ActionRow2Assignee</td>
-                        <td><bdi class="w08-due">@Ar.AttentionCenter.ActionRow2Due</bdi></td>
+                        <td><bdi class="w08-due w08-due--warning">@Ar.AttentionCenter.ActionRow2Due</bdi></td>
                         <td class="w08-chevron-cell">
                             <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
                             <WIcon Name="chevron-left" Size="16" Class="w08-chevron-icon" />
@@ -83,7 +89,10 @@
                     </tr>
                     <tr class="w-table-row">
                         <td><WChip Variant="WChipVariant.Warning" Label="@Ar.AttentionCenter.TypeCommitment" /></td>
-                        <td>@Ar.AttentionCenter.ActionRow3Subject</td>
+                        <td>
+                            <span>@Ar.AttentionCenter.ActionRow3Subject</span>
+                            <div class="w08-row-meta"><bdi>@Ar.AttentionCenter.ActionRow3Meta</bdi></div>
+                        </td>
                         <td>@Ar.AttentionCenter.ActionRow3Assignee</td>
                         <td><bdi class="w08-due">@Ar.AttentionCenter.ActionRow3Due</bdi></td>
                         <td class="w08-chevron-cell">
@@ -95,7 +104,7 @@
             </WCard>
 
             <WCard>
-                <WSectionHeader Title="@Ar.AttentionCenter.PendingExpensesTitle" Count="6">
+                <WSectionHeader Title="@Ar.AttentionCenter.PendingExpensesTitle" Count="Ar.AttentionCenter.PendingExpensesCount">
                     <ActionContent>
                         <div class="w08-expenses-actions">
                             <WSearch @bind-Value="_expenseSearch" BindGlobalShortcut="false" Placeholder="@Ar.AttentionCenter.ExpensesSearchPlaceholder" />

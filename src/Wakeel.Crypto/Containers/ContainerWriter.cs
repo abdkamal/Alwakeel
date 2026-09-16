@@ -250,6 +250,13 @@ public static class ContainerWriter
             throw new CryptoException(ErrorCode.Corrupt, "Sealing a container needs the recipient public key.");
         }
 
+        // The mirror image of the rule the reader applies: the organisation root signs setup
+        // files and nothing else, so a mistake on the writing side is caught where it is made.
+        if (request.Producer?.Body?.Kind == DeviceKind.Org && request.Kind != ContainerKind.Setup)
+        {
+            throw new CryptoException(ErrorCode.Corrupt, "Only a setup file may be produced by the organisation itself.");
+        }
+
         if (request.OrgAgreementPublicKey is { } supplied && supplied.Length != DeviceIdentity.PublicKeySize)
         {
             throw new CryptoException(ErrorCode.Corrupt, "The organisation public key has the wrong length.");

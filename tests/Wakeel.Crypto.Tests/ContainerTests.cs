@@ -590,6 +590,25 @@ public class ContainerTests
     }
 
     [Fact]
+    public void Every_character_the_platform_refuses_in_a_file_name_is_refused_in_an_entry_name()
+    {
+        // The rule is not a list somebody typed out once, it is the platform's own list: on a
+        // system whose list is longer, the extra characters are refused as well. Only the two
+        // separators are exempt, and each of those has a rule of its own above.
+        foreach (var character in Path.GetInvalidFileNameChars())
+        {
+            var name = "vault/a" + character + "b.bin";
+            if (character == '/')
+            {
+                Assert.True(ContainerEntrySource.IsAcceptableName(name));
+                continue;
+            }
+
+            Assert.False(ContainerEntrySource.IsAcceptableName(name));
+        }
+    }
+
+    [Fact]
     public void Two_office_key_containers_never_share_a_content_key()
     {
         using var world = new ContainerWorld();
@@ -719,6 +738,13 @@ public class ContainerTests
         var readEntryError = Assert.Throws<CryptoException>(
             () => reader.ReadEntry("records.json", ContainerKeySource.OfficeKey(officeKey)));
         Assert.Equal(ErrorCode.Tampered, readEntryError.Code);
+
+        // ExtractTo carries its own copy of the same limit, and it is the path that writes to
+        // the disk rather than to memory, so it is asserted here too: a change that dropped the
+        // limit on one of the two paths would otherwise go unnoticed.
+        var extractError = Assert.Throws<CryptoException>(
+            () => reader.ExtractTo(world.Folder.File("out"), ContainerKeySource.OfficeKey(officeKey)));
+        Assert.Equal(ErrorCode.Tampered, extractError.Code);
     }
 
     [Fact]

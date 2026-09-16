@@ -1,0 +1,52 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Text
+
+<nav class="w-pager" aria-label="@Ar.Pager.Label">
+    <button type="button" class="w-pager-nav" disabled="@(Page <= 1)" aria-label="@Ar.Pager.Previous" @onclick="() => GoTo(Page - 1)">
+        <WIcon Name="chevron-left" Size="16" />
+    </button>
+    @foreach (var pageNumber in VisiblePages)
+    {
+        <button type="button" class="w-pager-page @(pageNumber == Page ? "w-pager-page--current" : null)"
+                aria-current="@(pageNumber == Page ? "page" : null)" @onclick="() => GoTo(pageNumber)">
+            <bdi>@pageNumber</bdi>
+        </button>
+    }
+    <button type="button" class="w-pager-nav" disabled="@(Page >= PageCount)" aria-label="@Ar.Pager.Next" @onclick="() => GoTo(Page + 1)">
+        <WIcon Name="chevron-right" Size="16" />
+    </button>
+</nav>
+
+@code {
+    /// <summary>1-based current page number.</summary>
+    [Parameter] public int Page { get; set; } = 1;
+
+    /// <summary>Total number of pages.</summary>
+    [Parameter] public int PageCount { get; set; } = 1;
+
+    /// <summary>Raised with the newly chosen page number (use with @bind-Page).</summary>
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+
+    private IEnumerable<int> VisiblePages
+    {
+        get
+        {
+            var start = Math.Max(1, Page - 2);
+            var end = Math.Min(PageCount, start + 4);
+            start = Math.Max(1, end - 4);
+            for (var i = start; i <= end; i++)
+            {
+                yield return i;
+            }
+        }
+    }
+
+    private Task GoTo(int page)
+    {
+        if (page < 1 || page > PageCount || page == Page)
+        {
+            return Task.CompletedTask;
+        }
+        return PageChanged.InvokeAsync(page);
+    }
+}
