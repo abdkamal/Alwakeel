@@ -61,7 +61,7 @@
 | `followups` | `id`, `correspondence_id`, `kind` (call/visit/reply/note/status), `note`, `next_at`, `reminder_at`, `status_from`, `status_to` | الخط الزمني |
 | `corrections` | `id`, `correspondence_id`, `changes` (JSON: الحقل/القديم/الجديد), `reason`, `at` | البند 19 والسياسات الموروثة |
 | `duplicate_reviews` | `id`, `correspondence_id`, `similar_id`, `score`, `verdict` (pending/not_duplicate/duplicate) | البند 14 |
-| `templates` | `id`, `name`, `document_id` (docx), `fields` (JSON), `is_default`, `kind` (letter/report) | |
+| `templates` | `id`, `name`, `document_id` (docx), `fields` (JSON: العلامات المكتشفة), `is_default`, `kind` (letter/report) | قالب المراسلة بعلامات `@` (البند 57) يأتي من ملف الإعداد أو الافتراضي المدمج |
 | `exchange_log` | `id`, `direction`, `kind` (msg/transfer/inventory/payroll), `file_name`, `other_org`, `other_office`, `entity_id`, `signature_ok`, `at` | البندان 22 و49 |
 
 ## 4. المتابعة والمهام

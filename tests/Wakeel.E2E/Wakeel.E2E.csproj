@@ -1,10 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Windows-targeted (not plain net10.0): this suite launches the WPF Wakeel.Desktop.exe and is
+         never meant to run on another OS. Targeting the Windows Desktop TFM also brings in
+         System.Drawing.Common (via Microsoft.WindowsDesktop.App, through UseWindowsForms below)
+         for W08ScreenshotDiff's PNG pixel compare, with no extra NuGet package needed beyond what
+         Directory.Packages.props already pins. -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,8 +25,20 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-
   <ItemGroup>
+    <!-- Connects to the already-running WebView2 over CDP (ConnectOverCDPAsync) — no Playwright
+         browser download (`playwright install`) is needed, since we never launch a bundled
+         Chromium/Firefox/WebKit ourselves. The Playwright .NET driver (a small bundled Node runtime
+         that the .NET API talks to) ships inside this package and is copied to the build output
+         automatically; see build/e2e.ps1 for the one-time driver-install fallback if it's ever
+         missing on a fresh machine. -->
     <PackageReference Include="Microsoft.Playwright" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Wakeel.Design.Text.Ar.* is the single source of truth for the Arabic strings the tests
+         assert against (GalleryOpens, W08ScreenshotDiff), per ARCHITECTURE.md §12. -->
+    <ProjectReference Include="..\..\src\Wakeel.Design\Wakeel.Design.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -65,6 +65,15 @@ public partial class App : Application
     /// </summary>
     private static void ConfigureRemoteDebugging(string[] args)
     {
+        // Clear unconditionally first: WebView2 honours this variable from the *inherited* process
+        // environment too, not just what this method sets below, so a value left over in the parent
+        // process's environment could enable remote debugging (or smuggle other Chromium switches,
+        // e.g. --remote-allow-origins / --disable-web-security, which the flag path below
+        // deliberately refuses to forward) without any command-line flag being passed to this
+        // process at all. Only a validated --remote-debugging-port from our own argv may set it
+        // again below.
+        Environment.SetEnvironmentVariable("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", null);
+
         const string prefix = "--remote-debugging-port=";
         foreach (var arg in args)
         {

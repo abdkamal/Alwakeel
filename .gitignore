@@ -52,3 +52,5 @@ installer/output/
 tmp/
 temp/
 .tmp/
+/*.docx
+/*.pdf
