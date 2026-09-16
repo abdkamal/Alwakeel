@@ -59,3 +59,7 @@ tests/Wakeel.E2E/artifacts/
 # Generated previews and agent progress notes
 design/exports/preview/
 docs/build/progress/
+
+# Local OCR and embedding models (fetched by build/get-models.ps1)
+tools/tessdata/
+tools/models/
