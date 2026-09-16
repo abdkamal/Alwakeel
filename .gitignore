@@ -54,3 +54,4 @@ temp/
 .tmp/
 /*.docx
 /*.pdf
+tests/Wakeel.E2E/artifacts/
