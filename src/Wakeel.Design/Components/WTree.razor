@@ -1,0 +1,619 @@
+@namespace Wakeel.Design.Components
+@typeparam TItem
+@using Wakeel.Design.Bidi
+@using Wakeel.Design.Text
+
+@if (_roots.Count == 0)
+{
+    <p class="w-tree-empty">@(HasSearch ? Ar.Tree.NoMatch : EmptyText)</p>
+}
+else
+{
+    <ul class="w-tree" role="tree" tabindex="0"
+        aria-label="@Label"
+        aria-activedescendant="@(_activeKey is null ? null : RowId(_activeKey))"
+        @onkeydown="HandleKeyDown">
+        @foreach (var node in _roots)
+        {
+            @_renderNode(node)
+        }
+    </ul>
+}
+
+@if (!string.IsNullOrEmpty(Hint))
+{
+    <p class="w-tree-hint"><bdi>@Bidi.Wrap(Hint)</bdi></p>
+}
+
+@code {
+    // One flattened, in-order copy of the visible rows: everything the keyboard does (move, Home/End,
+    // open/close, select) is an index move inside this list, so the nested markup below never has to
+    // be walked to answer "what is the next row".
+    private readonly List<Node> _flat = new();
+    private IReadOnlyList<Node> _roots = Array.Empty<Node>();
+    private readonly HashSet<string> _ownExpanded = new(StringComparer.Ordinal);
+    private readonly string _instanceId = "wtree-" + Guid.NewGuid().ToString("N")[..8];
+    private string? _activeKey;
+    private RenderFragment<Node> _renderNode = default!;
+
+    // DefaultExpandAll is seeded once, but not before the caller's hierarchy has actually arrived:
+    // a screen that loads its structure from storage renders its first frame with no items at all.
+    private bool _defaultsApplied;
+
+    /// <summary>Root items of the hierarchy.</summary>
+    [Parameter] public IReadOnlyList<TItem> Items { get; set; } = Array.Empty<TItem>();
+
+    /// <summary>Returns the children of an item; return null or an empty list for a leaf.</summary>
+    [Parameter] public Func<TItem, IReadOnlyList<TItem>?>? ChildrenOf { get; set; }
+
+    /// <summary>Returns the stable identity of an item (used for selection, expansion and focus).</summary>
+    [Parameter, EditorRequired] public Func<TItem, string> KeyOf { get; set; } = _ => string.Empty;
+
+    /// <summary>Translates an item into the built-in row anatomy (icon, name, level chip, meta, state).</summary>
+    [Parameter] public Func<TItem, WTreeRow>? RowOf { get; set; }
+
+    /// <summary>
+    /// Replaces the built-in row body (name through state chip) with the caller's own content. The
+    /// caret, the depth indentation and the drag handle stay with the tree so rows still line up.
+    /// </summary>
+    [Parameter] public RenderFragment<TItem>? Row { get; set; }
+
+    /// <summary>Key of the selected node.</summary>
+    [Parameter] public string? Selected { get; set; }
+
+    /// <summary>Raised with the key of the node the operator chose.</summary>
+    [Parameter] public EventCallback<string?> SelectedChanged { get; set; }
+
+    /// <summary>Raised with the item the operator chose, for callers that would otherwise look the key up again.</summary>
+    [Parameter] public EventCallback<TItem> OnItemSelected { get; set; }
+
+    /// <summary>Keys of the open branches. Leave unbound to let the tree keep the state itself.</summary>
+    [Parameter] public IReadOnlyCollection<string>? Expanded { get; set; }
+
+    /// <summary>Raised whenever the set of open branches changes (use with @bind-Expanded).</summary>
+    [Parameter] public EventCallback<IReadOnlyCollection<string>> ExpandedChanged { get; set; }
+
+    /// <summary>Opens every branch on first render (the tree's own state only).</summary>
+    [Parameter] public bool DefaultExpandAll { get; set; }
+
+    /// <summary>Search text; non-matching nodes are hidden, ancestors of a match are kept and opened.</summary>
+    [Parameter] public string? Search { get; set; }
+
+    /// <summary>Shows a drag handle at the end of every row.</summary>
+    [Parameter] public bool Movable { get; set; }
+
+    /// <summary>Accessible name of the tree.</summary>
+    [Parameter] public string Label { get; set; } = Ar.Tree.Label;
+
+    /// <summary>
+    /// Guidance line printed inside the pane under the last row (the A05 tree pane prints its move
+    /// hint there). Omitted when empty.
+    /// </summary>
+    [Parameter] public string? Hint { get; set; }
+
+    /// <summary>Text shown when the tree has no nodes at all (the search miss has its own text).</summary>
+    [Parameter] public string EmptyText { get; set; } = Ar.Tree.Empty;
+
+    /// <summary>Maps a node's depth to its level-chip colour when the row does not name one.</summary>
+    [Parameter] public Func<int, WChipVariant> LevelVariantAt { get; set; } = DefaultLevelVariant;
+
+    /// <summary>
+    /// Text the search filter reads when the caller renders its own <see cref="Row"/> instead of
+    /// supplying <see cref="RowOf"/>. Leave both unset and search keeps every node (it never falls
+    /// back to matching on the node key, which the operator cannot see).
+    /// </summary>
+    [Parameter] public Func<TItem, string>? SearchTextOf { get; set; }
+
+    private bool HasSearch => !string.IsNullOrWhiteSpace(Search);
+
+    private string SearchTerm => Search?.Trim() ?? string.Empty;
+
+    /// <summary>Depth palette: هيئة → دائرة → قسم → وحدة, darkening the chip as the hierarchy narrows.</summary>
+    private static WChipVariant DefaultLevelVariant(int depth) => depth switch
+    {
+        0 => WChipVariant.Primary,
+        1 => WChipVariant.Info,
+        2 => WChipVariant.Success,
+        _ => WChipVariant.Neutral,
+    };
+
+    protected override void OnInitialized()
+    {
+        // Self-referencing template: a node renders its row and then, when open, the same template for
+        // each child. Assigning it to a field (instead of a local) is what lets it call itself.
+        _renderNode = node =>@<li class="w-tree-item" role="treeitem"
+                                 id="@RowId(node.Key)"
+                                 aria-level="@(node.Depth + 1)"
+                                 aria-selected="@((node.Key == Selected).ToString().ToLowerInvariant())"
+                                 aria-expanded="@(node.HasChildren ? (node.Open ? "true" : "false") : null)">
+            <div class="@RowClass(node)" style="--w-tree-depth: @node.Depth" @onclick="() => SelectAsync(node)">
+                @* The indent spacer comes FIRST so the caret travels with its own node (A05 anatomy):
+                   caret and icon step together one indent per level and the caret always hugs its icon.
+                   The slot keeps its width on leaf rows, so sibling icons stay on one column. *@
+                <span class="w-tree-indent" aria-hidden="true"></span>
+                <span class="w-tree-caret-slot">
+                    @if (node.HasChildren)
+                    {
+                        <button type="button" class="w-tree-caret @(node.Open ? "w-tree-caret--open" : null)"
+                                tabindex="-1"
+                                title="@(node.Open ? Ar.Tree.CollapseNode : Ar.Tree.ExpandNode)"
+                                aria-label="@(node.Open ? Ar.Tree.CollapseNode : Ar.Tree.ExpandNode)"
+                                @onclick="() => ToggleAsync(node.Key)" @onclick:stopPropagation="true">
+                            <WIcon Name="chevron-down" Size="14" Mirror="false" />
+                        </button>
+                    }
+                </span>
+                @if (Row is not null)
+                {
+                    <span class="w-tree-custom">@Row(node.Item)</span>
+                }
+                else
+                {
+                    @BuiltInRow(node)
+                }
+                @if (Movable)
+                {
+                    <span class="w-tree-handle" title="@Ar.Tree.DragHandle">
+                        <WIcon Name="more-vertical" Size="14" Title="@Ar.Tree.DragHandle" />
+                    </span>
+                }
+            </div>
+            @if (node.HasChildren && node.Open && node.Children.Count > 0)
+            {
+                <ul class="w-tree-group" role="group">
+                    @foreach (var child in node.Children)
+                    {
+                        @_renderNode(child)
+                    }
+                </ul>
+            }
+        </li>;
+    }
+
+    /// <summary>The built-in row anatomy: icon, name, level chip, badge, state chip, meta text.</summary>
+    private RenderFragment BuiltInRow(Node node)
+    {
+        var row = node.RowData;
+
+        return @<text>
+            @if (!string.IsNullOrEmpty(row.Icon))
+            {
+                <WIcon Name="@row.Icon" Size="16" Class="w-tree-icon" />
+            }
+            <bdi class="w-tree-name">@NameContent(row.Name)</bdi>
+            @if (!string.IsNullOrEmpty(row.LevelLabel))
+            {
+                <span class="w-tree-level">
+                    <WChip Label="@row.LevelLabel" ShowDot="false" Variant="@(row.LevelVariant ?? LevelVariantAt(node.Depth))" />
+                </span>
+            }
+            @if (row.Badge is int badge)
+            {
+                <WBadge Count="badge" Kind="WBadgeKind.Group" />
+            }
+            <span class="w-tree-spacer"></span>
+            @if (!string.IsNullOrEmpty(row.StateLabel))
+            {
+                <span class="w-tree-state w-tree-state--@VariantSlug(row.StateVariant)">
+                    @if (!string.IsNullOrEmpty(row.StateIcon))
+                    {
+                        <WIcon Name="@row.StateIcon" Size="14" />
+                    }
+                    <bdi>@Bidi.Wrap(row.StateLabel)</bdi>
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(row.Meta))
+            {
+                <bdi class="w-tree-meta">@Bidi.Wrap(row.Meta)</bdi>
+            }
+        </text>;
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Seeded here rather than in OnInitialized: a screen whose hierarchy arrives after the first
+        // render would otherwise be opened while it is still empty and stay collapsed for good.
+        if (DefaultExpandAll && !_defaultsApplied && Items.Count > 0)
+        {
+            foreach (var key in AllKeys(Items))
+            {
+                _ownExpanded.Add(key);
+            }
+
+            _defaultsApplied = true;
+        }
+
+        Rebuild();
+
+        if (_activeKey is null || _flat.TrueForAll(n => n.Key != _activeKey))
+        {
+            _activeKey = Selected is not null && _flat.Exists(n => n.Key == Selected)
+                ? Selected
+                : _flat.Count > 0 ? _flat[0].Key : null;
+        }
+    }
+
+    /// <summary>Opens every branch of the tree, awaiting the caller's ExpandedChanged handler.</summary>
+    public Task ExpandAllAsync() => SetExpandedAsync(AllKeys(Items).ToList());
+
+    /// <summary>Closes every branch of the tree, awaiting the caller's ExpandedChanged handler.</summary>
+    public Task CollapseAllAsync() => SetExpandedAsync(Array.Empty<string>());
+
+    /// <summary>
+    /// Opens every branch of the tree. Dispatched through the renderer so a failure inside the
+    /// caller's ExpandedChanged handler reaches Blazor's error boundary instead of being dropped
+    /// with the task; prefer <see cref="ExpandAllAsync"/> where the result can be awaited.
+    /// </summary>
+    public void ExpandAll() => _ = InvokeAsync(ExpandAllAsync);
+
+    /// <summary>
+    /// Closes every branch of the tree. Dispatched like <see cref="ExpandAll"/>; prefer
+    /// <see cref="CollapseAllAsync"/> where the result can be awaited.
+    /// </summary>
+    public void CollapseAll() => _ = InvokeAsync(CollapseAllAsync);
+
+    private async Task SetExpandedAsync(IReadOnlyCollection<string> keys)
+    {
+        if (Expanded is null)
+        {
+            _ownExpanded.Clear();
+            foreach (var key in keys)
+            {
+                _ownExpanded.Add(key);
+            }
+        }
+
+        Rebuild();
+        StateHasChanged();
+
+        // Awaited, so a failure inside the caller's handler reaches Blazor's error boundary instead
+        // of disappearing into a dropped task.
+        if (ExpandedChanged.HasDelegate)
+        {
+            await ExpandedChanged.InvokeAsync(keys);
+        }
+    }
+
+    private IEnumerable<string> AllKeys(IReadOnlyList<TItem>? items)
+    {
+        foreach (var item in items ?? Array.Empty<TItem>())
+        {
+            yield return KeyOf(item);
+
+            foreach (var key in AllKeys(ChildrenOf?.Invoke(item)))
+            {
+                yield return key;
+            }
+        }
+    }
+
+    private bool IsExpanded(string key) => Expanded?.Contains(key) ?? _ownExpanded.Contains(key);
+
+    private void Rebuild()
+    {
+        _flat.Clear();
+        var roots = new List<Node>();
+
+        foreach (var item in Items ?? Array.Empty<TItem>())
+        {
+            var node = Build(item, 0);
+            if (node is not null)
+            {
+                roots.Add(node);
+            }
+        }
+
+        _roots = roots;
+        Flatten(roots);
+    }
+
+    private void Flatten(IReadOnlyList<Node> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            _flat.Add(node);
+
+            if (node.Open)
+            {
+                Flatten(node.Children);
+            }
+        }
+    }
+
+    private Node? Build(TItem item, int depth)
+    {
+        var key = KeyOf(item);
+        var data = RowOf?.Invoke(item) ?? new WTreeRow(key);
+        var sourceChildren = ChildrenOf?.Invoke(item) ?? Array.Empty<TItem>();
+        var children = new List<Node>();
+
+        foreach (var child in sourceChildren)
+        {
+            var built = Build(child, depth + 1);
+            if (built is not null)
+            {
+                children.Add(built);
+            }
+        }
+
+        var selfMatches = !HasSearch || Matches(item, data);
+
+        if (HasSearch && !selfMatches && children.Count == 0)
+        {
+            return null;
+        }
+
+        // While searching, a branch that still holds a match opens itself so the match is on screen;
+        // outside search the operator's own expansion state decides.
+        var open = sourceChildren.Count > 0
+            && ((HasSearch && children.Count > 0) || IsExpanded(key));
+
+        // While a search is active the non-matching children are already gone, so the caret must be
+        // driven by what the row can actually open. Otherwise a branch that matches on its own name
+        // keeps a caret that toggles aria-expanded while no group is ever rendered.
+        var hasChildren = HasSearch ? children.Count > 0 : sourceChildren.Count > 0;
+
+        return new Node(item, key, depth, hasChildren, open, children, data);
+    }
+
+    private bool Matches(TItem item, WTreeRow row)
+    {
+        // With a custom Row the node key is not on screen, so it must never decide a search result:
+        // only an explicit SearchTextOf can say what the operator can actually read. Without one the
+        // tree keeps every node rather than filtering on something invisible.
+        if (RowOf is null && Row is not null)
+        {
+            return SearchTextOf is null
+                || SearchTextOf(item).Contains(SearchTerm, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return row.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+            || (row.Meta?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private string RowId(string key) => $"{_instanceId}-{Uri.EscapeDataString(key)}";
+
+    private string RowClass(Node node)
+    {
+        var classes = new List<string>(5) { "w-tree-row" };
+
+        if (node.Key == Selected)
+        {
+            classes.Add("w-tree-row--selected");
+        }
+
+        if (node.Key == _activeKey)
+        {
+            classes.Add("w-tree-row--active");
+        }
+
+        if (node.RowData.Attention)
+        {
+            classes.Add("w-tree-row--attention");
+        }
+
+        if (node.RowData.Dimmed)
+        {
+            classes.Add("w-tree-row--dimmed");
+        }
+
+        return string.Join(' ', classes);
+    }
+
+    private static string VariantSlug(WChipVariant variant) => variant switch
+    {
+        WChipVariant.Info => "info",
+        WChipVariant.Primary => "primary",
+        WChipVariant.Warning => "warning",
+        WChipVariant.Success => "success",
+        WChipVariant.Danger => "danger",
+        _ => "neutral",
+    };
+
+    /// <summary>Renders the name, splitting the search match out into a &lt;mark&gt; when there is one.</summary>
+    private RenderFragment NameContent(string name) => builder =>
+    {
+        var index = HasSearch ? name.IndexOf(SearchTerm, StringComparison.OrdinalIgnoreCase) : -1;
+
+        if (index < 0)
+        {
+            builder.AddContent(0, Bidi.Wrap(name));
+            return;
+        }
+
+        // Each of the three fragments is bidi-wrapped on its own, so the highlight must never cut a
+        // Latin/numeric run in half: two half-isolates of one word are reordered against each other
+        // under the RTL paragraph direction and «Archive» would read «iveArch» (AGREEMENT item 55).
+        // Snapping the bounds outward to the run they land in keeps every token inside one isolate;
+        // the mark then covers the whole word, which is also the clearer highlight.
+        var (start, end) = SnapToTokenBounds(name, index, index + SearchTerm.Length);
+
+        builder.AddContent(1, Bidi.Wrap(name[..start]));
+        builder.OpenElement(2, "mark");
+        builder.AddAttribute(3, "class", "w-tree-match");
+        builder.AddContent(4, Bidi.Wrap(name[start..end]));
+        builder.CloseElement();
+        builder.AddContent(5, Bidi.Wrap(name[end..]));
+    };
+
+    /// <summary>
+    /// Widens <paramref name="start"/>/<paramref name="end"/> so they never fall inside a
+    /// Latin/numeric run, using the same run definition as <see cref="Bidi.Wrap"/>.
+    /// </summary>
+    private static (int Start, int End) SnapToTokenBounds(string text, int start, int end)
+    {
+        var position = 0;
+
+        while (position < text.Length)
+        {
+            if (!IsTokenAnchor(text[position]))
+            {
+                position++;
+                continue;
+            }
+
+            // Greedy run of token characters, trimmed back to the last alphanumeric inside it — the
+            // maximal-munch behaviour of Bidi's token pattern.
+            var runStart = position;
+            var lastAnchor = position;
+            var scan = position;
+
+            while (scan < text.Length && IsTokenChar(text[scan]))
+            {
+                if (IsTokenAnchor(text[scan]))
+                {
+                    lastAnchor = scan;
+                }
+
+                scan++;
+            }
+
+            var runEnd = lastAnchor + 1;
+
+            if (runStart < end && runEnd > start)
+            {
+                start = Math.Min(start, runStart);
+                end = Math.Max(end, runEnd);
+            }
+
+            position = runEnd;
+        }
+
+        return (start, end);
+    }
+
+    private static bool IsTokenAnchor(char ch) => char.IsAsciiLetterOrDigit(ch);
+
+    private static bool IsTokenChar(char ch)
+        => char.IsAsciiLetterOrDigit(ch) || ch is '.' or '/' or '\\' or '_' or ':' or '@' or '+' or ',' or '-' or ' ';
+
+    private async Task SelectAsync(Node node)
+    {
+        _activeKey = node.Key;
+
+        if (node.Key != Selected)
+        {
+            Selected = node.Key;
+            await SelectedChanged.InvokeAsync(node.Key);
+        }
+
+        await OnItemSelected.InvokeAsync(node.Item);
+    }
+
+    private async Task ToggleAsync(string key)
+    {
+        var keys = new HashSet<string>(Expanded ?? _ownExpanded, StringComparer.Ordinal);
+
+        if (!keys.Remove(key))
+        {
+            keys.Add(key);
+        }
+
+        if (Expanded is null)
+        {
+            _ownExpanded.Clear();
+            foreach (var item in keys)
+            {
+                _ownExpanded.Add(item);
+            }
+        }
+
+        _activeKey = key;
+
+        if (ExpandedChanged.HasDelegate)
+        {
+            await ExpandedChanged.InvokeAsync(keys.ToList());
+        }
+
+        Rebuild();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        // No preventDefault / stopPropagation on this listener, deliberately. Blazor evaluates both
+        // modifiers at RENDER time, so they cannot be limited to the keys the tree consumes: a flag
+        // set inside this handler only takes effect on the NEXT keystroke, which would keep Tab
+        // swallowed right after an arrow key (a keyboard trap) and would keep the page-wide Ctrl+F
+        // from reaching its window listener. Letting every key through costs only the browser's own
+        // arrow-key scrolling; the tree still moves its active row on the same keystroke.
+        if (_flat.Count == 0)
+        {
+            return;
+        }
+
+        var index = _flat.FindIndex(n => n.Key == _activeKey);
+        if (index < 0)
+        {
+            index = 0;
+        }
+
+        var current = _flat[index];
+
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                _activeKey = _flat[Math.Min(index + 1, _flat.Count - 1)].Key;
+                break;
+
+            case "ArrowUp":
+                _activeKey = _flat[Math.Max(index - 1, 0)].Key;
+                break;
+
+            // The layout is right-to-left: children sit to the LEFT of their parent, so ArrowLeft opens
+            // a branch (or steps into it) and ArrowRight closes it (or steps back out to the parent).
+            case "ArrowLeft":
+                if (current.HasChildren && !current.Open)
+                {
+                    await ToggleAsync(current.Key);
+                }
+                else if (current.HasChildren && index + 1 < _flat.Count)
+                {
+                    _activeKey = _flat[index + 1].Key;
+                }
+                break;
+
+            case "ArrowRight":
+                if (current.HasChildren && current.Open)
+                {
+                    await ToggleAsync(current.Key);
+                }
+                else
+                {
+                    var parent = _flat.FindLastIndex(index, n => n.Depth == current.Depth - 1);
+                    if (parent >= 0)
+                    {
+                        _activeKey = _flat[parent].Key;
+                    }
+                }
+                break;
+
+            case "Home":
+                _activeKey = _flat[0].Key;
+                break;
+
+            case "End":
+                _activeKey = _flat[^1].Key;
+                break;
+
+            case "Enter":
+            case " ":
+                await SelectAsync(current);
+                break;
+
+            default:
+                return;
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>One visible row: the caller's item plus everything the tree derived for it.</summary>
+    private sealed record Node(
+        TItem Item,
+        string Key,
+        int Depth,
+        bool HasChildren,
+        bool Open,
+        IReadOnlyList<Node> Children,
+        WTreeRow RowData);
+}

@@ -188,4 +188,71 @@ public static partial class Ar
     {
         public const string Title = "الصفحة غير موجودة";
     }
+
+    /// <summary>WTree / WTreeToolbar vocabulary: the generic hierarchy component reused by the
+    /// organisation structure, unit pickers and document folders.</summary>
+    public static class Tree
+    {
+        /// <summary>Accessible name of the tree landmark when the caller supplies none.</summary>
+        public const string Label = "شجرة العناصر";
+
+        /// <summary>Text button that opens every branch.</summary>
+        public const string ExpandAll = "توسيع الكل";
+
+        /// <summary>Text button that closes every branch.</summary>
+        public const string CollapseAll = "طي الكل";
+
+        /// <summary>Tooltip on a closed branch's caret.</summary>
+        public const string ExpandNode = "توسيع الفرع";
+
+        /// <summary>Tooltip on an open branch's caret.</summary>
+        public const string CollapseNode = "طي الفرع";
+
+        /// <summary>Tooltip on a movable row's reorder handle.</summary>
+        public const string DragHandle = "مقبض ترتيب العنصر";
+
+        /// <summary>Shown when the search text matches no node.</summary>
+        public const string NoMatch = "لا عنصر بهذا الاسم";
+
+        /// <summary>Shown when the tree itself has no nodes at all.</summary>
+        public const string Empty = "لا توجد عناصر بعد";
+
+        /// <summary>Search box placeholder above a tree.</summary>
+        public const string SearchPlaceholder = "ابحث باسم العنصر أو رئيسه...";
+
+        /// <summary>
+        /// Sample vocabulary for the design gallery's tree section. It lives here (rather than beside
+        /// the other gallery strings) because the gallery text file belongs to another work package;
+        /// these strings are demonstration data only and no screen reads them.
+        /// </summary>
+        public static class Demo
+        {
+            public const string Title = "شجرة الهيكل التنظيمي";
+            public const string Authority = "هيئة تنمية المناطق الريفية";
+            public const string PlanningDept = "دائرة التخطيط";
+            public const string StrategicSection = "قسم التخطيط الاستراتيجي";
+            public const string FollowUpUnit = "وحدة المتابعة والتقارير";
+            public const string StudiesUnit = "وحدة الدراسات";
+            public const string ProjectsSection = "قسم متابعة المشاريع";
+            public const string AdminDept = "دائرة الشؤون الإدارية";
+            public const string HumanResources = "قسم الموارد البشرية";
+            public const string ArchiveUnit = "وحدة الأرشيف Archive";
+            public const string FinanceDept = "الدائرة المالية";
+            public const string LevelAuthority = "هيئة";
+            public const string LevelDepartment = "دائرة";
+            public const string LevelSection = "قسم";
+            public const string LevelUnit = "وحدة";
+            public const string HeadSami = "د. سامي العبد الله";
+            public const string HeadLayla = "أ. ليلى الحسن";
+            public const string HeadAhmad = "أحمد الخطيب";
+            public const string HeadSara = "سارة النعيمي";
+            public const string HeadNour = "نور الدين حمدان";
+            public const string HeadImad = "عماد الشريف";
+            public const string HeadHuda = "هدى السنان";
+            public const string HeadRania = "رانيا القاسم";
+            public const string NoHead = "بلا رئيس معيّن";
+            public const string OutOfService = "خارج الخدمة";
+            public const string Hint = "مقبض الترتيب في نهاية كل صف محجوز لتغيير التبعية لاحقًا.";
+        }
+    }
 }

@@ -1,0 +1,39 @@
+.w-tree-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 10px;
+}
+
+.w-tree-toolbar-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 28px;
+}
+
+.w-tree-toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.w-tree-toolbar-text {
+    font-size: var(--w-fs-section);
+    font-weight: 700;
+    color: var(--w-text);
+}
+
+.w-tree-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-inline-start: auto;
+}
+
+/* The tree pane's search box spans the whole pane, as in the A05 preview, instead of stopping at
+   the narrower cap a stand-alone search box uses. Arrangement only; the box keeps its own styling. */
+.w-tree-toolbar ::deep .w-search {
+    max-width: none;
+}

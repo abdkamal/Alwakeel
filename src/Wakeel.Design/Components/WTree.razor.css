@@ -1,0 +1,191 @@
+/* Depth indentation is expressed once, here: every row carries a unitless --w-tree-depth and the
+   spacer below turns it into a width. No pixel maths reaches the markup, and the row itself stays
+   full width, so backgrounds, hover and selection line up on a single grid instead of staircasing. */
+.w-tree {
+    /* Step and pitch measured off the A05 preview's tree pane (indent ≈21px, row pitch ≈38px). */
+    --w-tree-indent: 20px;
+    --w-tree-row-height: 38px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    outline: none;
+}
+
+.w-tree-group {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.w-tree-item { list-style: none; }
+
+.w-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--w-tree-row-height);
+    padding-inline: 8px;
+    border-radius: var(--w-radius);
+    color: var(--w-text);
+    font-size: var(--w-fs-body);
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.w-tree-row:hover { background: var(--w-surface2); }
+
+.w-tree-row--selected {
+    background: var(--w-primary-soft);
+    border-color: var(--w-primary-border);
+    font-weight: 700;
+}
+
+.w-tree-row--attention:not(.w-tree-row--selected) {
+    background: var(--w-attention-bg);
+    border-color: var(--w-warning-border);
+}
+
+/* Picking the node that needs attention is the normal path of the structure screen, so the
+   selection tint wins the background while the amber border and the row's own state text keep
+   saying that the node still needs attention. */
+.w-tree-row--selected.w-tree-row--attention {
+    background: var(--w-primary-soft);
+    border-color: var(--w-warning-border);
+}
+
+.w-tree-row--dimmed { color: var(--w-disabled); }
+
+.w-tree-row--dimmed .w-tree-meta,
+.w-tree-row--dimmed ::deep .w-tree-icon { color: var(--w-disabled); }
+
+/* The focus ring follows aria-activedescendant: the tree itself holds focus, the active row shows it. */
+.w-tree:focus-visible .w-tree-row--active,
+.w-tree:focus-within .w-tree-row--active {
+    outline: 2px solid var(--w-primary);
+    outline-offset: -2px;
+}
+
+/* The caret slot follows the depth spacer, so the caret steps inward with its own node and always
+   hugs the icon beside it — the anatomy of the A05 tree pane. The slot keeps its width on leaf rows
+   so the icons of sibling nodes still line up on one column. */
+.w-tree-caret-slot {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.w-tree-caret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--w-radius);
+    background: transparent;
+    color: var(--w-muted);
+    cursor: pointer;
+    transform: rotate(90deg);
+    transition: transform 120ms ease, background 120ms ease;
+}
+
+.w-tree-caret:hover { background: var(--w-neutral-soft); }
+
+.w-tree-caret--open { transform: rotate(0deg); }
+
+.w-tree-indent {
+    flex: 0 0 auto;
+    width: calc(var(--w-tree-indent) * var(--w-tree-depth, 0));
+}
+
+::deep .w-tree-icon {
+    flex: 0 0 auto;
+    color: var(--w-muted);
+}
+
+.w-tree-row--selected ::deep .w-tree-icon { color: var(--w-primary); }
+
+.w-tree-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+::deep .w-tree-match {
+    background: var(--w-warning-soft);
+    color: inherit;
+    border-radius: 3px;
+    padding-inline: 1px;
+}
+
+.w-tree-level { flex: 0 0 auto; }
+
+.w-tree-spacer {
+    flex: 1 1 auto;
+    min-width: 8px;
+}
+
+.w-tree-meta {
+    flex: 0 0 auto;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+    white-space: nowrap;
+}
+
+.w-tree-state {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--w-fs-meta);
+    white-space: nowrap;
+}
+
+.w-tree-state--warning { color: var(--w-warning); }
+.w-tree-state--danger { color: var(--w-danger); }
+.w-tree-state--info { color: var(--w-info); }
+.w-tree-state--success { color: var(--w-success); }
+.w-tree-state--primary { color: var(--w-primary); }
+.w-tree-state--neutral { color: var(--w-muted); }
+
+.w-tree-handle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    color: var(--w-placeholder);
+    /* Deliberately not `grab`: the handle reserves the place of the future move affordance, and the
+       pointer must not promise a gesture the component does not implement yet. */
+    cursor: default;
+}
+
+.w-tree-row:hover .w-tree-handle { color: var(--w-muted); }
+
+.w-tree-custom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.w-tree-empty {
+    margin: 0;
+    padding: 24px 8px;
+    text-align: center;
+    color: var(--w-muted);
+    font-size: var(--w-fs-body);
+}
+
+/* Guidance line under the last row, inside the pane — where the A05 tree pane prints its move hint. */
+.w-tree-hint {
+    margin: 8px 0 0;
+    padding-inline: 8px;
+    color: var(--w-muted);
+    font-size: var(--w-fs-caption);
+    line-height: 1.6;
+}

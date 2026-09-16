@@ -1,0 +1,69 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Bidi
+@using Wakeel.Design.Text
+
+<div class="w-tree-toolbar">
+    <div class="w-tree-toolbar-head">
+        <div class="w-tree-toolbar-title">
+            <bdi class="w-tree-toolbar-text">@Bidi.Wrap(Title)</bdi>
+            @if (Count is int count)
+            {
+                <WBadge Count="count" Kind="WBadgeKind.Group" />
+            }
+        </div>
+        @if (ShowExpandControls)
+        {
+            <div class="w-tree-toolbar-actions">
+                <WButton Variant="WButtonVariant.Text" Label="@Ar.Tree.ExpandAll" OnClick="OnExpandAll" />
+                <WButton Variant="WButtonVariant.Text" Label="@Ar.Tree.CollapseAll" OnClick="OnCollapseAll" />
+            </div>
+        }
+    </div>
+    @if (ShowSearch)
+    {
+        <WSearch Value="@Search" ValueChanged="SearchChanged" Placeholder="@SearchPlaceholder"
+                 BindGlobalShortcut="@BindGlobalShortcut" ShowShortcutHint="@(ShowShortcutHint ?? BindGlobalShortcut)" />
+    }
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>Heading of the tree pane (e.g. «شجرة الهيكل التنظيمي»).</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>Count badge beside the title (the number of nodes). Omitted when null.</summary>
+    [Parameter] public int? Count { get; set; }
+
+    /// <summary>Shows the «توسيع الكل» / «طي الكل» text buttons.</summary>
+    [Parameter] public bool ShowExpandControls { get; set; } = true;
+
+    /// <summary>Raised by «توسيع الكل»; wire it to the tree's ExpandAll().</summary>
+    [Parameter] public EventCallback OnExpandAll { get; set; }
+
+    /// <summary>Raised by «طي الكل»; wire it to the tree's CollapseAll().</summary>
+    [Parameter] public EventCallback OnCollapseAll { get; set; }
+
+    /// <summary>Shows the search box with its Ctrl+F hint.</summary>
+    [Parameter] public bool ShowSearch { get; set; } = true;
+
+    /// <summary>Current search text (use with @bind-Search).</summary>
+    [Parameter] public string? Search { get; set; }
+
+    /// <summary>Raised on every keystroke in the search box.</summary>
+    [Parameter] public EventCallback<string?> SearchChanged { get; set; }
+
+    /// <summary>Placeholder of the search box.</summary>
+    [Parameter] public string SearchPlaceholder { get; set; } = Ar.Tree.SearchPlaceholder;
+
+    /// <summary>Lets Ctrl+F anywhere on the page focus this search box (default true).</summary>
+    [Parameter] public bool BindGlobalShortcut { get; set; } = true;
+
+    /// <summary>
+    /// Shows the keyboard-shortcut hint chip inside the search box. Left unset it follows
+    /// <see cref="BindGlobalShortcut"/>, so the box never advertises a shortcut that is not bound.
+    /// </summary>
+    [Parameter] public bool? ShowShortcutHint { get; set; }
+
+    /// <summary>Extra controls placed under the search box (e.g. a filter row).</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

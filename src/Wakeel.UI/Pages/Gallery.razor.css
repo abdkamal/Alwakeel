@@ -46,3 +46,23 @@
     font-size: var(--w-fs-meta);
     color: var(--w-muted);
 }
+
+.w-gallery-tree {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+    background: var(--w-surface);
+    max-width: 520px;
+}
+
+/* The notification rows of the daily-shell section, on a bordered surface so their own separators
+   read the way they do inside the panel. */
+.w-gallery-notifications {
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+    background: var(--w-surface);
+    overflow: hidden;
+    max-width: 420px;
+}

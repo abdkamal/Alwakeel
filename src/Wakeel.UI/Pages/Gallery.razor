@@ -156,7 +156,78 @@
         <WBannerClock />
         <WMenu Items="_menuItems" />
     </section>
+
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Tree.Label" />
+        <div class="w-gallery-tree">
+            <WTreeToolbar Title="@Ar.Tree.Demo.Title" Count="_treeCount"
+                          BindGlobalShortcut="false" ShowShortcutHint="true"
+                          OnExpandAll="ExpandTree" OnCollapseAll="CollapseTree"
+                          @bind-Search="_treeSearch" />
+            <WTree TItem="OrgNode" @ref="_tree"
+                   Items="_orgRoots"
+                   ChildrenOf="node => node.Children"
+                   KeyOf="node => node.Key"
+                   RowOf="DescribeOrgNode"
+                   Search="@_treeSearch"
+                   Movable="true"
+                   DefaultExpandAll="true"
+                   Label="@Ar.Tree.Demo.Title"
+                   Hint="@Ar.Tree.Demo.Hint"
+                   @bind-Selected="_treeSelected" />
+        </div>
+    </section>
+
+    @* The pieces package B2 added to the design system, so the daily screens compose out of it. *@
+    <section class="w-gallery-section">
+        <WSectionHeader Title="@Ar.Shell.GalleryDailyTitle" Sub="@Ar.Shell.GalleryDailySub" />
+        <div class="w-gallery-row">
+            <WKpiCard Label="@Ar.AttentionCenter.OverdueLabel" Icon="alert-triangle" Value="12"
+                      Sub="@Ar.AttentionCenter.OverdueSub" Variant="WSemanticVariant.Danger"
+                      Tooltip="@Ar.Shell.GalleryKpiTooltip" OnClick="() => _galleryPanelOpen = true" />
+            <WKpiCard Label="@Ar.AttentionCenter.NearDueLabel" Icon="calendar" Value="8"
+                      Sub="@Ar.AttentionCenter.NearDueSub" Variant="WSemanticVariant.Warning" />
+        </div>
+        <WSegmented Options="_quickKindOptions" Icons="_quickKindIcons" Stacked="true"
+                    @bind-SelectedValue="_quickKind" />
+        <div class="w-gallery-notifications">
+            <WNotificationItem Icon="users" KindLabel="@Ar.Shell.GalleryNotificationKind"
+                               RelativeTime="@Ar.Shell.GalleryNotificationTime" Unread="true"
+                               Tooltip="@Ar.Shell.GalleryNotificationTooltip">
+                <Title>@Ar.Shell.GalleryNotificationTitle</Title>
+                <Body>@Ar.Shell.GalleryNotificationBody</Body>
+            </WNotificationItem>
+            <WNotificationItem Icon="bar-chart-3" KindLabel="@Ar.Notifications.KindLabel("financial_cycle")"
+                               RelativeTime="@Ar.Shell.GalleryNotificationTime"
+                               Variant="WSemanticVariant.Warning"
+                               Tooltip="@Ar.Shell.GalleryNotificationTooltip">
+                <Title>@Ar.AttentionCenter.MonthlyReportBanner</Title>
+            </WNotificationItem>
+        </div>
+        <WDialog Inline="true" Kind="WDialogKind.Danger" Title="@Ar.StandardDialogs.DangerTitle"
+                 Desc="@Ar.StandardDialogs.DangerDesc" Notice="@Ar.StandardDialogs.DangerNotice"
+                 ConfirmLabel="@Ar.StandardDialogs.DangerConfirm" ConfirmIcon="ban"
+                 CancelLabel="@Ar.Buttons.Cancel" CancelIcon="x" />
+    </section>
 </div>
+
+<WNotificationPanel Open="_galleryPanelOpen" Count="2" OnClose="() => _galleryPanelOpen = false">
+    <HeadActions>
+        <WButton Variant="WButtonVariant.Icon" Icon="settings" Tooltip="@Ar.Notifications.SettingsTooltip" />
+    </HeadActions>
+    <ChildContent>
+        <WNotificationItem Icon="users" KindLabel="@Ar.Shell.GalleryNotificationKind"
+                           RelativeTime="@Ar.Shell.GalleryNotificationTime" Unread="true"
+                           Tooltip="@Ar.Shell.GalleryNotificationTooltip">
+            <Title>@Ar.Shell.GalleryNotificationTitle</Title>
+            <Body>@Ar.Shell.GalleryNotificationBody</Body>
+        </WNotificationItem>
+    </ChildContent>
+    <FooterContent>
+        <WButton Variant="WButtonVariant.Text" Label="@Ar.Notifications.ViewAll"
+                 Tooltip="@Ar.Notifications.ViewAll" />
+    </FooterContent>
+</WNotificationPanel>
 
 <WDialog Open="_normalDialogOpen" Title="@Ar.Gallery.DialogNormalTitle" Desc="@Ar.Gallery.DialogSampleDesc"
          OnConfirm="() => _normalDialogOpen = false" OnCancel="() => _normalDialogOpen = false" />
@@ -183,6 +254,27 @@
         ("list", Ar.Gallery.ViewOptionList),
         ("grid", Ar.Gallery.ViewOptionGrid),
     };
+
+    // The stacked, icon-carrying form of WSegmented, as W94 uses it.
+    private readonly IReadOnlyList<(string Value, string Label)> _quickKindOptions = new List<(string, string)>
+    {
+        ("task", Ar.QuickCapture.KindTask),
+        ("note", Ar.QuickCapture.KindNote),
+        ("expense", Ar.QuickCapture.KindExpense),
+        ("appointment", Ar.QuickCapture.KindAppointment),
+    };
+
+    private readonly IReadOnlyDictionary<string, string> _quickKindIcons = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["task"] = "check-square",
+        ["note"] = "file-text",
+        ["expense"] = "wallet",
+        ["appointment"] = "calendar",
+    };
+
+    private string _quickKind = "task";
+
+    private bool _galleryPanelOpen;
 
     private readonly IReadOnlyList<string> _steps = new List<string>
     {
@@ -219,6 +311,119 @@
     private bool _normalDialogOpen;
     private bool _dangerDialogOpen;
 
+    // ---- WTree sample: a four-level organisation (هيئة → دائرة → قسم → وحدة) showing every row state.
+    private WTree<OrgNode>? _tree;
+    private string? _treeSearch = string.Empty;
+    private string? _treeSelected = "strategic";
+
+    private readonly IReadOnlyList<OrgNode> _orgRoots = new List<OrgNode>
+    {
+        new("authority", Ar.Tree.Demo.Authority, Ar.Tree.Demo.LevelAuthority, "landmark")
+        {
+            Head = Ar.Tree.Demo.HeadSami,
+            Children = new List<OrgNode>
+            {
+                new("planning", Ar.Tree.Demo.PlanningDept, Ar.Tree.Demo.LevelDepartment, "building")
+                {
+                    Head = Ar.Tree.Demo.HeadLayla,
+                    Children = new List<OrgNode>
+                    {
+                        new("strategic", Ar.Tree.Demo.StrategicSection, Ar.Tree.Demo.LevelSection, "folder-open")
+                        {
+                            Head = Ar.Tree.Demo.HeadAhmad,
+                            Children = new List<OrgNode>
+                            {
+                                new("follow-up", Ar.Tree.Demo.FollowUpUnit, Ar.Tree.Demo.LevelUnit, "file-text")
+                                {
+                                    Head = Ar.Tree.Demo.HeadSara,
+                                },
+                                new("studies", Ar.Tree.Demo.StudiesUnit, Ar.Tree.Demo.LevelUnit, "file-text")
+                                {
+                                    State = Ar.Tree.Demo.NoHead,
+                                    StateIcon = "alert-triangle",
+                                    Attention = true,
+                                },
+                            },
+                        },
+                        new("projects", Ar.Tree.Demo.ProjectsSection, Ar.Tree.Demo.LevelSection, "folder-open")
+                        {
+                            Head = Ar.Tree.Demo.HeadNour,
+                        },
+                    },
+                },
+                new("admin", Ar.Tree.Demo.AdminDept, Ar.Tree.Demo.LevelDepartment, "building")
+                {
+                    Head = Ar.Tree.Demo.HeadImad,
+                    Children = new List<OrgNode>
+                    {
+                        new("hr", Ar.Tree.Demo.HumanResources, Ar.Tree.Demo.LevelSection, "folder-open")
+                        {
+                            Head = Ar.Tree.Demo.HeadHuda,
+                            Badge = 2,
+                            Children = new List<OrgNode>
+                            {
+                                new("archive", Ar.Tree.Demo.ArchiveUnit, Ar.Tree.Demo.LevelUnit, "file-text")
+                                {
+                                    State = Ar.Tree.Demo.OutOfService,
+                                    StateVariant = WChipVariant.Neutral,
+                                    Dimmed = true,
+                                },
+                            },
+                        },
+                    },
+                },
+                new("finance", Ar.Tree.Demo.FinanceDept, Ar.Tree.Demo.LevelDepartment, "building")
+                {
+                    Head = Ar.Tree.Demo.HeadRania,
+                },
+            },
+        },
+    };
+
+    private int _treeCount;
+
+    /// <summary>One node of the gallery's sample hierarchy.</summary>
+    private sealed record OrgNode(string Key, string Name, string Level, string Icon)
+    {
+        public string? Head { get; init; }
+        public string? State { get; init; }
+        public WChipVariant StateVariant { get; init; } = WChipVariant.Warning;
+        public string? StateIcon { get; init; }
+        public int? Badge { get; init; }
+        public bool Attention { get; init; }
+        public bool Dimmed { get; init; }
+        public IReadOnlyList<OrgNode> Children { get; init; } = Array.Empty<OrgNode>();
+    }
+
+    private static WTreeRow DescribeOrgNode(OrgNode node) => new(node.Name)
+    {
+        Icon = node.Icon,
+        LevelLabel = node.Level,
+        Meta = node.Head,
+        StateLabel = node.State,
+        StateVariant = node.StateVariant,
+        StateIcon = node.StateIcon,
+        Badge = node.Badge,
+        Attention = node.Attention,
+        Dimmed = node.Dimmed,
+    };
+
+    private static int CountNodes(IReadOnlyList<OrgNode> nodes)
+    {
+        var total = 0;
+
+        foreach (var node in nodes)
+        {
+            total += 1 + CountNodes(node.Children);
+        }
+
+        return total;
+    }
+
+    private Task ExpandTree() => _tree?.ExpandAllAsync() ?? Task.CompletedTask;
+
+    private Task CollapseTree() => _tree?.CollapseAllAsync() ?? Task.CompletedTask;
+
     private readonly RenderFragment _splitMenu = @<div class="w-gallery-split-menu">@Ar.Gallery.SplitMenuText</div>;
 
     private readonly RenderFragment _tableHeader = @<text>
@@ -231,6 +436,7 @@
     protected override void OnInitialized()
     {
         HeaderState.Set(Ar.Gallery.Title, Ar.Gallery.Sub, navKey: null);
+        _treeCount = CountNodes(_orgRoots);
         _themeValue = Theme.Theme switch
         {
             UiTheme.Light => "light",
