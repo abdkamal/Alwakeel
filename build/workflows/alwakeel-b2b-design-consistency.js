@@ -82,7 +82,8 @@ async function chain(p) {
   return s
 }
 log('design consistency: WTree component → admin screens ∥ app screens')
-const tree = await chain(PACKAGES.tree)
-if (!accepted(tree)) { log('WTree not accepted — stopping for the supervisor'); return { tree } }
+// Pass args {skipTree:true} when the WTree component was already accepted by an earlier run.
+const tree = (args && args.skipTree) ? { key: 'design-tree', skipped: true } : await chain(PACKAGES.tree)
+if (!(args && args.skipTree) && !accepted(tree)) { log('WTree not accepted — stopping for the supervisor'); return { tree } }
 const both = await parallel([() => chain(PACKAGES.admin), () => chain(PACKAGES.app)])
 return { tree, admin: both[0], app: both[1] }
