@@ -1,0 +1,258 @@
+@page "/"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminDashboardService Board
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject NavigationManager Nav
+
+@* A03 — what the organisation looks like from above: four figures, the structure in brief, and
+   whatever wants attention. Every number is read from the tool's own data, so the board is right
+   the moment a structure edit or an export lands. *@
+@if (_board is null)
+{
+    <AdminErrorState Message="@AdminAr.Errors.DataUnreadable" OnRetry="Reload" />
+}
+else
+{
+    <div class="a03-kpis">
+        <WKpiCard Icon="layout-grid"
+                  Label="@AdminAr.Dashboard.StructureCard"
+                  Value="@AdminAr.Dashboard.StructureCounts(_board.Departments, _board.Sections, _board.Units)"
+                  Sub="@AdminAr.Dashboard.StructureCardSub" />
+
+        <WKpiCard Icon="building"
+                  Label="@AdminAr.Dashboard.OfficesCard"
+                  Value="@_board.ActivatedOffices.ToString(Culture)"
+                  Sub="@OfficesSub" />
+
+        <WKpiCard Icon="cpu"
+                  Label="@AdminAr.Dashboard.DevicesCard"
+                  Value="@AdminAr.Counting.Devices(_board.Devices)"
+                  Sub="@AdminAr.Dashboard.DevicesRevoked(_board.ActiveDevices, _board.RevokedDevices)" />
+
+        <WKpiCard Icon="package"
+                  Label="@AdminAr.Dashboard.LastExportCard"
+                  Value="@LastExportValue"
+                  Sub="@(_board.LastExportOffice ?? AdminAr.Dashboard.NoExportYet)" />
+    </div>
+
+    <div class="a03-panels">
+        <section class="a03-panel" aria-labelledby="a03-structure-title">
+            <div class="a03-panel-head">
+                <h2 id="a03-structure-title" class="a03-panel-title">@AdminAr.Dashboard.StructureSummary</h2>
+            </div>
+
+            @if (_board.Branches.Count == 0)
+            {
+                <WStateCard Icon="layout-grid"
+                            Title="@AdminAr.Dashboard.StructureEmpty"
+                            Desc="@AdminAr.Dashboard.StructureEmptyDesc"
+                            ActionLabel="@null" />
+            }
+            else
+            {
+                <ul class="a03-branches">
+                    @foreach (var branch in _board.Branches)
+                    {
+                        <li class="a03-branch">
+                            <span class="a03-branch-name"><Bdi Text="@branch.Name" /></span>
+                            <span class="a03-branch-sub">
+                                <Bdi Text="@AdminAr.Dashboard.BranchSummary(branch.Sections, branch.Units, branch.Offices, branch.OfficesWaiting)" />
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="a03-panel" aria-labelledby="a03-alerts-title">
+            <div class="a03-panel-head">
+                <div>
+                    <h2 id="a03-alerts-title" class="a03-panel-title">@AdminAr.Dashboard.Alerts</h2>
+                    @if (AlertsSub is { Length: > 0 } sub)
+                    {
+                        <p class="a03-panel-sub"><Bdi Text="@sub" /></p>
+                    }
+                </div>
+                @if (_board.AlertCount > 0)
+                {
+                    <div class="a03-panel-actions">
+                        <WBadge Count="@_board.AlertCount" Kind="WBadgeKind.Group" />
+                        @if (_auditRoute is null)
+                        {
+                            @* Switched off until admin-3 builds the operations log, and saying so in
+                               words on hover: a live-looking control that does nothing when pressed
+                               is indistinguishable from a broken tool. *@
+                            <WTooltip Text="@AdminAr.Dashboard.NotReadyYetTooltip">
+                                <WButton Variant="WButtonVariant.Text"
+                                         Label="@AdminAr.Dashboard.AlertsAll"
+                                         Tooltip="@AdminAr.Dashboard.NotReadyYetTooltip"
+                                         Disabled="true"
+                                         OnClick="OpenAuditLog" />
+                            </WTooltip>
+                        }
+                        else
+                        {
+                            <WButton Variant="WButtonVariant.Text"
+                                     Label="@AdminAr.Dashboard.AlertsAll"
+                                     Tooltip="@AdminAr.Dashboard.AlertsAllTooltip"
+                                     OnClick="OpenAuditLog" />
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (_board.Alerts.Count == 0)
+            {
+                <WStateCard Icon="check-circle"
+                            Title="@AdminAr.Dashboard.AlertsNone"
+                            Desc="@AdminAr.Dashboard.AlertsNoneDesc(_board.IsEmpty)"
+                            ActionLabel="@null" />
+            }
+            else
+            {
+                <ul class="a03-alerts">
+                    @foreach (var alert in _board.Alerts)
+                    {
+                        <li class="a03-alert">
+                            <WIcon Name="alert-triangle" Size="16" />
+                            <div class="a03-alert-text">
+                                <span class="a03-alert-title"><Bdi Text="@alert.Title" /></span>
+                                <span class="a03-alert-detail"><Bdi Text="@alert.Detail" /></span>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
+
+    private AdminDashboard? _board;
+
+    // Where the two buttons that leave this screen would go. Both areas belong to admin-3, so the
+    // routes are read once here and the buttons are drawn switched off until they exist: a control
+    // that looks live and does nothing when pressed is indistinguishable from a broken tool.
+    private string? _exportRoute;
+    private string? _auditRoute;
+
+    private string OfficesSub => _board is null
+        ? string.Empty
+        : _board.Offices == 0
+            ? AdminAr.Dashboard.OfficesWaiting(0, 0)
+            : Bidi.Wrap($"{AdminAr.Dashboard.OfOffices(_board.Offices)} · {AdminAr.Dashboard.OfficesWaiting(_board.OfficesWaiting, _board.Offices)}");
+
+    /// <summary>
+    /// What the alerts are, counted by kind — never a sentence about a kind that is absent. The
+    /// figures come from the board's own totals rather than from the handful of lines drawn below,
+    /// so this line and the cards above it always say the same thing about the same organisation.
+    /// </summary>
+    private string AlertsSub => _board is null || _board.AlertCount == 0
+        ? string.Empty
+        : AdminAr.Dashboard.AlertsSummary(_board.OfficesWaiting, _board.PendingChanges, _board.RevokedDevices);
+
+    private string LastExportValue => _board?.LastExportAt is { } at
+        ? at.ToLocalTime().ToString("yyyy/MM/dd", Culture)
+        : "—";
+
+    protected override void OnInitialized()
+    {
+        // The dashboard is behind the door: without an open database there is nothing to read and
+        // nothing to show, so whoever got here goes back to the door.
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        _exportRoute = AdminRoutes.ForTab(AdminAr.Tabs.SetupExport);
+        _auditRoute = AdminRoutes.ForTab(AdminAr.Tabs.AuditLog);
+
+        HeaderState.Set(
+            AdminAr.Dashboard.Title,
+            AdminAr.Dashboard.Sub,
+            activeTab: null,
+            actions: BuildActions());
+
+        Reload();
+    }
+
+    private RenderFragment BuildActions() => builder =>
+    {
+        builder.OpenComponent<WButton>(0);
+        builder.AddComponentParameter(1, nameof(WButton.Variant), WButtonVariant.Secondary);
+        builder.AddComponentParameter(2, nameof(WButton.Icon), "refresh-cw");
+        builder.AddComponentParameter(3, nameof(WButton.Label), AdminAr.Dashboard.Refresh);
+        builder.AddComponentParameter(4, nameof(WButton.Tooltip), AdminAr.Dashboard.RefreshTooltip);
+        builder.AddComponentParameter(5, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, Reload));
+        builder.CloseComponent();
+
+        if (_exportRoute is null)
+        {
+            // Switched off, and wrapped so that hovering it says why in words. A button that looks
+            // live and does nothing when pressed is indistinguishable from a broken tool.
+            builder.OpenComponent<WTooltip>(6);
+            builder.AddComponentParameter(7, nameof(WTooltip.Text), AdminAr.Dashboard.NotReadyYetTooltip);
+            builder.AddComponentParameter(8, nameof(WTooltip.ChildContent),
+                (RenderFragment)(inner => BuildExportButton(inner)));
+            builder.CloseComponent();
+        }
+        else
+        {
+            BuildExportButton(builder);
+        }
+    };
+
+    private void BuildExportButton(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
+    {
+        builder.OpenComponent<WButton>(100);
+        builder.AddComponentParameter(101, nameof(WButton.Variant), WButtonVariant.Primary);
+        builder.AddComponentParameter(102, nameof(WButton.Icon), "download");
+        builder.AddComponentParameter(103, nameof(WButton.Label), AdminAr.Dashboard.ExportSetup);
+        builder.AddComponentParameter(104, nameof(WButton.Tooltip), _exportRoute is null
+            ? AdminAr.Dashboard.NotReadyYetTooltip
+            : AdminAr.Dashboard.ExportSetupTooltip);
+        builder.AddComponentParameter(105, nameof(WButton.Disabled), _exportRoute is null);
+        builder.AddComponentParameter(106, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, OpenExport));
+        builder.CloseComponent();
+    }
+
+    private void Reload()
+    {
+        try
+        {
+            _board = Board.Read();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            // The one thing that can go wrong here is the tool's own file becoming unreadable
+            // underneath it; the screen says so in words and offers to look again.
+            _board = null;
+        }
+
+        StateHasChanged();
+    }
+
+    /// <summary>A08 is admin-3's; until it exists the button is switched off and says so.</summary>
+    private void OpenExport()
+    {
+        if (_exportRoute is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    /// <summary>A11 is admin-3's; the same rule applies until it exists.</summary>
+    private void OpenAuditLog()
+    {
+        if (_auditRoute is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+}

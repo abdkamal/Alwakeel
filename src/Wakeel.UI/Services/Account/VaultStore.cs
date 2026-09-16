@@ -39,14 +39,57 @@ public static class VaultStore
 
         // Through a temporary name so a half written file can never be mistaken for a stored one.
         var temporary = target + ".tmp";
-        using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
+        try
         {
-            stream.Write(sealedBytes);
-            stream.Flush(flushToDisk: true);
+            using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(sealedBytes);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(temporary, target, overwrite: true);
+        }
+        catch
+        {
+            // The write or the move failed; do not leave sealed, unaccountable bytes behind under a
+            // key the caller may abandon (e.g. a vault key wiped after a failed activation).
+            try
+            {
+                File.Delete(temporary);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            throw;
         }
 
-        File.Move(temporary, target, overwrite: true);
         return hashHex;
+    }
+
+    /// <summary>
+    /// Removes one file from the vault, e.g. to undo a write made during an activation that failed
+    /// before it committed. Missing files and files the process cannot touch are left alone rather
+    /// than allowed to hide the failure that brought the caller here.
+    /// </summary>
+    public static void Delete(WakeelPaths paths, string sha256Hex)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sha256Hex);
+
+        try
+        {
+            File.Delete(paths.VaultFilePath(sha256Hex));
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     /// <summary>Reads one file back, or returns null when the vault does not hold it.</summary>

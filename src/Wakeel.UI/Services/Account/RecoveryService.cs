@@ -149,6 +149,14 @@ public sealed class RecoveryService
     /// </summary>
     private void CountWrongCode(string? codeText)
     {
+        // A successful password sign-in resets the shared attempt counter (LoginService.OpenSessionAsync);
+        // once that has happened, a code that was already counted against the old streak is a fresh
+        // attempt again, not a repeat of the same keystroke.
+        if (_login.Profile().FailedAttempts == 0)
+        {
+            _lastCountedCode = null;
+        }
+
         var normalized = RecoveryCode.Normalize(codeText);
         if (string.Equals(normalized, _lastCountedCode, StringComparison.Ordinal))
         {
@@ -366,6 +374,11 @@ public sealed class RecoveryService
             CryptographicOperations.ZeroMemory(dbKey);
             CryptographicOperations.ZeroMemory(vaultKey);
         }
+
+        // The counter's memory of the last wrong code must not outlive a recovery that succeeded — a
+        // stale entry costing no attempt on a later, unrelated brute-force run is a defect, not a
+        // convenience, even though it never fires against fresh codes.
+        _lastCountedCode = null;
 
         return new RecoveryResult(RecoveryOutcome.Success, Ar.FirstRun.Recovery.Succeeded, newSheet);
     }

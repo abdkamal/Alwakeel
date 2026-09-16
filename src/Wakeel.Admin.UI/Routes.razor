@@ -1,0 +1,15 @@
+@namespace Wakeel.Admin.UI
+@using Wakeel.Admin.UI.Layout
+
+@* The administration tool's router. Every screen that is part of the shell gets the shell layout;
+   A01 and A02 come before there is anything to navigate to, so they set the bare one themselves. *@
+<Router AppAssembly="@typeof(Routes).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(AdminLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(AdminLayout)">
+            <p class="w-muted">@Ar.NotFound.Title</p>
+        </LayoutView>
+    </NotFound>
+</Router>

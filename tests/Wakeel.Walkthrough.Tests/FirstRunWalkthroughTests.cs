@@ -402,6 +402,49 @@ public sealed class FirstRunWalkthroughTests
     }
 
     /// <summary>
+    /// The logo is stored in the vault before the guide, and a failure while storing the guide must
+    /// not leave the logo's encrypted bytes behind: with the key file gone, nothing on the machine
+    /// could ever open them again, and they would sit in the vault folder as dead, unaccounted bytes.
+    /// </summary>
+    [Fact]
+    public async Task An_activation_that_fails_after_the_first_attachment_removes_that_attachment_too()
+    {
+        using var world = new FirstRunWorld();
+        await world.ChooseAsync(world.Export());
+        world.Inspection.Inspect(world.PackagePasswordText);
+        Assert.True(world.Inspection.IsAcceptable);
+        world.Activation.Begin();
+
+        // The guide's vault slot is occupied by a directory, so the logo (written first) lands on
+        // disk successfully and the guide's write fails when VaultStore tries to move its temporary
+        // file into that same, already-occupied name.
+        var guideHash = Sha256.HashHex(FirstRunWorld.Guide);
+        var logoHash = Sha256.HashHex(FirstRunWorld.Logo);
+        var guideVaultPath = world.Paths.VaultFilePath(guideHash);
+        Directory.CreateDirectory(guideVaultPath);
+
+        await Assert.ThrowsAnyAsync<Exception>(() => world.Activation.ActivateAsync(FirstRunWorld.FirstPassword));
+
+        // Nothing the failed attempt wrote outlives it, including the logo it had already stored,
+        // and including the sealed temporary file the guide's own failing write left behind.
+        Assert.False(File.Exists(world.Paths.InstallationKeyPath));
+        Assert.False(File.Exists(world.Paths.DbPath));
+        Assert.False(File.Exists(world.Paths.VaultFilePath(logoHash)));
+        Assert.False(File.Exists(world.Paths.VaultFilePath(guideHash) + ".tmp"));
+        Assert.False(world.Login.IsActivated);
+        Assert.False(world.Activation.AlreadyActivated);
+
+        Directory.Delete(guideVaultPath, recursive: true);
+
+        // The same file and sheet activate the machine cleanly once the obstruction is gone.
+        Assert.True(world.Activation.CanActivate);
+        var result = await world.Activation.ActivateAsync(FirstRunWorld.FirstPassword);
+        Assert.True(result.Succeeded);
+        Assert.True(File.Exists(world.Paths.VaultFilePath(logoHash)));
+        Assert.True(File.Exists(world.Paths.VaultFilePath(guideHash)));
+    }
+
+    /// <summary>
     /// Recovery replaces the password wrap and — when a new sheet is asked for — the recovery wrap
     /// as well. If that were written before the installation had been proved openable, a database
     /// that refuses to open would leave the old password dead and the replacement code, which nobody
@@ -481,6 +524,31 @@ public sealed class FirstRunWalkthroughTests
         Assert.Equal(RecoveryOutcome.Success, world.Recovery.Verify(code));
         var recovered = await world.Recovery.RecoverAsync(code, FirstRunWorld.SecondPassword, issueNewSheet: false);
         Assert.True(recovered.Succeeded);
+    }
+
+    /// <summary>
+    /// A successful password sign-in resets the shared attempt counter (LoginService.OpenSessionAsync);
+    /// the dialog's own memory of "the last wrong code already counted" must reset with it, or that
+    /// one code text stays free to retry forever after the person signs in correctly.
+    /// </summary>
+    [Fact]
+    public async Task A_successful_sign_in_forgets_the_last_wrong_recovery_code()
+    {
+        using var world = new FirstRunWorld();
+        await ActivateAsync(world);
+        world.Session.SignOut();
+
+        var wrong = RecoveryCode.Generate().Display;
+        Assert.Equal(RecoveryOutcome.CodeWrong, world.Recovery.Verify(wrong));
+        Assert.Equal(1, world.Login.Profile().FailedAttempts);
+
+        var signIn = await world.Login.SignInAsync(FirstRunWorld.FirstPassword);
+        Assert.True(signIn.Succeeded);
+        Assert.Equal(0, world.Login.Profile().FailedAttempts);
+
+        // The very same wrong code text, resubmitted after a fresh sign-in, is a fresh attempt again.
+        Assert.Equal(RecoveryOutcome.CodeWrong, world.Recovery.Verify(wrong));
+        Assert.Equal(1, world.Login.Profile().FailedAttempts);
     }
 
     [Fact]

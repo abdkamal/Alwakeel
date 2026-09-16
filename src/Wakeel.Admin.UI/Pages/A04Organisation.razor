@@ -1,0 +1,743 @@
+@page "/organisation"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminOrgService Org
+@inject AdminStructureService Structure
+@inject IAdminImageSquareCrop Cropper
+@inject IAdminPrintService Printer
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IToastService Toasts
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+
+@* A04 — everything about the organisation that every computer in it has to agree on: its name, its
+   logo, the day its money year turns, the shape of its official numbers, and the two Word templates
+   it writes with. *@
+@if (_identity is null)
+{
+    <AdminErrorState Message="@AdminAr.Errors.DataUnreadable" OnRetry="Reload" />
+}
+else
+{
+    <div class="a04">
+        <div class="a04-grid">
+            <WCard Title="@AdminAr.Organisation.Identity.Heading">
+                <WInput Label="@AdminAr.Organisation.Identity.NameLabel"
+                        Required="true"
+                        Value="@_name"
+                        ValueChanged="OnNameChanged"
+                        Placeholder="@AdminAr.Organisation.Identity.NamePlaceholder"
+                        Hint="@AdminAr.Organisation.Identity.NameHint"
+                        Error="@_nameError" />
+            </WCard>
+
+            <WCard Title="@AdminAr.Organisation.Logo.Heading" Desc="@AdminAr.Organisation.Logo.Desc">
+                <div class="a04-logo">
+                    <div class="a04-logo-frame" aria-label="@AdminAr.Organisation.Logo.PreviewLabel">
+                        @if (_logoPreview is { Length: > 0 })
+                        {
+                            <img src="@_logoPreview" alt="@AdminAr.Organisation.Logo.PreviewLabel" />
+                        }
+                        else
+                        {
+                            <WIcon Name="image" Size="28" />
+                        }
+                    </div>
+
+                    <div class="a04-logo-side">
+                        @if (_logoPreview is null)
+                        {
+                            <p class="a04-muted">@AdminAr.Organisation.Logo.EmptyDesc</p>
+                        }
+                        else if (_logo is not null)
+                        {
+                            <p class="a04-muted"><Bdi Text="@AdminAr.Organisation.Logo.Measure(_logo.Width, _logo.Height)" /></p>
+                        }
+
+                        <label class="a04-file">
+                            <span class="a04-file-button">
+                                <WIcon Name="upload" Size="16" />
+                                @(_logoPreview is null ? AdminAr.Organisation.Logo.Choose : AdminAr.Organisation.Logo.Replace)
+                            </span>
+                            <InputFile OnChange="ChooseLogo" accept="image/png,image/jpeg" />
+                        </label>
+
+                        @if (_logoPreview is not null)
+                        {
+                            <WButton Variant="WButtonVariant.Text"
+                                     Icon="trash-2"
+                                     Label="@AdminAr.Organisation.Logo.Remove"
+                                     Tooltip="@AdminAr.Organisation.Logo.RemoveTooltip"
+                                     OnClick="RemoveLogo" />
+                        }
+                    </div>
+                </div>
+
+                @if (_logoChosen is not null && Cropper.IsAvailable)
+                {
+                    <div class="a04-focus">
+                        <label for="a04-focus">@AdminAr.Organisation.Logo.FocusLabel</label>
+                        <input id="a04-focus" type="range" min="0" max="100" step="1"
+                               value="@((int)Math.Round(_focus * 100))"
+                               @oninput="OnFocusChanged" />
+                        <span class="a04-muted">@AdminAr.Organisation.Logo.FocusHint</span>
+                    </div>
+                }
+
+                @if (_logo is { WasCropped: false })
+                {
+                    <p class="a04-note"><WIcon Name="info" Size="14" /> @AdminAr.Organisation.Logo.CropUnavailable</p>
+                }
+
+                @if (_logoError is { Length: > 0 })
+                {
+                    <p class="a04-error"><WIcon Name="alert-circle" Size="14" /> @_logoError</p>
+                }
+            </WCard>
+
+            <WCard Title="@AdminAr.Organisation.Cycle.Heading">
+                <WSelect Label="@AdminAr.Organisation.Cycle.DayLabel"
+                         Required="true"
+                         Options="DayOptions"
+                         Value="@_cycleDay.ToString(Culture)"
+                         ValueChanged="OnCycleDayChanged"
+                         Hint="@AdminAr.Organisation.Cycle.DayHint" />
+
+                <p class="a04-explain">@AdminAr.Organisation.Cycle.Explain</p>
+                <p class="a04-example"><Bdi Text="@AdminAr.Organisation.Cycle.Example(_cycleDay)" /></p>
+            </WCard>
+
+            <WCard Title="@AdminAr.Organisation.Numbering.Heading">
+                <WInput Label="@AdminAr.Organisation.Numbering.FormatLabel"
+                        Value="@_numbering"
+                        ValueChanged="OnNumberingChanged"
+                        Hint="@AdminAr.Organisation.Numbering.FormatHint"
+                        Error="@_numberingError" />
+
+                <p class="a04-example"><Bdi Text="@AdminAr.Organisation.Numbering.Sample(_numbering)" /></p>
+
+                @if (NumberingChanged)
+                {
+                    <p class="a04-warn">
+                        <WIcon Name="alert-triangle" Size="14" />
+                        @AdminAr.Organisation.Numbering.ChangeWarning
+                    </p>
+                }
+
+                @if (!string.Equals(_numbering, AdminKeyService.DefaultNumberingFormat, StringComparison.Ordinal))
+                {
+                    <WButton Variant="WButtonVariant.Text"
+                             Icon="rotate-ccw"
+                             Label="@AdminAr.Organisation.Numbering.Reset"
+                             Tooltip="@AdminAr.Organisation.Numbering.ResetTooltip"
+                             OnClick="ResetNumbering" />
+                }
+            </WCard>
+        </div>
+
+        <WCard Title="@AdminAr.Organisation.ReportTemplate.Heading" Desc="@AdminAr.Organisation.ReportTemplate.Desc">
+            <div class="a04-template">
+                <div class="a04-template-name">
+                    <WIcon Name="file-text" Size="18" />
+                    <Bdi Text="@(_identity.ReportTemplateName ?? AdminAr.Organisation.ReportTemplate.None)" />
+                </div>
+                <div class="a04-template-actions">
+                    <label class="a04-file">
+                        <span class="a04-file-button">
+                            <WIcon Name="upload" Size="16" />
+                            @AdminAr.Organisation.ReportTemplate.Choose
+                        </span>
+                        <InputFile OnChange="ChooseReportTemplate" accept=".docx" />
+                    </label>
+                    @if (_identity.ReportTemplateName is not null)
+                    {
+                        <WButton Variant="WButtonVariant.Text"
+                                 Icon="trash-2"
+                                 Label="@AdminAr.Organisation.ReportTemplate.Remove"
+                                 Tooltip="@AdminAr.Organisation.ReportTemplate.RemoveTooltip"
+                                 OnClick="RemoveReportTemplate" />
+                    }
+                </div>
+            </div>
+
+            @if (_reportError is { Length: > 0 })
+            {
+                <p class="a04-error"><WIcon Name="alert-circle" Size="14" /> @_reportError</p>
+            }
+        </WCard>
+
+        <WCard Title="@AdminAr.Organisation.LetterTemplate.Heading" Desc="@AdminAr.Organisation.LetterTemplate.Desc">
+            <div class="a04-template">
+                <div class="a04-template-name">
+                    <WIcon Name="file-text" Size="18" />
+                    <Bdi Text="@AdminAr.Organisation.LetterTemplate.InUse(_letter?.FileName ?? DefaultLetterTemplate.FileName)" />
+                    @if (_identity.UsesBuiltInLetterTemplate)
+                    {
+                        <WChip Label="@AdminAr.Organisation.LetterTemplate.BuiltInChip" Variant="WChipVariant.Neutral" />
+                    }
+                </div>
+                <div class="a04-template-actions">
+                    <label class="a04-file">
+                        <span class="a04-file-button">
+                            <WIcon Name="upload" Size="16" />
+                            @AdminAr.Organisation.LetterTemplate.Choose
+                        </span>
+                        <InputFile OnChange="ChooseLetterTemplate" accept=".docx" />
+                    </label>
+                    @if (!_identity.UsesBuiltInLetterTemplate)
+                    {
+                        <WButton Variant="WButtonVariant.Text"
+                                 Icon="rotate-ccw"
+                                 Label="@AdminAr.Organisation.LetterTemplate.Remove"
+                                 Tooltip="@AdminAr.Organisation.LetterTemplate.RemoveTooltip"
+                                 OnClick="RemoveLetterTemplate" />
+                    }
+                </div>
+            </div>
+
+            @if (_letterError is { Length: > 0 })
+            {
+                <p class="a04-error"><WIcon Name="alert-circle" Size="14" /> @_letterError</p>
+            }
+
+            @if (_letter is { IsReadable: true })
+            {
+                <div class="a04-marks">
+                    <div class="a04-marks-block">
+                        <h3 class="a04-marks-title">@AdminAr.Organisation.LetterTemplate.KnownHeading</h3>
+                        <ul class="a04-mark-list">
+                            @foreach (var mark in _letter.Known)
+                            {
+                                <li class="a04-mark a04-mark--known">
+                                    <WIcon Name="check-circle" Size="14" />
+                                    <Bdi Text="@mark.Name" />
+                                    @if (mark.Count > 1)
+                                    {
+                                        <span class="a04-mark-times"><Bdi Text="@AdminAr.Organisation.LetterTemplate.Times(mark.Count)" /></span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </div>
+
+                    <div class="a04-marks-block">
+                        <h3 class="a04-marks-title">@AdminAr.Organisation.LetterTemplate.UnknownHeading</h3>
+                        @if (_letter.Unknown.Count == 0)
+                        {
+                            <p class="a04-muted">@AdminAr.Organisation.LetterTemplate.AllKnown</p>
+                        }
+                        else
+                        {
+                            <p class="a04-warn">
+                                <WIcon Name="alert-triangle" Size="14" />
+                                @AdminAr.Organisation.LetterTemplate.UnknownDesc
+                            </p>
+                            <ul class="a04-mark-list">
+                                @foreach (var mark in _letter.Unknown)
+                                {
+                                    <li class="a04-mark a04-mark--unknown">
+                                        <WIcon Name="alert-triangle" Size="14" />
+                                        <Bdi Text="@mark.Name" />
+                                    </li>
+                                }
+                            </ul>
+                        }
+
+                        @if (_letter.Missing.Count > 0)
+                        {
+                            <h3 class="a04-marks-title">@AdminAr.Organisation.LetterTemplate.MissingHeading</h3>
+                            <p class="a04-muted">@AdminAr.Organisation.LetterTemplate.MissingDesc</p>
+                            <ul class="a04-mark-list">
+                                @foreach (var missing in _letter.Missing)
+                                {
+                                    <li class="a04-mark a04-mark--missing"><Bdi Text="@missing" /></li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+
+                <div class="a04-preview-head">
+                    <div>
+                        <h3 class="a04-marks-title">@AdminAr.Organisation.LetterTemplate.PreviewHeading</h3>
+                        <p class="a04-muted">@AdminAr.Organisation.LetterTemplate.PreviewDesc</p>
+                    </div>
+                    <div class="a04-preview-actions">
+                        <WSegmented Options="PaperOptions" SelectedValue="@_paper" SelectedValueChanged="OnPaperChanged" />
+                        <WButton Variant="WButtonVariant.Secondary"
+                                 Icon="printer"
+                                 Label="@AdminAr.Organisation.LetterTemplate.SavePdf"
+                                 Tooltip="@(Printer.IsAvailable ? AdminAr.Organisation.LetterTemplate.SavePdfTooltip : AdminAr.Organisation.LetterTemplate.SavePdfUnavailable)"
+                                 Disabled="@(!Printer.IsAvailable)"
+                                 Loading="@_saving"
+                                 OnClick="SavePreviewPdf" />
+                    </div>
+                </div>
+
+                <div class="a04-sheet-wrap">
+                    <div class="a04-letter-sheet @(_paper == "A5" ? "a04-letter-sheet--a5" : "a04-letter-sheet--a4")">
+                        @foreach (var paragraph in _sample)
+                        {
+                            <p class="a04-letter-line @AlignmentClass(paragraph.Alignment) @(paragraph.Bold ? "a04-letter-line--bold" : null)">
+                                <Bdi Text="@paragraph.Text" />
+                            </p>
+                        }
+                    </div>
+                </div>
+            }
+        </WCard>
+    </div>
+}
+
+<AdminConfirmDialog Open="@_confirmNumbering"
+                    Danger="true"
+                    Title="@AdminAr.Organisation.Numbering.ChangeTitle"
+                    Desc="@AdminAr.Organisation.Numbering.ChangeWarning"
+                    ConfirmLabel="@AdminAr.Organisation.Save"
+                    ConfirmIcon="check"
+                    OnConfirm="ConfirmSave"
+                    OnCancel="CancelNumbering" />
+
+@code {
+    private static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
+
+    private AdminOrgIdentity? _identity;
+    private LetterTemplateReport? _letter;
+    private IReadOnlyList<LetterParagraph> _sample = [];
+
+    private string _name = string.Empty;
+    private int _cycleDay = 1;
+    private string _numbering = AdminKeyService.DefaultNumberingFormat;
+    private string _paper = "A4";
+
+    private string? _nameError;
+    private string? _numberingError;
+    private string? _logoError;
+    private string? _reportError;
+    private string? _letterError;
+
+    private AdminLogoImage? _logo;
+    private byte[]? _logoChosen;
+    private string? _logoPreview;
+    private double _focus = 0.5;
+
+    private bool _confirmNumbering;
+    private bool _saving;
+
+    /// <summary>The twenty eight days a cycle may start on (AGREEMENT item 52).</summary>
+    private static IReadOnlyList<(string Value, string Label)> DayOptions { get; } =
+        Enumerable.Range(AdminOrgService.MinCycleDay, AdminOrgService.MaxCycleDay)
+            .Select(day => (day.ToString(Culture), $"اليوم {ArabicFigures(day)} من كل شهر"))
+            .ToList();
+
+    private static IReadOnlyList<(string Value, string Label)> PaperOptions { get; } =
+    [
+        ("A4", AdminAr.Organisation.LetterTemplate.PreviewA4),
+        ("A5", AdminAr.Organisation.LetterTemplate.PreviewA5),
+    ];
+
+    /// <summary>Whether the numbering format in the box is different from the one in force.</summary>
+    private bool NumberingChanged =>
+        _identity is not null && !string.Equals(_identity.NumberingFormat, _numbering.Trim(), StringComparison.Ordinal);
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(
+            AdminAr.Organisation.Title,
+            AdminAr.Organisation.Sub,
+            AdminAr.Tabs.Organisation,
+            BuildActions());
+
+        Reload();
+    }
+
+    private RenderFragment BuildActions() => builder =>
+    {
+        builder.OpenComponent<WButton>(0);
+        builder.AddComponentParameter(1, nameof(WButton.Variant), WButtonVariant.Secondary);
+        builder.AddComponentParameter(2, nameof(WButton.Icon), "rotate-ccw");
+        builder.AddComponentParameter(3, nameof(WButton.Label), AdminAr.Organisation.Discard);
+        builder.AddComponentParameter(4, nameof(WButton.Tooltip), AdminAr.Organisation.DiscardTooltip);
+        builder.AddComponentParameter(5, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, Reload));
+        builder.CloseComponent();
+
+        builder.OpenComponent<WButton>(10);
+        builder.AddComponentParameter(11, nameof(WButton.Variant), WButtonVariant.Primary);
+        builder.AddComponentParameter(12, nameof(WButton.Icon), "check");
+        builder.AddComponentParameter(13, nameof(WButton.Label), AdminAr.Organisation.Save);
+        builder.AddComponentParameter(14, nameof(WButton.Tooltip), AdminAr.Organisation.SaveTooltip);
+        builder.AddComponentParameter(15, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, Save));
+        builder.CloseComponent();
+    };
+
+    private void Reload()
+    {
+        try
+        {
+            _identity = Org.Read();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _identity = null;
+        }
+
+        if (_identity is null)
+        {
+            return;
+        }
+
+        _name = _identity.Name;
+        _cycleDay = _identity.CycleStartDay;
+        _numbering = _identity.NumberingFormat;
+        _logo = _identity.Logo;
+        _logoPreview = _identity.Logo?.ToDataUrl();
+        _logoChosen = null;
+        _nameError = null;
+        _numberingError = null;
+        _logoError = null;
+        _reportError = null;
+        _letterError = null;
+
+        ReadLetterTemplate();
+        StateHasChanged();
+    }
+
+    private void ReadLetterTemplate()
+    {
+        var (fileName, bytes) = Org.ReadLetterTemplate();
+        _letter = LetterTemplateInspector.Inspect(fileName, bytes);
+        _sample = _letter.IsReadable
+            ? LetterTemplateInspector.FillWithSample(_letter.Paragraphs, AdminAr.Organisation.SampleLetterValues)
+            : [];
+    }
+
+    private void OnNameChanged(string? value)
+    {
+        _name = value ?? string.Empty;
+        _nameError = null;
+    }
+
+    private void OnCycleDayChanged(string? value)
+    {
+        if (int.TryParse(value, Culture, out var day))
+        {
+            _cycleDay = day;
+        }
+    }
+
+    private void OnNumberingChanged(string? value)
+    {
+        _numbering = value ?? string.Empty;
+        _numberingError = null;
+    }
+
+    private void ResetNumbering()
+    {
+        _numbering = AdminKeyService.DefaultNumberingFormat;
+        _numberingError = null;
+    }
+
+    private void OnPaperChanged(string? value) => _paper = value ?? "A4";
+
+    private void CancelNumbering() => _confirmNumbering = false;
+
+    /// <summary>
+    /// Saving goes through the danger dialog whenever the numbering format is the thing that
+    /// changed (AGREEMENT item 5); everything else on this screen simply saves.
+    /// </summary>
+    private void Save()
+    {
+        if (!Validate())
+        {
+            return;
+        }
+
+        if (NumberingChanged)
+        {
+            _confirmNumbering = true;
+            return;
+        }
+
+        Commit();
+    }
+
+    private void ConfirmSave()
+    {
+        _confirmNumbering = false;
+        Commit();
+    }
+
+    private bool Validate()
+    {
+        _nameError = string.IsNullOrWhiteSpace(_name) ? AdminAr.Organisation.Identity.NameRequired : null;
+        _numberingError = AdminOrgService.IsNumberingFormatValid(_numbering.Trim())
+            ? null
+            : AdminAr.Organisation.Numbering.Invalid;
+
+        return _nameError is null && _numberingError is null;
+    }
+
+    private void Commit()
+    {
+        switch (Org.Save(_name, _cycleDay, _numbering))
+        {
+            case AdminOrgRefusal.NameRequired:
+                _nameError = AdminAr.Organisation.Identity.NameRequired;
+                return;
+            case AdminOrgRefusal.CycleDayOutOfRange:
+                Toasts.Show(AdminAr.Organisation.Cycle.OutOfRange, WSemanticVariant.Warning);
+                return;
+            case AdminOrgRefusal.NumberingFormatInvalid:
+                _numberingError = AdminAr.Organisation.Numbering.Invalid;
+                return;
+            case AdminOrgRefusal.NoOrganisation:
+                Toasts.Show(AdminAr.Errors.DataUnreadable, WSemanticVariant.Danger);
+                return;
+        }
+
+        // The tree is headed by the organisation, so a rename here has to reach it too.
+        Structure.SyncRootName();
+
+        Toasts.Show(AdminAr.Organisation.Saved, WSemanticVariant.Success);
+        Reload();
+    }
+
+    private async Task ChooseLogo(InputFileChangeEventArgs args)
+    {
+        _logoError = null;
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        if (file.Size > AdminLogoReader.MaxBytes)
+        {
+            _logoError = AdminAr.Organisation.Logo.TooLarge;
+            return;
+        }
+
+        byte[] bytes;
+        try
+        {
+            using var stream = file.OpenReadStream(AdminLogoReader.MaxBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            bytes = buffer.ToArray();
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        {
+            _logoError = AdminAr.Errors.FileUnreadable;
+            return;
+        }
+
+        _logoChosen = bytes;
+        ApplyLogo();
+    }
+
+    private void OnFocusChanged(ChangeEventArgs args)
+    {
+        if (double.TryParse(args.Value?.ToString(), Culture, out var percent))
+        {
+            _focus = Math.Clamp(percent / 100d, 0d, 1d);
+            ApplyLogo();
+        }
+    }
+
+    /// <summary>
+    /// Cuts the chosen picture to the square the person is looking at, and stores it. Moving the
+    /// slider re-cuts and re-saves, so what is in the tool is always what is on the screen.
+    /// </summary>
+    private void ApplyLogo()
+    {
+        if (_logoChosen is null)
+        {
+            return;
+        }
+
+        var refusal = AdminLogoReader.Accept(_logoChosen, Cropper, _focus, out var image);
+        if (refusal != AdminLogoRefusal.None || image is null)
+        {
+            _logoError = refusal switch
+            {
+                AdminLogoRefusal.TooLarge => AdminAr.Organisation.Logo.TooLarge,
+                AdminLogoRefusal.WrongKind => AdminAr.Organisation.Logo.WrongKind,
+                AdminLogoRefusal.TooSmall => AdminAr.Organisation.Logo.TooSmall,
+                _ => AdminAr.Organisation.Logo.Unreadable,
+            };
+
+            _logoChosen = null;
+            return;
+        }
+
+        _logo = image;
+        _logoPreview = image.ToDataUrl();
+        Org.SaveLogo(image);
+        _identity = Org.Read();
+        Toasts.Show(AdminAr.Organisation.Logo.Saved, WSemanticVariant.Success);
+    }
+
+    private void RemoveLogo()
+    {
+        Org.ClearLogo();
+        _logo = null;
+        _logoChosen = null;
+        _logoPreview = null;
+        _identity = Org.Read();
+        Toasts.Show(AdminAr.Organisation.Logo.Removed, WSemanticVariant.Success);
+    }
+
+    private async Task ChooseReportTemplate(InputFileChangeEventArgs args)
+    {
+        _reportError = null;
+        if (await ReadDocx(args, value => _reportError = value) is not { } file)
+        {
+            return;
+        }
+
+        Org.SaveReportTemplate(file.Name, file.Bytes);
+        _identity = Org.Read();
+        Toasts.Show(AdminAr.Organisation.ReportTemplate.Saved, WSemanticVariant.Success);
+    }
+
+    private void RemoveReportTemplate()
+    {
+        Org.ClearReportTemplate();
+        _identity = Org.Read();
+        Toasts.Show(AdminAr.Organisation.ReportTemplate.Removed, WSemanticVariant.Success);
+    }
+
+    private async Task ChooseLetterTemplate(InputFileChangeEventArgs args)
+    {
+        _letterError = null;
+        if (await ReadDocx(args, value => _letterError = value) is not { } file)
+        {
+            return;
+        }
+
+        // Read before storing: a file that turns out not to be a Word document at all is refused
+        // here rather than becoming the template every letter is written on.
+        var report = LetterTemplateInspector.Inspect(file.Name, file.Bytes);
+        if (!report.IsReadable)
+        {
+            _letterError = AdminAr.Organisation.LetterTemplate.Unreadable;
+            return;
+        }
+
+        Org.SaveLetterTemplate(file.Name, file.Bytes);
+        _identity = Org.Read();
+        ReadLetterTemplate();
+        Toasts.Show(AdminAr.Organisation.LetterTemplate.Saved, WSemanticVariant.Success);
+    }
+
+    private void RemoveLetterTemplate()
+    {
+        Org.ClearLetterTemplate();
+        _identity = Org.Read();
+        ReadLetterTemplate();
+        Toasts.Show(AdminAr.Organisation.LetterTemplate.Removed, WSemanticVariant.Success);
+    }
+
+    private async Task<(string Name, byte[] Bytes)?> ReadDocx(InputFileChangeEventArgs args, Action<string> onError)
+    {
+        var file = args.File;
+        if (file is null)
+        {
+            return null;
+        }
+
+        if (file.Size > AdminOrgService.MaxTemplateBytes)
+        {
+            onError(AdminAr.Organisation.ReportTemplate.TooLarge);
+            return null;
+        }
+
+        if (!file.Name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+        {
+            onError(AdminAr.Organisation.ReportTemplate.WrongKind);
+            return null;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(AdminOrgService.MaxTemplateBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            return (file.Name, buffer.ToArray());
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        {
+            onError(AdminAr.Errors.FileUnreadable);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Writes the sheet that is on screen to a PDF at the chosen paper size, through this computer's
+    /// own printing. Nothing is rendered twice: what comes out is the letter the person is looking
+    /// at (ARCHITECTURE.md §9 — internal sheets come from HTML, not from Word).
+    /// </summary>
+    private async Task SavePreviewPdf()
+    {
+        if (!Printer.IsAvailable || _saving)
+        {
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            await Js.InvokeAsync<bool>("wakeelAdmin.beginLetterPrint", _paper);
+
+            var result = await Printer.SaveAsPdfAsync(
+                $"{AdminAr.Organisation.LetterTemplate.PreviewFileName}-{_paper}.pdf");
+
+            Toasts.Show(
+                result.Outcome switch
+                {
+                    AdminPrintOutcome.Saved => AdminAr.Organisation.LetterTemplate.SavePdfDone,
+                    AdminPrintOutcome.Cancelled => AdminAr.Organisation.LetterTemplate.SavePdfCancelled,
+                    AdminPrintOutcome.Unavailable => AdminAr.Organisation.LetterTemplate.SavePdfUnavailable,
+                    _ => AdminAr.Organisation.LetterTemplate.SavePdfFailed,
+                },
+                result.Saved ? WSemanticVariant.Success : WSemanticVariant.Warning);
+        }
+        catch (JSException)
+        {
+            Toasts.Show(AdminAr.Organisation.LetterTemplate.SavePdfFailed, WSemanticVariant.Danger);
+        }
+        finally
+        {
+            try
+            {
+                await Js.InvokeAsync<bool>("wakeelAdmin.endLetterPrint");
+            }
+            catch (JSException)
+            {
+                // The rule only affects printing; leaving it in place changes nothing on screen.
+            }
+
+            _saving = false;
+        }
+    }
+
+    private static string AlignmentClass(LetterAlignment alignment) => alignment switch
+    {
+        LetterAlignment.Centre => "a04-letter-line--centre",
+        LetterAlignment.End => "a04-letter-line--end",
+        LetterAlignment.Justify => "a04-letter-line--justify",
+        _ => "a04-letter-line--start",
+    };
+
+    /// <summary>The day as it is written in the chooser, in the figures the tool's prose uses.</summary>
+    private static string ArabicFigures(int value) =>
+        string.Concat(value.ToString(Culture).Select(c => c is >= '0' and <= '9' ? (char)('٠' + (c - '0')) : c));
+}

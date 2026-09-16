@@ -152,8 +152,12 @@ public sealed class WakeelE2eFixture : IAsyncLifetime
             await Task.Delay(200);
         }
 
-        throw new WakeelAppLaunchException(
-            $"Connected to Wakeel.Desktop.exe over CDP, but no page/target at path '{expectedPath}' appeared in time. Observed URLs: [{string.Join(", ", observedUrls)}].",
-            processWasKilled: false);
+        // A plain exception, not WakeelAppLaunchException: this failure is about which page/target
+        // was found among an already-connected browser's pages, not about launching or killing the
+        // process — the app was already up and CDP already answered by the time this runs. Whether
+        // the process ends up killed afterwards is InitializeAsync's catch block's doing (it always
+        // calls DisposeAsync on any failure here), not a fact this call site could report correctly.
+        throw new InvalidOperationException(
+            $"Connected to Wakeel.Desktop.exe over CDP, but no page/target at path '{expectedPath}' appeared in time. Observed URLs: [{string.Join(", ", observedUrls)}].");
     }
 }

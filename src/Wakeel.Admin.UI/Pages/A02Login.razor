@@ -1,0 +1,354 @@
+@page "/sign-in"
+@namespace Wakeel.Admin.UI.Pages
+@layout Wakeel.Admin.UI.Layout.AdminBareLayout
+@implements IDisposable
+@inject AdminAccountService Accounts
+@inject AdminOptions Options
+@inject AdminQrImageReader QrReader
+@inject IToastService Toasts
+@inject NavigationManager Nav
+
+@* A02 — the door. One card in the middle of an empty frame: the tool's mark, the organisation, the
+   password, and — for the day the password is gone — the printed organisation recovery sheet. *@
+<div class="a02">
+    <div class="a02-center">
+        <div class="a02-brand">
+            <WIcon Name="shield" Size="34" />
+            <h1 class="a02-title">@AdminAr.ToolName</h1>
+            @if (!string.IsNullOrEmpty(OrgName))
+            {
+                <p class="a02-org"><Bdi Text="@OrgName" /></p>
+            }
+        </div>
+
+        @if (!_recovering)
+        {
+            <section class="a02-card" aria-labelledby="a02-title">
+                <h2 id="a02-title" class="a02-card-title">@AdminAr.Account.SignIn.Title</h2>
+                <p class="a02-card-desc">@AdminAr.Account.SignIn.Desc</p>
+
+                <WInput Type="WInputType.Password"
+                        Label="@AdminAr.Account.SignIn.PasswordLabel"
+                        Required="true"
+                        Value="@_password"
+                        ValueChanged="OnPasswordChanged"
+                        Error="@_passwordError"
+                        Disabled="@IsLocked" />
+
+                @if (IsLocked)
+                {
+                    <div class="a02-locked" role="alert">
+                        <div class="a02-locked-head">
+                            <WIcon Name="lock" Size="16" />
+                            <strong>@AdminAr.Account.SignIn.LockedTitle</strong>
+                        </div>
+                        <p>@AdminAr.Account.SignIn.LockedBody</p>
+                        <p class="a02-locked-count"><Bdi Text="@AdminAr.Account.SignIn.LockedFor(_lockedSeconds)" /></p>
+                    </div>
+                }
+                else if (_passwordError is null)
+                {
+                    <p class="a02-note"><Bdi Text="@AdminAr.Account.SignIn.AttemptsNote(Options.MaxAttempts, Options.LockOutSeconds)" /></p>
+                }
+
+                <WButton Variant="WButtonVariant.Primary"
+                         Icon="log-out"
+                         Label="@AdminAr.Account.SignIn.Submit"
+                         Tooltip="@AdminAr.Account.SignIn.Submit"
+                         Class="a02-submit"
+                         Disabled="@IsLocked"
+                         OnClick="SignIn" />
+
+                <button type="button" class="a02-link" @onclick="StartRecovery">
+                    <WIcon Name="key" Size="14" />
+                    @AdminAr.Account.SignIn.ForgotLink
+                </button>
+            </section>
+        }
+        else
+        {
+            <section class="a02-card" aria-labelledby="a02-recovery-title">
+                <h2 id="a02-recovery-title" class="a02-card-title">@AdminAr.Account.Recovery.Title</h2>
+                <p class="a02-card-desc">@AdminAr.Account.Recovery.Desc</p>
+
+                <WInput Label="@AdminAr.Account.Recovery.CodeLabel"
+                        Required="true"
+                        Value="@_recoveryCode"
+                        ValueChanged="@(value => { _recoveryCode = value; _recoveryError = null; })"
+                        Placeholder="@AdminAr.Account.Recovery.CodePlaceholder"
+                        Hint="@AdminAr.Account.Recovery.CodeHint"
+                        Error="@_recoveryError" />
+
+                <div class="a02-pick">
+                    <label class="a02-pick-button">
+                        <WIcon Name="qr-code" Size="16" />
+                        <span>@AdminAr.Account.Recovery.PickImage</span>
+                        <InputFile OnChange="ReadCodeFromImage" accept="image/*" disabled="@(!QrReader.IsAvailable)" />
+                    </label>
+                    @if (!QrReader.IsAvailable)
+                    {
+                        <span class="a02-note">@AdminAr.Account.Recovery.ImageUnavailable</span>
+                    }
+                </div>
+
+                <WInput Type="WInputType.Password"
+                        Label="@AdminAr.Account.Recovery.NewPasswordLabel"
+                        Required="true"
+                        Value="@_newPassword"
+                        ValueChanged="@(value => { _newPassword = value; _newPasswordError = null; })"
+                        Hint="@AdminPasswordStrength.Describe(_newPassword)"
+                        Error="@_newPasswordError" />
+
+                <WInput Type="WInputType.Password"
+                        Label="@AdminAr.Account.Recovery.NewPasswordConfirmLabel"
+                        Required="true"
+                        Value="@_newConfirmation"
+                        ValueChanged="@(value => { _newConfirmation = value; _newPasswordError = null; })" />
+
+                <p class="a02-note">@AdminAr.Account.Recovery.SheetStillValid</p>
+
+                <WButton Variant="WButtonVariant.Primary"
+                         Icon="check"
+                         Label="@AdminAr.Account.Recovery.Submit"
+                         Tooltip="@AdminAr.Account.Recovery.Submit"
+                         Class="a02-submit"
+                         OnClick="Recover" />
+
+                <button type="button" class="a02-link" @onclick="CancelRecovery">
+                    <WIcon Name="arrow-right" Size="14" />
+                    @AdminAr.Account.Recovery.Cancel
+                </button>
+            </section>
+        }
+
+        <p class="a02-machine"><Bdi Text="@MachineLine" /></p>
+    </div>
+</div>
+
+@code {
+    /// <summary>Largest picture of a recovery sheet this screen will look at.</summary>
+    private const long MaxImageBytes = 12 * 1024 * 1024;
+
+    private string? _password;
+    private string? _passwordError;
+
+    private bool _recovering;
+    private string? _recoveryCode;
+    private string? _recoveryError;
+    private string? _newPassword;
+    private string? _newConfirmation;
+    private string? _newPasswordError;
+
+    private int _lockedSeconds;
+    private Timer? _countdown;
+
+    /// <summary>The organisation's name, as far as may be known before any password has worked.</summary>
+    private string OrgName => Accounts.OrgName;
+
+    private bool IsLocked => _lockedSeconds > 0;
+
+    private string MachineLine => Bidi.Wrap(AdminAr.Account.SignIn.MachineLine(Options.MachineName));
+
+    protected override void OnInitialized()
+    {
+        // Nothing to sign in to on a machine that has never been set up: the first run is the only
+        // thing that can happen there.
+        if (!Accounts.IsCreated)
+        {
+            Nav.NavigateTo(AdminRoutes.FirstRun, replace: true);
+            return;
+        }
+
+        RefreshLockOut();
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        _password = value;
+        _passwordError = null;
+    }
+
+    private void SignIn()
+    {
+        var result = Accounts.SignIn(_password ?? string.Empty);
+
+        switch (result.Refusal)
+        {
+            case AdminAccountRefusal.None:
+                // The password leaves the screen the moment it has worked.
+                _password = null;
+                _passwordError = null;
+                StopCountdown();
+                Nav.NavigateTo(AdminRoutes.Dashboard, replace: true);
+                break;
+
+            case AdminAccountRefusal.WrongPassword:
+                _password = null;
+                _passwordError = AdminAr.Account.SignIn.AttemptsRemaining(result.AttemptsRemaining);
+                break;
+
+            case AdminAccountRefusal.LockedOut:
+                _password = null;
+                _passwordError = null;
+                RefreshLockOut();
+                break;
+
+            case AdminAccountRefusal.NotCreated:
+                Nav.NavigateTo(AdminRoutes.FirstRun, replace: true);
+                break;
+
+            default:
+                _passwordError = AdminAr.Errors.DataUnreadable;
+                break;
+        }
+    }
+
+    private void StartRecovery()
+    {
+        _recovering = true;
+        _password = null;
+        _passwordError = null;
+    }
+
+    private void CancelRecovery()
+    {
+        _recovering = false;
+        _recoveryCode = null;
+        _recoveryError = null;
+        _newPassword = null;
+        _newConfirmation = null;
+        _newPasswordError = null;
+        RefreshLockOut();
+    }
+
+    private async Task ReadCodeFromImage(InputFileChangeEventArgs args)
+    {
+        _recoveryError = null;
+
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        if (file.Size > MaxImageBytes)
+        {
+            // Nothing was decoded here, so the screen says what actually happened rather than
+            // blaming the sharpness of a picture it never looked at.
+            Toasts.Show(AdminAr.Account.Recovery.ImageTooLarge, WSemanticVariant.Warning);
+            return;
+        }
+
+        byte[] bytes;
+        try
+        {
+            using var stream = file.OpenReadStream(MaxImageBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            bytes = buffer.ToArray();
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        {
+            Toasts.Show(AdminAr.Errors.FileUnreadable, WSemanticVariant.Danger);
+            return;
+        }
+
+        var text = QrReader.TryRead(bytes);
+        if (string.IsNullOrEmpty(text))
+        {
+            Toasts.Show(
+                QrReader.IsAvailable ? AdminAr.Account.Recovery.ImageNoCode : AdminAr.Account.Recovery.ImageUnavailable,
+                WSemanticVariant.Warning);
+            return;
+        }
+
+        _recoveryCode = text;
+        Toasts.Show(AdminAr.Account.Recovery.ImageRead, WSemanticVariant.Success);
+    }
+
+    private void Recover()
+    {
+        _recoveryError = null;
+        _newPasswordError = null;
+
+        var result = Accounts.Recover(_recoveryCode ?? string.Empty, _newPassword ?? string.Empty, _newConfirmation ?? string.Empty);
+
+        switch (result.Refusal)
+        {
+            case AdminAccountRefusal.None:
+                _recoveryCode = null;
+                _newPassword = null;
+                _newConfirmation = null;
+                Toasts.Show(AdminAr.Account.Recovery.Done, WSemanticVariant.Success);
+                Nav.NavigateTo(AdminRoutes.Dashboard, replace: true);
+                break;
+
+            case AdminAccountRefusal.MalformedRecoveryCode:
+                _recoveryError = AdminAr.Account.Recovery.CodeInvalid;
+                break;
+
+            case AdminAccountRefusal.WrongRecoveryCode:
+                _recoveryError = AdminAr.Account.Recovery.CodeWrong;
+                break;
+
+            case AdminAccountRefusal.WeakPassword:
+                _newPasswordError = AdminAr.Account.Create.PasswordTooWeak;
+                break;
+
+            case AdminAccountRefusal.PasswordMismatch:
+                _newPasswordError = AdminAr.Account.Create.ConfirmMismatch;
+                break;
+
+            case AdminAccountRefusal.NotCreated:
+                _recoveryError = AdminAr.Account.Recovery.NoAccount;
+                break;
+
+            default:
+                _recoveryError = AdminAr.Errors.DataUnreadable;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Reads how long the lock-out still has to run and, while it is running, counts it down on
+    /// screen once a second — a door that says nothing while it is shut would just look broken.
+    /// </summary>
+    private void RefreshLockOut()
+    {
+        _lockedSeconds = Accounts.LockedSecondsRemaining;
+
+        if (_lockedSeconds > 0)
+        {
+            _countdown ??= new Timer(_ => InvokeAsync(Tick), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        }
+        else
+        {
+            StopCountdown();
+        }
+    }
+
+    private void Tick()
+    {
+        var remaining = Accounts.LockedSecondsRemaining;
+        if (remaining == _lockedSeconds)
+        {
+            return;
+        }
+
+        _lockedSeconds = remaining;
+        if (_lockedSeconds == 0)
+        {
+            StopCountdown();
+        }
+
+        StateHasChanged();
+    }
+
+    private void StopCountdown()
+    {
+        _countdown?.Dispose();
+        _countdown = null;
+    }
+
+    public void Dispose() => StopCountdown();
+}

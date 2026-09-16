@@ -1,0 +1,11 @@
+.a-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: var(--w-fs-body);
+  color: var(--w-text);
+}
+
+.a-confirm-typed {
+  margin-block-start: 12px;
+}

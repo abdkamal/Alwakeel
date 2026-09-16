@@ -1,0 +1,7 @@
+.a-bare {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--w-bg);
+  color: var(--w-text);
+}

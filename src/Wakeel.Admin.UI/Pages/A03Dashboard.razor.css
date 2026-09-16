@@ -1,0 +1,132 @@
+/* A03 — a row of figures, then the structure beside what wants attention. */
+
+.a03-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.a03-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.a03-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--w-surface);
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-lg);
+}
+
+.a03-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.a03-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.a03-panel-title {
+  margin: 0;
+  font-size: var(--w-fs-section);
+  font-weight: 700;
+  color: var(--w-text);
+}
+
+.a03-panel-sub {
+  margin: 4px 0 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+.a03-branches,
+.a03-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.a03-branch {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 2px;
+  border-block-end: 1px solid var(--w-border);
+}
+
+.a03-branch:last-child {
+  border-block-end: 0;
+}
+
+.a03-branch-name {
+  font-size: var(--w-fs-body);
+  font-weight: 700;
+  color: var(--w-text);
+}
+
+.a03-branch-sub {
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+  text-align: start;
+}
+
+/* A row that wants attention: the warm fill and the 3px edge of DESIGN-GUIDE. */
+.a03-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-block-end: 8px;
+  background: var(--w-attention-bg);
+  border: 1px solid var(--w-warning-border);
+  border-inline-end: 3px solid var(--w-warning);
+  border-radius: var(--w-radius);
+  color: var(--w-warning);
+}
+
+.a03-alert:last-child {
+  margin-block-end: 0;
+}
+
+.a03-alert-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.a03-alert-title {
+  font-size: var(--w-fs-body);
+  font-weight: 700;
+  color: var(--w-text);
+}
+
+.a03-alert-detail {
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+@media (max-width: 1100px) {
+  .a03-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .a03-panels {
+    grid-template-columns: 1fr;
+  }
+}

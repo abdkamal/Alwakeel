@@ -41,11 +41,46 @@ public sealed class SchemaTests : IDisposable
     }
 
     [Fact]
-    public void Open_RecordsSchemaVersionOne()
+    public void Open_RecordsEveryEmbeddedSchemaVersion()
     {
         var paths = WakeelPaths.ForRoot(_root);
         using var connection = DbConnectionFactory.Open(paths.DbPath, _key);
-        Assert.Equal(1, SchemaMigrator.GetCurrentVersion(connection));
+
+        // A fresh database is migrated to the newest embedded script, not merely to the first.
+        var embedded = typeof(SchemaMigrator).Assembly.GetManifestResourceNames()
+            .Where(n => n.StartsWith("Wakeel.Core.Migrations.", StringComparison.Ordinal)
+                && n.EndsWith(".sql", StringComparison.Ordinal))
+            .Select(n => int.Parse(n["Wakeel.Core.Migrations.".Length..].Split('_', 2)[0], System.Globalization.CultureInfo.InvariantCulture))
+            .ToList();
+
+        Assert.NotEmpty(embedded);
+        Assert.Equal(embedded.Max(), SchemaMigrator.GetCurrentVersion(connection));
+
+        using var count = connection.CreateCommand();
+        count.CommandText = "SELECT COUNT(*) FROM schema_versions;";
+        Assert.Equal(embedded.Count, Convert.ToInt32(count.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Open_IndexesTheNotificationSourceAndCreationTime()
+    {
+        // The reminder pass runs every minute and reads the notification table each time
+        // (used reminder keys), and the bell panel orders it by creation time.
+        var paths = WakeelPaths.ForRoot(_root);
+        using var connection = DbConnectionFactory.Open(paths.DbPath, _key);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'notifications';";
+        var names = new List<string>();
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                names.Add(reader.GetString(0));
+            }
+        }
+
+        Assert.Contains("ix_notifications_source", names);
+        Assert.Contains("ix_notifications_created_at", names);
     }
 
     [Fact]

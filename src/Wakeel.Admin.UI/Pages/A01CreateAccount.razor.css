@@ -1,0 +1,415 @@
+/* A01 — two columns under a thin bar, and a command strip along the bottom. */
+
+.a01 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--w-bg);
+}
+
+.a01-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 22px;
+  background: var(--w-surface);
+  border-block-end: 1px solid var(--w-border);
+  color: var(--w-text);
+}
+
+.a01-bar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--w-primary);
+}
+
+.a01-bar-title {
+  font-size: var(--w-fs-section);
+  font-weight: 700;
+  color: var(--w-text);
+}
+
+.a01-bar-machine {
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+.a01-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px 22px;
+  align-items: start;
+}
+
+.a01-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--w-surface);
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-lg);
+  padding: 16px 18px;
+}
+
+.a01-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.a01-card-title {
+  margin: 0;
+  font-size: var(--w-fs-section);
+  font-weight: 700;
+  color: var(--w-text);
+}
+
+.a01-card-desc {
+  margin: 4px 0 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+/* The numbered badge on each card, as in the design. */
+.a01-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-primary-fill);
+  color: var(--w-on-fill);
+  font-size: var(--w-fs-meta);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.a01-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Step one, once it is done. */
+.a01-done {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--w-success-border);
+  border-radius: var(--w-radius);
+  background: var(--w-success-soft);
+  color: var(--w-success);
+}
+
+.a01-done strong {
+  font-size: var(--w-fs-body);
+  color: var(--w-text);
+}
+
+.a01-done p {
+  margin: 4px 0 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+/* ── the strength meter ─────────────────────────────────────────────────── */
+
+.a01-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.a01-meter-bar {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.a01-meter-seg {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--w-radius-pill);
+  background: var(--w-disabled-bg);
+}
+
+.a01-meter-seg-weak { background: var(--w-danger); }
+.a01-meter-seg-fair { background: var(--w-warning); }
+.a01-meter-seg-good { background: var(--w-info); }
+.a01-meter-seg-strong { background: var(--w-success); }
+
+.a01-meter-label {
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+.a01-meter-value {
+  font-size: var(--w-fs-meta);
+  font-weight: 700;
+  color: var(--w-muted);
+}
+
+.a01-meter-value-weak { color: var(--w-danger); }
+.a01-meter-value-fair { color: var(--w-warning); }
+.a01-meter-value-good { color: var(--w-info); }
+.a01-meter-value-strong { color: var(--w-success); }
+
+.a01-rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.a01-rule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+.a01-rule-ok {
+  color: var(--w-success);
+}
+
+/* ── the sheet ──────────────────────────────────────────────────────────── */
+
+.a01-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--w-danger-border);
+  border-radius: var(--w-radius);
+  background: var(--w-danger-soft);
+  color: var(--w-danger);
+}
+
+.a01-warning-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.a01-warning p {
+  margin: 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-text);
+}
+
+.a01-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius);
+  background: var(--w-surface2);
+}
+
+.a01-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.a01-sheet-org {
+  margin: 0;
+  font-size: var(--w-fs-section);
+  font-weight: 700;
+  color: var(--w-text);
+}
+
+.a01-sheet-kind {
+  margin: 2px 0 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+.a01-sheet-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  text-align: start;
+}
+
+.a01-sheet-meta div {
+  display: flex;
+  gap: 6px;
+  font-size: var(--w-fs-meta);
+}
+
+.a01-sheet-meta dt {
+  color: var(--w-muted);
+}
+
+.a01-sheet-meta dd {
+  margin: 0;
+  color: var(--w-text);
+}
+
+.a01-sheet-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.a01-sheet-code-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.a01-sheet-code-label {
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+/* The code is Latin and must read left to right inside an Arabic page (AGREEMENT item 55). */
+.a01-code {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--w-border-strong);
+  border-radius: var(--w-radius);
+  background: var(--w-surface);
+  color: var(--w-text);
+}
+
+.a01-sheet-qr {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.a01-sheet-qr img {
+  width: 150px;
+  height: 150px;
+  background: #FFFFFF;
+  padding: 6px;
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius);
+}
+
+.a01-sheet-qr figcaption {
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+  max-width: 190px;
+  text-align: center;
+}
+
+.a01-sheet-footer {
+  margin: 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+.a01-sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.a01-note {
+  margin: 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-warning);
+}
+
+.a01-printed {
+  padding-block-start: 4px;
+}
+
+.a01-printed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: var(--w-radius-pill, 999px);
+  background: var(--w-success-soft, var(--w-surface-2));
+  color: var(--w-success);
+  font-size: var(--w-fs-meta);
+  align-self: flex-start;
+}
+
+/* ── the command strip ──────────────────────────────────────────────────── */
+
+.a01-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 22px;
+  background: var(--w-surface);
+  border-block-start: 1px solid var(--w-border);
+}
+
+.a01-footer-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.a01-footer-hint {
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}
+
+.a01-footer-error {
+  font-size: var(--w-fs-meta);
+  color: var(--w-danger);
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .a01-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* What comes out of the printer is the sheet alone — the same one that is on screen. */
+@media print {
+  .a-no-print {
+    display: none !important;
+  }
+
+  .a01,
+  .a01-card,
+  .a01-sheet {
+    background: #FFFFFF;
+    border: 0;
+    padding: 0;
+  }
+
+  .a01-body {
+    display: block;
+    padding: 0;
+  }
+}

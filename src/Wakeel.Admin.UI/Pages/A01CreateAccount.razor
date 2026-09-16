@@ -1,0 +1,561 @@
+@page "/first-run"
+@namespace Wakeel.Admin.UI.Pages
+@layout Wakeel.Admin.UI.Layout.AdminBareLayout
+@inject AdminAccountService Accounts
+@inject IAdminPrintService Printer
+@inject IToastService Toasts
+@inject IAdminWindow Window
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@inject TimeProvider Clock
+@inject AdminOptions Options
+
+@* A01 — the very first run of «مدير نظام الوكيل»: the administrator password on one side, the
+   organisation recovery sheet on the other. The sheet is shown once and never again, so «ابدأ» is
+   locked until the person says they have printed it and put it away. *@
+<div class="a01">
+    <header class="a01-bar a-no-print">
+        <div class="a01-bar-brand">
+            <WIcon Name="shield" Size="22" />
+            <span class="a01-bar-title">@AdminAr.Account.Create.WindowTitle</span>
+        </div>
+        <span class="a01-bar-machine"><Bdi Text="@MachineLine" /></span>
+    </header>
+
+    <div class="a01-body">
+        @* ── 1 · the password ──────────────────────────────────────────── *@
+        <section class="a01-card a-no-print" aria-labelledby="a01-password-title">
+            <div class="a01-card-head">
+                <div>
+                    <h2 id="a01-password-title" class="a01-card-title">@AdminAr.Account.Create.PasswordCardTitle</h2>
+                    <p class="a01-card-desc">@AdminAr.Account.Create.PasswordCardDesc</p>
+                </div>
+                <span class="a01-step">@AdminAr.Account.Create.Step1</span>
+            </div>
+
+            @if (IsCreated)
+            {
+                @* The password has done its work and left the screen; showing an empty field with a
+                   meter that reads «قصيرة جدًا» would say something untrue about it. *@
+                <div class="a01-done" role="status">
+                    <WIcon Name="check-circle" Size="18" />
+                    <div>
+                        <strong>@AdminAr.Account.Create.PasswordSet</strong>
+                        <p><Bdi Text="@AdminAr.Account.Create.PasswordSetDetail(_createdAdminName, _createdOrgName)" /></p>
+                    </div>
+                </div>
+            }
+            else
+            {
+            <div class="a01-fields">
+                <WInput Type="WInputType.Password"
+                        Label="@AdminAr.Account.Create.PasswordLabel"
+                        Required="true"
+                        Value="@_password"
+                        ValueChanged="OnPasswordChanged"
+                        Hint="@AdminAr.Account.Create.PasswordHint"
+                        Error="@_passwordError"
+                        />
+
+                <div class="a01-meter" role="group" aria-label="@AdminAr.Account.Strength.Label">
+                    <div class="a01-meter-bar">
+                        @for (var segment = 0; segment < AdminPasswordStrength.Segments; segment++)
+                        {
+                            <span class="@(segment < FilledSegments ? $"a01-meter-seg a01-meter-seg-{StrengthClass}" : "a01-meter-seg")"></span>
+                        }
+                    </div>
+                    <span class="a01-meter-label">@AdminAr.Account.Strength.Label</span>
+                    @* An untouched field has no password to judge: saying «قصيرة جدًا» over an empty
+                       box would be a verdict on something nobody has begun to type. The four rule
+                       lines below stay as they are — they say what is wanted, not what is wrong. *@
+                    @if (!string.IsNullOrEmpty(_password))
+                    {
+                        <span class="@($"a01-meter-value a01-meter-value-{StrengthClass}")">@AdminPasswordStrength.Describe(_password)</span>
+                    }
+                    else
+                    {
+                        <span class="a01-meter-value a01-meter-value-none">—</span>
+                    }
+                </div>
+
+                <ul class="a01-rules">
+                    <li class="@RuleClass(Rules.Length)"><WIcon Name="@RuleIcon(Rules.Length)" Size="14" /> @AdminAr.Account.Strength.RuleLength</li>
+                    <li class="@RuleClass(Rules.Case)"><WIcon Name="@RuleIcon(Rules.Case)" Size="14" /> @AdminAr.Account.Strength.RuleCase</li>
+                    <li class="@RuleClass(Rules.Digit)"><WIcon Name="@RuleIcon(Rules.Digit)" Size="14" /> @AdminAr.Account.Strength.RuleDigit</li>
+                    <li class="@RuleClass(Rules.Symbol)"><WIcon Name="@RuleIcon(Rules.Symbol)" Size="14" /> @AdminAr.Account.Strength.RuleSymbol</li>
+                </ul>
+
+                <WInput Type="WInputType.Password"
+                        Label="@AdminAr.Account.Create.ConfirmLabel"
+                        Required="true"
+                        Value="@_confirmation"
+                        ValueChanged="OnConfirmationChanged"
+                        Hint="@ConfirmationHint"
+                        Error="@_confirmationError"
+                        />
+
+                <WInput Label="@AdminAr.Account.Create.AdminNameLabel"
+                        Required="true"
+                        Value="@_adminName"
+                        ValueChanged="@(value => _adminName = value)"
+                        Placeholder="@AdminAr.Account.Create.AdminNamePlaceholder"
+                        Hint="@AdminAr.Account.Create.AdminNameHint"
+                        Error="@_adminNameError"
+                        />
+
+                <WInput Label="@AdminAr.Account.Create.OrgNameLabel"
+                        Required="true"
+                        Value="@_orgName"
+                        ValueChanged="@(value => _orgName = value)"
+                        Placeholder="@AdminAr.Account.Create.OrgNamePlaceholder"
+                        Hint="@AdminAr.Account.Create.OrgNameHint"
+                        Error="@_orgNameError" />
+            </div>
+            }
+        </section>
+
+        @* ── 2 · the recovery sheet ─────────────────────────────────────── *@
+        <section class="a01-card" aria-labelledby="a01-sheet-title">
+            <div class="a01-card-head a-no-print">
+                <div>
+                    <h2 id="a01-sheet-title" class="a01-card-title">@AdminAr.Account.Create.SheetCardTitle</h2>
+                    <p class="a01-card-desc">@AdminAr.Account.Create.SheetCardDesc</p>
+                </div>
+                <span class="a01-step">@AdminAr.Account.Create.Step2</span>
+            </div>
+
+            @if (_sheet is null)
+            {
+                <div class="a-no-print">
+                    <WStateCard Icon="key"
+                                Title="@AdminAr.Account.Create.SheetCardTitle"
+                                Desc="@AdminAr.Account.Create.StartHint"
+                                ActionLabel="@null" />
+                </div>
+            }
+            else
+            {
+                <div class="a01-warning a-no-print" role="note">
+                    <div class="a01-warning-head">
+                        <WIcon Name="alert-circle" Size="18" />
+                        <strong>@AdminAr.Account.Create.OnceWarningTitle</strong>
+                    </div>
+                    <p>@AdminAr.Account.Create.OnceWarningBody</p>
+                </div>
+
+                <div class="a01-sheet" id="a01-sheet">
+                    <div class="a01-sheet-head">
+                        <div>
+                            <h3 class="a01-sheet-org"><Bdi Text="@_sheet.OrgName" /></h3>
+                            <p class="a01-sheet-kind">@AdminAr.Account.Create.SheetHeading</p>
+                        </div>
+                        <dl class="a01-sheet-meta">
+                            <div>
+                                <dt>@AdminAr.Account.Create.SheetIssuedLabel</dt>
+                                <dd><Bdi Text="@IssuedText" /></dd>
+                            </div>
+                            <div>
+                                <dt>@AdminAr.Account.Create.SheetAdminLabel</dt>
+                                <dd><Bdi Text="@_sheet.AdminName" /></dd>
+                            </div>
+                            <div>
+                                <dt>@AdminAr.Account.Create.SheetNumberLabel</dt>
+                                <dd><Bdi Text="@_sheet.SheetNumber" /></dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div class="a01-sheet-code">
+                        <div class="a01-sheet-code-text">
+                            <span class="a01-sheet-code-label">@AdminAr.Account.Create.SheetCodeLabel</span>
+                            <code class="a01-code"><bdi>@_sheet.CodeDisplay</bdi></code>
+                        </div>
+                        <figure class="a01-sheet-qr">
+                            <img src="@_sheet.QrDataUrl" alt="@AdminAr.Account.Create.SheetQrAlt" width="150" height="150" />
+                            <figcaption>@AdminAr.Account.Create.SheetQrHint</figcaption>
+                        </figure>
+                    </div>
+
+                    <p class="a01-sheet-footer">@AdminAr.Account.Create.SheetFooter</p>
+                </div>
+
+                <div class="a01-sheet-actions a-no-print">
+                    <WButton Variant="WButtonVariant.Secondary" Icon="printer"
+                             Label="@AdminAr.Account.Create.PrintSheet"
+                             Tooltip="@AdminAr.Account.Create.PrintSheet"
+                             Disabled="@(!Printer.IsAvailable)"
+                             OnClick="PrintSheet" />
+                    <WButton Variant="WButtonVariant.Secondary" Icon="save"
+                             Label="@AdminAr.Account.Create.SavePdf"
+                             Tooltip="@AdminAr.Account.Create.SavePdf"
+                             Disabled="@(!Printer.IsAvailable)"
+                             OnClick="SaveSheetPdf" />
+                    <WButton Variant="WButtonVariant.Text" Icon="copy"
+                             Label="@AdminAr.Account.Create.CopyCode"
+                             Tooltip="@AdminAr.Account.Create.CopyCode"
+                             OnClick="CopyCode" />
+                </div>
+
+                @if (_printOpenedAt is { } printOpenedAt)
+                {
+                    <p class="a01-printed-chip a-no-print">
+                        <WIcon Name="printer" Size="14" />
+                        <Bdi Text="@AdminAr.Account.Create.PrintOpenedChip(printOpenedAt)" />
+                    </p>
+                }
+
+                @if (!Printer.IsAvailable)
+                {
+                    <p class="a01-note a-no-print">@AdminAr.Account.Create.PrintUnavailable</p>
+                }
+
+                <div class="a01-printed a-no-print">
+                    <WCheckbox Value="@_printedConfirmed"
+                               ValueChanged="@(value => _printedConfirmed = value)"
+                               Label="@AdminAr.Account.Create.PrintedCheckbox" />
+                </div>
+            }
+        </section>
+    </div>
+
+    <footer class="a01-footer a-no-print">
+        @if (Window.CanClose)
+        {
+            <WButton Variant="WButtonVariant.Text" Icon="x"
+                     Label="@AdminAr.Account.Create.Exit"
+                     Tooltip="@AdminAr.Account.Create.Exit"
+                     OnClick="Exit" />
+        }
+        else
+        {
+            <span></span>
+        }
+
+        <div class="a01-footer-main">
+            @if (_generalError is not null)
+            {
+                <span class="a01-footer-error" role="alert">@_generalError</span>
+            }
+            else
+            {
+                <span class="a01-footer-hint">@(IsCreated ? AdminAr.Account.Create.StartHint : AdminAr.Account.Create.CreateHint)</span>
+            }
+
+            @if (IsCreated)
+            {
+                <WButton Variant="WButtonVariant.Primary" Icon="arrow-left"
+                         Label="@AdminAr.Account.Create.Start"
+                         Tooltip="@AdminAr.Account.Create.Start"
+                         Disabled="@(!_printedConfirmed)"
+                         OnClick="Start" />
+            }
+            else
+            {
+                <WButton Variant="WButtonVariant.Primary" Icon="check"
+                         Label="@AdminAr.Account.Create.CreateAccount"
+                         Tooltip="@AdminAr.Account.Create.CreateAccount"
+                         Loading="@_working"
+                         OnClick="CreateAccount" />
+            }
+        </div>
+    </footer>
+</div>
+
+@* Leaving while the sheet is on screen and the tick box is still empty throws away the only copy
+   of the organisation recovery code, and nothing on this screen can ever show it again. It is the
+   one irreversible thing A01 can do, so it is asked in red before it happens. Writing «تأكيد» by
+   hand is not asked for: the person may simply have meant to close the window. *@
+<AdminConfirmDialog Open="@_exitConfirmOpen"
+                    Danger="true"
+                    RequireTypedConfirmation="false"
+                    Title="@AdminAr.Account.Create.ExitUnsavedTitle"
+                    Desc="@AdminAr.Account.Create.ExitUnsavedDesc"
+                    ConfirmLabel="@AdminAr.Account.Create.ExitUnsavedConfirm"
+                    CancelLabel="@AdminAr.Account.Create.ExitUnsavedCancel"
+                    ConfirmIcon="x"
+                    OnConfirm="ConfirmExit"
+                    OnCancel="@(() => _exitConfirmOpen = false)" />
+
+@code {
+    private string? _password;
+    private string? _confirmation;
+    private string? _adminName;
+    private string? _orgName;
+
+    private string? _passwordError;
+    private string? _confirmationError;
+    private string? _adminNameError;
+    private string? _orgNameError;
+    private string? _generalError;
+
+    private bool _working;
+    private bool _printedConfirmed;
+    private bool _exitConfirmOpen;
+    private DateTimeOffset? _printOpenedAt;
+
+    // Whether the code was ever put on this computer's clipboard, so leaving the screen can take
+    // it off again.
+    private bool _codeCopied;
+    private AdminRecoverySheet? _sheet;
+
+    // Kept for the finished state of step one: the fields they were typed into are gone by then.
+    private string _createdAdminName = string.Empty;
+    private string _createdOrgName = string.Empty;
+
+    /// <summary>The sheet exists, which means the account and the organisation keys now exist too.</summary>
+    private bool IsCreated => _sheet is not null;
+
+    private AdminPasswordRules Rules => AdminPasswordStrength.Rules(_password);
+
+    private int FilledSegments => AdminPasswordStrength.FilledSegments(_password);
+
+    private string StrengthClass => AdminPasswordStrength.Level(_password) switch
+    {
+        AdminPasswordLevel.TooShort => "none",
+        AdminPasswordLevel.Weak => "weak",
+        AdminPasswordLevel.Fair => "fair",
+        AdminPasswordLevel.Good => "good",
+        _ => "strong",
+    };
+
+    private string? ConfirmationHint =>
+        !string.IsNullOrEmpty(_confirmation) && string.Equals(_password, _confirmation, StringComparison.Ordinal)
+            ? AdminAr.Account.Create.ConfirmMatch
+            : null;
+
+    // The same source A02 reads: AdminOptions is the one place that asks this computer for its name
+    // and copes with a computer that will not say.
+    private string MachineLine => Bidi.Wrap(AdminAr.Account.SignIn.MachineLine(Options.MachineName));
+
+    private string IssuedText => _sheet is null
+        ? string.Empty
+        : _sheet.IssuedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+
+    protected override void OnInitialized()
+    {
+        // A machine that already carries an account has no business on this screen: whoever opened
+        // it is asked for the password instead of being offered a second organisation. An account
+        // file this computer cannot read is the one exception — sending it to the sign-in screen
+        // would only bounce it straight back here, so this screen stays put and says so instead.
+        if (Accounts.KeyFileUnreadable)
+        {
+            _generalError = AdminAr.Errors.DataUnreadable;
+            return;
+        }
+
+        if (Accounts.IsCreated)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+        }
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        _password = value;
+        _passwordError = null;
+        _generalError = null;
+    }
+
+    private void OnConfirmationChanged(string? value)
+    {
+        _confirmation = value;
+        _confirmationError = null;
+        _generalError = null;
+    }
+
+    private static string RuleClass(bool satisfied) => satisfied ? "a01-rule a01-rule-ok" : "a01-rule";
+
+    private static string RuleIcon(bool satisfied) => satisfied ? "check-circle" : "minus";
+
+    private void CreateAccount()
+    {
+        _passwordError = null;
+        _confirmationError = null;
+        _adminNameError = null;
+        _orgNameError = null;
+        _generalError = null;
+        _working = true;
+
+        try
+        {
+            var result = Accounts.Create(_password ?? string.Empty, _confirmation ?? string.Empty,
+                _adminName ?? string.Empty, _orgName ?? string.Empty);
+
+            switch (result.Refusal)
+            {
+                case AdminAccountRefusal.None:
+                    _sheet = result.Sheet;
+                    _createdAdminName = _adminName?.Trim() ?? string.Empty;
+                    _createdOrgName = _orgName?.Trim() ?? string.Empty;
+
+                    // The password leaves the screen the instant it has done its work; nothing on
+                    // this page keeps it for the rest of the session.
+                    _password = null;
+                    _confirmation = null;
+                    break;
+
+                case AdminAccountRefusal.WeakPassword:
+                    _passwordError = AdminAr.Account.Create.PasswordTooWeak;
+                    break;
+
+                case AdminAccountRefusal.PasswordMismatch:
+                    _confirmationError = AdminAr.Account.Create.ConfirmMismatch;
+                    break;
+
+                case AdminAccountRefusal.MissingName:
+                    if (string.IsNullOrWhiteSpace(_adminName))
+                    {
+                        _adminNameError = AdminAr.Errors.RequiredField;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(_orgName))
+                    {
+                        _orgNameError = AdminAr.Errors.RequiredField;
+                    }
+
+                    break;
+
+                case AdminAccountRefusal.AlreadyCreated:
+                    Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+                    break;
+
+                default:
+                    _generalError = AdminAr.Account.Create.CreateFailed;
+                    break;
+            }
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+
+    private async Task PrintSheet()
+    {
+        var outcome = await Printer.PrintAsync();
+        if (outcome == AdminPrintOutcome.DialogOpened)
+        {
+            // All that is known is that the print window was put on screen; whether paper came out
+            // of it is between the person and their printer. The chip is worded to match, and the
+            // tick box below stays the only thing that stands for «I printed it and put it away».
+            _printOpenedAt = Clock.GetLocalNow();
+        }
+
+        if (outcome == AdminPrintOutcome.Failed)
+        {
+            Toasts.Show(AdminAr.Account.Create.PrintFailed, WSemanticVariant.Danger);
+        }
+        else if (outcome == AdminPrintOutcome.Unavailable)
+        {
+            Toasts.Show(AdminAr.Account.Create.PrintUnavailable, WSemanticVariant.Warning);
+        }
+    }
+
+    private async Task SaveSheetPdf()
+    {
+        var result = await Printer.SaveAsPdfAsync("ورقة-استرداد-المؤسسة.pdf");
+        switch (result.Outcome)
+        {
+            case AdminPrintOutcome.Saved:
+                Toasts.Show(AdminAr.Account.Create.SavedToast, WSemanticVariant.Success);
+                break;
+            case AdminPrintOutcome.Failed:
+                Toasts.Show(AdminAr.Account.Create.SaveFailed, WSemanticVariant.Danger);
+                break;
+            case AdminPrintOutcome.Unavailable:
+                Toasts.Show(AdminAr.Account.Create.PrintUnavailable, WSemanticVariant.Warning);
+                break;
+        }
+    }
+
+    private async Task CopyCode()
+    {
+        if (_sheet is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var copied = await Js.InvokeAsync<bool>("wakeelAdmin.copyText", _sheet.CodeDisplay);
+            _codeCopied |= copied;
+            Toasts.Show(
+                copied ? AdminAr.Account.Create.CopiedToast : AdminAr.Account.Create.CopyFailed,
+                copied ? WSemanticVariant.Success : WSemanticVariant.Warning);
+        }
+        catch (JSException)
+        {
+            // A computer that refuses to hand over its clipboard is not an error worth a red
+            // banner: the code is on screen and on the printed sheet either way.
+            Toasts.Show(AdminAr.Account.Create.CopyFailed, WSemanticVariant.Warning);
+        }
+    }
+
+    private async Task Start()
+    {
+        if (!_printedConfirmed)
+        {
+            _generalError = AdminAr.Account.Create.PrintedRequired;
+            return;
+        }
+
+        // Dropping the sheet from this screen is not enough if the code was copied: it would still
+        // be sitting in this computer's clipboard, ready to be pasted anywhere. Leaving the screen
+        // takes it back off again.
+        await ClearCopiedCode();
+
+        // The sheet is dropped here, and this is the only place it ever existed: from now on the
+        // code lives on paper alone.
+        _sheet = null;
+        Nav.NavigateTo(AdminRoutes.Dashboard, replace: true);
+    }
+
+    private async Task ClearCopiedCode()
+    {
+        if (!_codeCopied)
+        {
+            return;
+        }
+
+        try
+        {
+            await Js.InvokeAsync<bool>("wakeelAdmin.clearCopiedText");
+        }
+        catch (JSException)
+        {
+            // A clipboard that refuses to be emptied is not a reason to keep the person on this
+            // screen; the toast already told them to clear it themselves.
+        }
+        finally
+        {
+            _codeCopied = false;
+        }
+    }
+
+    /// <summary>
+    /// Whether the recovery sheet is on screen with nobody having said yet that they printed it and
+    /// put it away. While that is true, leaving the screen destroys the only copy of the code.
+    /// </summary>
+    private bool SheetUnsaved => _sheet is not null && !_printedConfirmed;
+
+    private void Exit()
+    {
+        if (SheetUnsaved)
+        {
+            _exitConfirmOpen = true;
+            return;
+        }
+
+        Window.Close();
+    }
+
+    private async Task ConfirmExit()
+    {
+        _exitConfirmOpen = false;
+
+        // The code may be on this computer's clipboard; the tool does not leave it there behind a
+        // window that has closed.
+        await ClearCopiedCode();
+        Window.Close();
+    }
+}

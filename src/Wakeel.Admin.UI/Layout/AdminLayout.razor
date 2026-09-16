@@ -1,0 +1,154 @@
+@namespace Wakeel.Admin.UI.Layout
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AdminPageHeaderState HeaderState
+@inject AdminSession Session
+@inject AdminAccountService Accounts
+@inject AdminDashboardService Dashboard
+@inject ThemeService Theme
+@inject NavigationManager Nav
+
+@* The administration tool's shell: a dark bar with the tool's name and the organisation summary,
+   a strip of tabs under it, and full-width content. No sidebar — the tool is seven areas, not a
+   tree (DESIGN-GUIDE «أداة مدير النظام»). *@
+<div class="a-shell">
+    <header class="a-topbar">
+        <div class="a-topbar-brand">
+            <button type="button" class="a-topbar-home" title="@AdminAr.Shell.HomeTooltip"
+                    aria-label="@AdminAr.Shell.HomeTooltip" @onclick="GoHome">
+                <WIcon Name="shield" Size="22" />
+            </button>
+            <div class="a-topbar-titles">
+                <span class="a-topbar-title">@AdminAr.ToolName</span>
+                <span class="a-topbar-sub"><Bdi Text="@OrgSummary" /></span>
+            </div>
+        </div>
+
+        <div class="a-topbar-side">
+            <WTooltip Text="@ThemeTooltip">
+                <button type="button" class="a-topbar-icon" aria-label="@ThemeTooltip" @onclick="ToggleTheme">
+                    <WIcon Name="@(IsDark ? "sun" : "moon")" Size="18" />
+                </button>
+            </WTooltip>
+            <WTooltip Text="@AdminAr.Shell.SignOutTooltip">
+                <button type="button" class="a-topbar-icon" aria-label="@AdminAr.Shell.SignOutTooltip" @onclick="SignOut">
+                    <WIcon Name="log-out" Size="18" />
+                </button>
+            </WTooltip>
+            <div class="a-topbar-user">
+                <span class="a-topbar-user-name"><Bdi Text="@Session.AdminName" /></span>
+                <span class="a-topbar-user-role">@AdminAr.Shell.AdminRole</span>
+            </div>
+            <WAvatar Name="@Session.AdminName" Size="34" />
+        </div>
+    </header>
+
+    <nav class="a-tabs" aria-label="@AdminAr.Shell.TabsLabel">
+        @foreach (var tab in TabLabels)
+        {
+            <button type="button"
+                    class="@(HeaderState.ActiveTab == tab ? "a-tab a-tab-active" : "a-tab")"
+                    aria-current="@(HeaderState.ActiveTab == tab ? "page" : null)"
+                    @onclick="() => OpenTab(tab)">
+                @tab
+            </button>
+        }
+    </nav>
+
+    <main class="a-page">
+        @if (!string.IsNullOrEmpty(HeaderState.Title))
+        {
+            <div class="a-page-header">
+                <div class="a-page-header-titles">
+                    <h1 class="a-page-title">@HeaderState.Title</h1>
+                    @if (!string.IsNullOrEmpty(HeaderState.Sub))
+                    {
+                        <p class="a-page-sub"><Bdi Text="@HeaderState.Sub" /></p>
+                    }
+                </div>
+                @if (HeaderState.Actions is not null)
+                {
+                    <div class="a-page-actions">@HeaderState.Actions</div>
+                }
+            </div>
+        }
+        <div class="a-page-content">
+            @Body
+        </div>
+    </main>
+
+    <WToastHost />
+</div>
+
+@code {
+    /// <summary>The seven areas, in the order the design puts them.</summary>
+    private static IReadOnlyList<string> TabLabels => AdminAr.Tabs.All;
+
+    private string _orgSummary = AdminAr.Shell.NoOrgYet;
+
+    /// <summary>The organisation line in the bar: the name, then how much structure there is.</summary>
+    private string OrgSummary => _orgSummary;
+
+    private bool IsDark => Theme.Theme == UiTheme.Dark;
+
+    private string ThemeTooltip => IsDark ? AdminAr.Shell.LightModeTooltip : AdminAr.Shell.DarkModeTooltip;
+
+    protected override async Task OnInitializedAsync()
+    {
+        HeaderState.Changed += HandleChanged;
+        Session.Changed += HandleChanged;
+        await Theme.InitializeAsync();
+        ReadOrgSummary();
+    }
+
+    protected override void OnParametersSet() => ReadOrgSummary();
+
+    /// <summary>
+    /// The bar's own summary, read from the database rather than remembered, so a structure edit in
+    /// A05 shows up in the bar the moment the person leaves that screen.
+    /// </summary>
+    private void ReadOrgSummary()
+    {
+        if (!Session.IsSignedIn)
+        {
+            _orgSummary = AdminAr.Shell.NoOrgYet;
+            return;
+        }
+
+        var line = Dashboard.ReadOrgLine();
+        _orgSummary = string.IsNullOrEmpty(line.OrgName)
+            ? AdminAr.Shell.NoOrgYet
+            : AdminAr.Shell.OrgSummary(line.OrgName, line.Departments, line.Sections, line.Units);
+    }
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task ToggleTheme() =>
+        await Theme.SetThemeAsync(IsDark ? UiTheme.Light : UiTheme.Dark);
+
+    private void GoHome() => Nav.NavigateTo("/");
+
+    /// <summary>
+    /// Tabs whose screen admin-2 and admin-3 still have to build simply stay where they are; the
+    /// strip is drawn now so the shell is the shell, and each sub-package lights its own.
+    /// </summary>
+    private void OpenTab(string tab)
+    {
+        if (AdminRoutes.ForTab(tab) is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    private void SignOut()
+    {
+        Accounts.SignOut();
+        Nav.NavigateTo("/sign-in");
+    }
+
+    public void Dispose()
+    {
+        HeaderState.Changed -= HandleChanged;
+        Session.Changed -= HandleChanged;
+    }
+}

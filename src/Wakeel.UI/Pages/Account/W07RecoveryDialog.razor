@@ -141,6 +141,13 @@ else if (_newSheet is { } sheet)
                  Disabled="@(!Printer.IsAvailable)" OnClick="SaveAsync" />
         <span class="w07-muted">@_printStatus</span>
     </div>
+
+    @* Recovery replaced the password, but with no session open behind it the person must still be
+       told that الوكيل needs to be closed and opened again — the sheet alone does not say that. *@
+    @if (_error is { Length: > 0 })
+    {
+        <WCard Variant="WSemanticVariant.Warning" Icon="info" Desc="@_error" />
+    }
 }
 </WDialog>
 
@@ -199,11 +206,11 @@ else if (_newSheet is { } sheet)
         ? Ar.FirstRun.Recovery.DialogDesc
         : Ar.FirstRun.Recovery.NewSheetDesc;
 
-    private string ConfirmLabel => _newSheet is null
+    private string ConfirmLabel => _newSheet is null && !_recoveredWithoutSession
         ? Ar.FirstRun.Recovery.Submit
         : Ar.FirstRun.Recovery.NewSheetDone;
 
-    private string ConfirmIcon => _newSheet is null ? "key-round" : "check";
+    private string ConfirmIcon => _newSheet is null && !_recoveredWithoutSession ? "key-round" : "check";
 
     private int FilledSegments => PasswordStrength.FilledSegments(_password);
 
@@ -325,10 +332,11 @@ else if (_newSheet is { } sheet)
 
     /// <summary>
     /// The dialog's one confirming button does two different things, because the dialog has two
-    /// states: while the form is up it performs the recovery, and once the new sheet is on screen it
-    /// is the «حفظتُ الورقة الجديدة» that closes it.
+    /// states: while the form is up it performs the recovery, and once the new password is in force —
+    /// with or without a new sheet beside it — it is the closing button instead, so a second press
+    /// never re-submits a recovery that has already happened.
     /// </summary>
-    private Task ConfirmAsync() => _newSheet is null ? SubmitAsync() : CloseAsync();
+    private Task ConfirmAsync() => _newSheet is null && !_recoveredWithoutSession ? SubmitAsync() : CloseAsync();
 
     private async Task PrintAsync()
     {

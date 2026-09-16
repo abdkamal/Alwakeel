@@ -1,0 +1,14 @@
+@namespace Wakeel.Admin.UI.Layout
+@inherits LayoutComponentBase
+@inject ThemeService Theme
+
+@* A01 and A02 come before there is anything to navigate to: no bar, no tabs, just the frame and
+   what is being asked (DESIGN-GUIDE: «شاشات A01 وA02 (قبل الدخول) مستقلة بلا شريط»). *@
+<div class="a-bare">
+    @Body
+    <WToastHost />
+</div>
+
+@code {
+    protected override Task OnInitializedAsync() => Theme.InitializeAsync();
+}

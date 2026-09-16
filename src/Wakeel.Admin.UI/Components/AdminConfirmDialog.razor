@@ -1,0 +1,104 @@
+@namespace Wakeel.Admin.UI.Components
+
+@* A12's shared confirmation. The ordinary kind simply asks; the dangerous kind (revoking a device,
+   changing the numbering format, rotating an office key) is red, says plainly that it cannot be
+   undone, and will not let the main button work until the person has written «تأكيد» by hand —
+   a deliberate pause in front of the few actions that cannot be taken back. *@
+<WDialog Open="@Open"
+         Kind="@(Danger ? WDialogKind.Danger : WDialogKind.Normal)"
+         Title="@Title"
+         Desc="@Desc"
+         ConfirmLabel="@(ConfirmLabel ?? AdminAr.Confirm.Continue)"
+         CancelLabel="@(CancelLabel ?? AdminAr.Confirm.Back)"
+         ConfirmIcon="@ConfirmIcon"
+         OnConfirm="HandleConfirm"
+         OnCancel="HandleCancel"
+         CloseOnScrimClick="@(!Danger)">
+    @if (ChildContent is not null)
+    {
+        <div class="a-confirm-body">@ChildContent</div>
+    }
+
+    @if (Danger && RequireTypedConfirmation)
+    {
+        <div class="a-confirm-typed">
+            <WInput Label="@AdminAr.Confirm.TypeToConfirm"
+                    Value="@_typed"
+                    ValueChanged="OnTypedChanged"
+                    Placeholder="@AdminAr.Confirm.ConfirmWord" />
+        </div>
+    }
+</WDialog>
+
+@code {
+    private string? _typed;
+
+    /// <summary>Whether the dialog is on screen.</summary>
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>Red, and not undoable.</summary>
+    [Parameter] public bool Danger { get; set; }
+
+    /// <summary>The question, in one line.</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>What happens if the person says yes.</summary>
+    [Parameter] public string? Desc { get; set; }
+
+    /// <summary>Anything else the person should see before deciding.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>The main button's label; «متابعة» when none is given.</summary>
+    [Parameter] public string? ConfirmLabel { get; set; }
+
+    /// <summary>The way back's label; «العودة» when none is given.</summary>
+    [Parameter] public string? CancelLabel { get; set; }
+
+    /// <summary>An icon on the main button.</summary>
+    [Parameter] public string? ConfirmIcon { get; set; }
+
+    /// <summary>
+    /// Whether a dangerous action also has to be written out by hand. On by default, because that
+    /// is the whole point of the dangerous kind; a caller can turn it off for something red that is
+    /// nevertheless easy to undo.
+    /// </summary>
+    [Parameter] public bool RequireTypedConfirmation { get; set; } = true;
+
+    /// <summary>Raised when the person goes ahead.</summary>
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    /// <summary>Raised when the person backs out.</summary>
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    /// <summary>Whether the main button may be pressed right now.</summary>
+    public bool CanConfirm =>
+        !Danger || !RequireTypedConfirmation
+        || string.Equals(_typed?.Trim(), AdminAr.Confirm.ConfirmWord, StringComparison.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        if (!Open)
+        {
+            // Nothing typed survives a close: the next dangerous question starts from a blank line.
+            _typed = null;
+        }
+    }
+
+    private void OnTypedChanged(string? value) => _typed = value;
+
+    private async Task HandleConfirm()
+    {
+        if (!CanConfirm)
+        {
+            return;
+        }
+
+        await OnConfirm.InvokeAsync();
+    }
+
+    private async Task HandleCancel()
+    {
+        _typed = null;
+        await OnCancel.InvokeAsync();
+    }
+}

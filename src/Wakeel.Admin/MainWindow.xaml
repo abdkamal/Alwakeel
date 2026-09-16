@@ -1,12 +1,20 @@
-﻿<Window x:Class="Wakeel.Admin.MainWindow"
+<Window x:Class="Wakeel.Admin.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Wakeel.Admin"
+        xmlns:blazor="clr-namespace:Microsoft.AspNetCore.Components.WebView.Wpf;assembly=Microsoft.AspNetCore.Components.WebView.Wpf"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="مدير نظام الوكيل"
+        Height="768" Width="1366"
+        MinHeight="700" MinWidth="1100"
+        FlowDirection="RightToLeft"
+        WindowStartupLocation="CenterScreen">
     <Grid>
-
+        <!-- RootComponents is populated in code-behind (not declaratively here) because the WPF XAML
+             markup compiler's first pass runs before Razor's source generator has produced the
+             Routes class, so a type reference to it cannot resolve at XAML-compile time. -->
+        <blazor:BlazorWebView x:Name="BlazorView" HostPage="wwwroot\index.html" />
     </Grid>
 </Window>

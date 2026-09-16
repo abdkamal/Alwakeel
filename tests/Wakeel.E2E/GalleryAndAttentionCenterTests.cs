@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Globalization;
 using Microsoft.Playwright;
 using Wakeel.Design.Text;
 using Wakeel.E2E.Support;
@@ -77,8 +78,24 @@ public sealed class GalleryAndAttentionCenterTests : IClassFixture<WakeelE2eFixt
         await page.WaitForFunctionAsync("() => document.documentElement.getAttribute('data-theme') === 'light'");
 
         // W08 (مركز الانتباه) — the attention-center placeholder route this package's spec points at.
+        // page.GotoAsync is a real browser navigation, not a client-side route change, so the whole
+        // Blazor app reboots from a static document that carries no data-theme attribute yet: the
+        // very first paint follows the OS's prefers-color-scheme until the persisted "light" choice
+        // is re-applied. Re-checking the attribute here (found live, while diagnosing an intermittent
+        // W08ScreenshotDiff failure — see the note further below) closes most, but not quite all, of
+        // that race before the capture.
         await page.GotoAsync($"{_fixture.Origin}/w08");
         await page.WaitForSelectorAsync(HeaderTitleSelector);
+        await page.WaitForFunctionAsync("() => document.documentElement.getAttribute('data-theme') === 'light'");
+
+        // A short, fixed settle: WSidebar.razor's own background/hover-state repaint (an internal
+        // Blazor render pass following the attribute above, not something this package's allowed
+        // paths can reach) was found, live, to occasionally still be one frame behind even after the
+        // attribute check resolves and two requestAnimationFrame round trips pass — giving it real
+        // wall-clock time to finish is the simplest mitigation that does not hard-code an assumption
+        // about which pixel or colour is involved.
+        await page.WaitForTimeoutAsync(250);
+
         var heading = await page.TextContentAsync(HeaderTitleSelector);
         Assert.Equal(Ar.AttentionCenter.Title, heading);
 
@@ -117,7 +134,13 @@ public sealed class GalleryAndAttentionCenterTests : IClassFixture<WakeelE2eFixt
         }
         finally
         {
+            // The override is undone and the session is detached in the same breath: leaving a CDP
+            // session attached for the rest of the fixture's lifetime is harmless for this one
+            // screenshot (the app is killed at teardown and the assembly runs sequentially), but a
+            // later package taking many more screenshots off this same pattern would otherwise
+            // accumulate one leaked attachment per shot.
             await cdp.SendAsync("Emulation.clearDeviceMetricsOverride");
+            await cdp.DetachAsync();
         }
 
         using (var actualImage = new Bitmap(actualPath))
@@ -133,11 +156,48 @@ public sealed class GalleryAndAttentionCenterTests : IClassFixture<WakeelE2eFixt
         File.WriteAllText(percentagePath, percentage.ToString("F4"));
 
         // Recorded only — this package prototypes the harness; no pass/fail threshold is set yet
-        // (later B1-B8 packages define acceptance thresholds per screen). The percentage itself
-        // cannot be asserted against a bound here for the same reason, but the artefacts the spec
-        // asks for (the diff image and the recorded percentage file) can and must exist.
+        // (later B1-B8 packages define acceptance thresholds per screen). The artefacts the spec
+        // asks for (the diff image and the recorded percentage file) must exist.
         _output.WriteLine($"W08 screenshot diff vs design export: {percentage:F2}% of pixels differ (no threshold enforced).");
         Assert.True(File.Exists(diffPath));
-        Assert.Equal(percentage.ToString("F4"), File.ReadAllText(percentagePath));
+
+        // What is worth pinning here — instead of Assert.Equal(percentage.ToString(...),
+        // File.ReadAllText(percentagePath)), which this same test would write and then read straight
+        // back, provable only against File.WriteAllText/ReadAllText themselves — is that the
+        // measurement lands near a known baseline rather than drifting arbitrarily. Sub-pixel font
+        // rendering differs slightly across machines and even across runs on the same machine (this
+        // package's own verification runs measured 33.3045% and 33.3047%), so the tolerance below is
+        // documented and wide enough to absorb that drift while still catching an actual regression:
+        // the wrong design export, W08's layout changing outright, or the capture pipeline breaking.
+        // Later B1-B8 packages that set a real pass/fail budget per screen should express it the same
+        // way — an upper bound with tolerance, never equality against one recorded figure.
+        //
+        // 2026-09-16 (b2-carryover): independently of every fix this package made, this test was
+        // found to measure ~33.97% instead of ~33.30% on a reproducible fraction of runs (system
+        // idle, no concurrent build) — traced to the W08AttentionCenter route's sidebar
+        // (WSidebar.razor) occasionally still painting a stale colour at the moment CDP's
+        // Page.captureScreenshot reads the composited frame, even once the DOM/CSSOM already report
+        // the correct light theme (getComputedStyle is synchronous with the CSSOM and so cannot
+        // detect a compositor paint that has not caught up to it yet). That race lives in
+        // WSidebar.razor / the app's theme-application startup path, both outside this package's
+        // allowed paths — the mitigation available here is the settle wait above (data-theme
+        // attribute confirmed, then a fixed real delay before the capture), which brought 12/12
+        // repeated runs back to the ~33.30% baseline. See docs/build/progress/b2-carryover.md for the
+        // full diagnosis; a package that touches WSidebar.razor should look at removing the wait.
+        Assert.InRange(percentage, BaselineDiffPercentage - BaselineDiffTolerance, BaselineDiffPercentage + BaselineDiffTolerance);
+
+        Assert.True(
+            double.TryParse(File.ReadAllText(percentagePath), NumberStyles.Float, CultureInfo.InvariantCulture, out _),
+            "The recorded percentage file must hold a parseable number for a later package to consume.");
     }
+
+    /// <summary>The known-good W08 diff percentage this harness has repeatedly measured, in percent.</summary>
+    private const double BaselineDiffPercentage = 33.30;
+
+    /// <summary>
+    /// How far the measured percentage may drift from <see cref="BaselineDiffPercentage"/> before the
+    /// test treats it as a regression rather than ordinary sub-pixel font-rendering variance between
+    /// machines and runs.
+    /// </summary>
+    private const double BaselineDiffTolerance = 0.5;
 }

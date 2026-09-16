@@ -1,9 +1,9 @@
-﻿<Application x:Class="Wakeel.Admin.App"
+<!-- No StartupUri: the window is constructed in App.xaml.cs, because it needs the service provider
+     the host builds there and WPF's own startup can only call a parameterless constructor. -->
+<Application x:Class="Wakeel.Admin.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Wakeel.Admin"
-             StartupUri="MainWindow.xaml">
+             xmlns:local="clr-namespace:Wakeel.Admin">
     <Application.Resources>
-         
     </Application.Resources>
 </Application>

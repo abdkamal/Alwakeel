@@ -1,0 +1,30 @@
+@namespace Wakeel.Admin.UI.Components
+
+@* A12's error state: what a screen shows in place of its content when what it was asked to do could
+   not be done. Always a plain Arabic sentence and something to do about it — never a code, never a
+   technical word (AGREEMENT item 15). *@
+<div class="a-error-state">
+    <WStateCard Icon="@Icon"
+                Title="@(string.IsNullOrEmpty(Title) ? AdminAr.Errors.Title : Title)"
+                Desc="@Message"
+                ActionLabel="@(OnRetry.HasDelegate ? RetryLabel : null)"
+                ActionIcon="refresh-cw"
+                OnAction="OnRetry" />
+</div>
+
+@code {
+    /// <summary>The sentence a person reads: what went wrong and what to do.</summary>
+    [Parameter, EditorRequired] public string Message { get; set; } = string.Empty;
+
+    /// <summary>A heading of the screen's own, or the shared «تعذّر إتمام الإجراء».</summary>
+    [Parameter] public string? Title { get; set; }
+
+    /// <summary>The picture; a warning triangle unless the screen wants another.</summary>
+    [Parameter] public string Icon { get; set; } = "alert-triangle";
+
+    /// <summary>The label of the button that tries again.</summary>
+    [Parameter] public string RetryLabel { get; set; } = AdminAr.Errors.Retry;
+
+    /// <summary>Raised when the person asks to try again. No button is drawn when nothing listens.</summary>
+    [Parameter] public EventCallback OnRetry { get; set; }
+}

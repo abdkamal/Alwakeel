@@ -1,6 +1,7 @@
 @page "/login"
 @namespace Wakeel.UI.Pages.Account
 @layout Wakeel.UI.Layout.BareLayout
+@implements IDisposable
 @using Wakeel.Core.Data
 @using Wakeel.Core.Data.Entities
 @using Wakeel.Core.Services
@@ -117,6 +118,13 @@
     private SignInResult? _result;
     private ClockVerdict _clock = ClockVerdict.Ok;
 
+    /// <summary>
+    /// Re-checks a standing lock-out on its own, the same cadence <see cref="LockService"/> polls at,
+    /// so a person who simply waits out the announced pause without touching the keyboard still sees
+    /// the button come back — not only the one who types a character and triggers the check that way.
+    /// </summary>
+    private ITimer? _lockTimer;
+
     private bool _lockedOut => _result?.Outcome == SignInOutcome.LockedOut;
 
     private string OrgName => string.IsNullOrWhiteSpace(_profile.OrgName) ? Ar.AppName : _profile.OrgName;
@@ -172,6 +180,7 @@
                 LockMinutes = minutes,
                 LockedUntil = until,
             };
+            StartLockTimer();
         }
     }
 
@@ -185,6 +194,7 @@
         if (_lockedOut && Login.LockedUntil() is null)
         {
             _result = null;
+            StopLockTimer();
         }
 
         // The one hint that catches the commonest cause of a wrong password on an Arabic keyboard:
@@ -205,6 +215,7 @@
         if (_lockedOut && Login.LockedUntil() is null)
         {
             _result = null;
+            StopLockTimer();
         }
 
         _busy = true;
@@ -225,6 +236,15 @@
         _result = result;
         _error = result.Succeeded ? null : result.Message;
 
+        if (result.Outcome == SignInOutcome.LockedOut)
+        {
+            StartLockTimer();
+        }
+        else
+        {
+            StopLockTimer();
+        }
+
         if (result.Succeeded)
         {
             await RunClockCheckAsync();
@@ -237,8 +257,44 @@
         _showRecovery = false;
         _error = null;
         _result = null;
+        StopLockTimer();
         Nav.NavigateTo("/w08");
     }
+
+    /// <summary>
+    /// Starts the standing-lock re-check if it is not already running; calling it more than once
+    /// while a timer is live is a no-op rather than a second, competing timer.
+    /// </summary>
+    private void StartLockTimer()
+    {
+        _lockTimer ??= Time.CreateTimer(
+            _ => InvokeAsync(CheckLockTimer),
+            null,
+            LockService.TickInterval,
+            LockService.TickInterval);
+    }
+
+    private void StopLockTimer()
+    {
+        _lockTimer?.Dispose();
+        _lockTimer = null;
+    }
+
+    /// <summary>Runs on the renderer's own thread (via <see cref="InvokeAsync(Action)"/>), so touching
+    /// component state and calling <see cref="StateHasChanged"/> here is safe.</summary>
+    private void CheckLockTimer()
+    {
+        if (!_lockedOut || Login.LockedUntil() is not null)
+        {
+            return;
+        }
+
+        _result = null;
+        StopLockTimer();
+        StateHasChanged();
+    }
+
+    public void Dispose() => StopLockTimer();
 
     /// <summary>
     /// The clock check this screen can actually perform before anything is unlocked, so the line

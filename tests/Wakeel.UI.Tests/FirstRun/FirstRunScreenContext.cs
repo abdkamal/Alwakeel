@@ -140,10 +140,42 @@ internal static class SharedSetupFile
     ];
 }
 
-/// <summary>A clock that does not move, so a screenshot of a screen is the same every run.</summary>
+/// <summary>
+/// A clock that does not move, so a screenshot of a screen is the same every run. Its timers never
+/// fire on their own either: a test that needs one to elapse calls <see cref="ManualTimer.Fire"/>
+/// on <see cref="LastTimer"/> itself, deterministically, instead of waiting on a real system timer.
+/// </summary>
 internal sealed class FixedTime(DateTimeOffset now) : TimeProvider
 {
     public override DateTimeOffset GetUtcNow() => now;
+
+    /// <summary>The most recently created timer.</summary>
+    internal ManualTimer? LastTimer { get; private set; }
+
+    public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+    {
+        var timer = new ManualTimer(callback, state);
+        LastTimer = timer;
+        return timer;
+    }
+
+    /// <summary>An <see cref="ITimer"/> a test fires by hand; it never schedules real callbacks.</summary>
+    internal sealed class ManualTimer(TimerCallback callback, object? state) : ITimer
+    {
+        internal bool Disposed { get; private set; }
+
+        internal void Fire() => callback(state);
+
+        public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+
+        public void Dispose() => Disposed = true;
+
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return ValueTask.CompletedTask;
+        }
+    }
 }
 
 /// <summary>

@@ -198,6 +198,63 @@ public class FirstRunGuardTests : FirstRunScreenContext
     }
 
     /// <summary>
+    /// The same wait-is-over recheck, but for a person who never touches the keyboard: the idle
+    /// timer W05Login starts on its own re-checks the standing lock-out and clears it without any
+    /// keystroke driving <see cref="Wakeel.UI.Pages.Account.W05Login.OnPasswordChanged"/>.
+    /// </summary>
+    [Fact]
+    public async Task The_idle_lock_timer_clears_the_lock_out_on_its_own()
+    {
+        await ActivateAsync();
+        Session.SignOut();
+        SaveProfile(profile => profile.LockedUntil = Time.GetUtcNow().AddMinutes(5));
+
+        var clock = (FixedTime)Time;
+        var cut = Render<W05Login>();
+        var button = cut.FindComponents<WButton>().First(b => b.Instance.Label == Ar.FirstRun.Login.SignIn);
+        Assert.True(button.Instance.Disabled);
+        Assert.Contains(Ar.FirstRun.Login.LockedOut(5), cut.Markup, StringComparison.Ordinal);
+        Assert.NotEmpty(cut.FindAll(".w-card--danger"));
+
+        var timer = clock.LastTimer;
+        Assert.NotNull(timer);
+        Assert.False(timer!.Disposed);
+
+        // The wait runs out on its own; nothing is typed.
+        SaveProfile(profile => profile.LockedUntil = null);
+        await cut.InvokeAsync(timer.Fire);
+
+        button = cut.FindComponents<WButton>().First(b => b.Instance.Label == Ar.FirstRun.Login.SignIn);
+        Assert.False(button.Instance.Disabled);
+        Assert.DoesNotContain(Ar.FirstRun.Login.LockedOut(5), cut.Markup, StringComparison.Ordinal);
+        Assert.Empty(cut.FindAll(".w-card--danger"));
+
+        // A lock timer that just cleared the lock must not keep ticking behind the screen.
+        Assert.True(timer.Disposed);
+    }
+
+    /// <summary>A lock timer still running when the screen itself goes away must not be left ticking.</summary>
+    [Fact]
+    public async Task Disposing_the_sign_in_screen_stops_a_still_running_lock_timer()
+    {
+        await ActivateAsync();
+        Session.SignOut();
+        SaveProfile(profile => profile.LockedUntil = Time.GetUtcNow().AddMinutes(5));
+
+        var clock = (FixedTime)Time;
+        Render<W05Login>();
+        var timer = clock.LastTimer;
+        Assert.NotNull(timer);
+        Assert.False(timer!.Disposed);
+
+        // bUnit only runs a rendered component's own Dispose (IDisposable.Dispose, which is where
+        // W05Login stops its timer) when the test context is asked to dispose its components.
+        await Renderer.DisposeComponents();
+
+        Assert.True(timer.Disposed);
+    }
+
+    /// <summary>
     /// Checking a code costs one deliberately slow derivation. A character that lands while one is
     /// running must not be dropped: the code the person finished typing is the one that has to get a
     /// verdict, or a complete and correct code stays refused until they edit the field again.

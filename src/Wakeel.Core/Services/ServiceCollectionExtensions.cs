@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Wakeel.Core.Data;
 
 namespace Wakeel.Core.Services;
@@ -20,7 +21,11 @@ public static class ServiceCollectionExtensions
     /// Registers the Wakeel.Core services (<see cref="IClock"/>, <see cref="IIdGenerator"/>,
     /// <see cref="IAuditService"/>, <see cref="ISettingsService"/>, <see cref="IOfficialNumberService"/>,
     /// <see cref="IFinancialCycleService"/>, <see cref="IClockCheckService"/>,
-    /// <see cref="IInstallationService"/>, <see cref="IErrorMapper"/>)
+    /// <see cref="IInstallationService"/>, <see cref="IErrorMapper"/>) and the daily-shell
+    /// services of B2 (<see cref="IAttentionService"/>, <see cref="IBadgeService"/>,
+    /// <see cref="INotificationService"/>, <see cref="IReminderScheduler"/>,
+    /// <see cref="IClockGuard"/>, <see cref="IHealthService"/>, <see cref="IQuickCaptureService"/>,
+    /// <see cref="IMinuteTicker"/> and the health-center probes),
     /// and <see cref="WakeelPaths"/>. The database-backed services are Scoped and resolve
     /// <see cref="WakeelDb"/> from the container — the host application is responsible for
     /// registering <see cref="WakeelDb"/> itself once a <see cref="DbSession"/> is open (the
@@ -44,6 +49,35 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFinancialCycleService, FinancialCycleService>();
         services.AddScoped<IClockCheckService, ClockCheckService>();
         services.AddScoped<IInstallationService, InstallationService>();
+
+        // B2 — the daily shell's services. All Scoped for the same reason as the rest: they read
+        // and write through WakeelDb, which only exists once a DbSession is open. The clock guard,
+        // the badge service and the quick-capture service each hold a little session state (the
+        // banner's «تجاهل مؤقتًا» flag, the last badge snapshot, the live undo tokens); a scope in
+        // الوكيل is the user's session, so that is exactly where that state belongs.
+        services.AddScoped<IAttentionService, AttentionService>();
+        services.AddScoped<IBadgeService, BadgeService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IReminderScheduler, ReminderScheduler>();
+        services.AddScoped<IClockGuard, ClockGuard>();
+        services.AddScoped<IHealthService, HealthService>();
+        services.AddScoped<IQuickCaptureService, QuickCaptureService>();
+
+        // The minute tick is Scoped like everything it drives. A singleton ticker would outlive
+        // the session it was started for: after a sign-out its timer would keep firing into the
+        // previous session's scheduler — whose database session has closed — and the container
+        // would never dispose it. Scoped means the tick stops when the session does.
+        services.AddScoped<IMinuteTicker, TimeProviderMinuteTicker>();
+
+        // Platform probes for the health center. These are the "nothing is available" answers;
+        // the Windows host replaces each with a real probe of its own (see
+        // Wakeel.Desktop/App.xaml.cs), so Core never depends on a Windows-only API and every
+        // check can be driven from a test with a fake. TryAdd, so a host that registered its own
+        // probe before calling AddWakeelCore keeps it.
+        services.TryAddSingleton<IWordProbe, UnavailableProbes>();
+        services.TryAddSingleton<IScannerProbe, UnavailableProbes>();
+        services.TryAddSingleton<IDiskSpaceProbe, UnavailableProbes>();
+        services.TryAddSingleton<IRuntimeProbe, UnavailableProbes>();
 
         return services;
     }

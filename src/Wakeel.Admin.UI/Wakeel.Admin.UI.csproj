@@ -13,12 +13,23 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <!-- The organisation recovery sheet (A01) draws its code as a QR picture, and the recovery
+         dialog (A02) reads one back from a picture of the printed sheet. Both versions are already
+         pinned centrally in Directory.Packages.props; no new package is introduced here. -->
+    <PackageReference Include="QRCoder" />
+    <PackageReference Include="ZXing.Net" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Wakeel.Design\Wakeel.Design.csproj" />
     <ProjectReference Include="..\Wakeel.Core\Wakeel.Core.csproj" />
     <ProjectReference Include="..\Wakeel.Crypto\Wakeel.Crypto.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The admin tool carries its own schema (DATA-MODEL §13); Wakeel.Core's migration set belongs
+         to a الوكيل installation and is never applied to admin.db. -->
+    <EmbeddedResource Include="Migrations\*.sql" />
   </ItemGroup>
 
 </Project>

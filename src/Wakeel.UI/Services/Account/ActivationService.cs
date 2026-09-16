@@ -167,6 +167,12 @@ public sealed class ActivationService
         // be no way out of that from inside the product.
         var committed = false;
 
+        // Every vault blob StoreAttachmentsAsync writes lands here as it is written, so a failure
+        // partway through — the third attachment, say — can be undone as completely as the key file
+        // and the database: a hash added here but never reached by a rollback would be dead bytes no
+        // later installation could read or account for, because the key that sealed them is gone too.
+        var writtenVaultHashes = new List<string>();
+
         try
         {
             WriteKeyFile(content, password, code, kdf, dbKey, vaultKey);
@@ -175,7 +181,7 @@ public sealed class ActivationService
             try
             {
                 var installation = await SeedAsync(database.Db, content, now, cancellationToken).ConfigureAwait(false);
-                await StoreAttachmentsAsync(database.Db, package, vaultKey, installation, cancellationToken)
+                await StoreAttachmentsAsync(database.Db, package, vaultKey, installation, writtenVaultHashes, cancellationToken)
                     .ConfigureAwait(false);
 
                 var account = await database.Db.Account.AsNoTracking()
@@ -201,12 +207,12 @@ public sealed class ActivationService
             // folded into the general «تعذّر إنشاء الحساب» (B1 acceptance criteria). A full disk is
             // also the failure most likely to be retried, which is exactly why the half-written
             // installation must be gone before the sentence appears.
-            RollBack(committed);
+            RollBack(committed, writtenVaultHashes);
             return new ActivationResult(ActivationOutcome.DiskFull, Ar.FirstRun.Setup.DiskFull);
         }
         catch
         {
-            RollBack(committed);
+            RollBack(committed, writtenVaultHashes);
             throw;
         }
         finally
@@ -226,10 +232,12 @@ public sealed class ActivationService
     /// <summary>
     /// Undoes a half-finished activation. <see cref="AlreadyActivated"/> guaranteed that neither the
     /// key file nor the database existed when this attempt started, so deleting both restores the
-    /// machine byte for byte. A file that refuses to go is left alone rather than allowed to hide the
-    /// failure that brought us here.
+    /// machine byte for byte. Any vault blob already written under the abandoned vault key is removed
+    /// too, or its bytes would sit there unreadable by anything once the wrapped key that opened them
+    /// is gone. A file that refuses to go is left alone rather than allowed to hide the failure that
+    /// brought us here.
     /// </summary>
-    private void RollBack(bool committed)
+    private void RollBack(bool committed, IReadOnlyCollection<string> writtenVaultHashes)
     {
         if (committed)
         {
@@ -246,6 +254,12 @@ public sealed class ActivationService
         Delete(_paths.DbPath + "-wal");
         Delete(_paths.DbPath + "-shm");
         Delete(_paths.DbPath + "-journal");
+
+        foreach (var hash in writtenVaultHashes)
+        {
+            VaultStore.Delete(_paths, hash);
+            Delete(_paths.VaultFilePath(hash) + ".tmp");
+        }
 
         static void Delete(string path)
         {
@@ -350,11 +364,12 @@ public sealed class ActivationService
         SetupPackage package,
         byte[] vaultKey,
         Installation installation,
+        ICollection<string> writtenVaultHashes,
         CancellationToken cancellationToken)
     {
         var settings = new SettingsService(db, _clock);
 
-        var logoId = await StoreAsync(db, vaultKey, package.ReadLogo(), "logo.png", "image/png", cancellationToken)
+        var logoId = await StoreAsync(db, vaultKey, package.ReadLogo(), "logo.png", "image/png", writtenVaultHashes, cancellationToken)
             .ConfigureAwait(false);
         if (logoId is { } logo)
         {
@@ -366,7 +381,7 @@ public sealed class ActivationService
 
         await RecordAsync(
             AccountSettingKeys.GuideDocumentId,
-            await StoreAsync(db, vaultKey, package.ReadGuide(), "guide.pdf", "application/pdf", cancellationToken)
+            await StoreAsync(db, vaultKey, package.ReadGuide(), "guide.pdf", "application/pdf", writtenVaultHashes, cancellationToken)
                 .ConfigureAwait(false)).ConfigureAwait(false);
 
         await RecordAsync(
@@ -377,6 +392,7 @@ public sealed class ActivationService
                 package.ReadReportTemplate(),
                 "report-template.docx",
                 WordMime,
+                writtenVaultHashes,
                 cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
 
         await RecordAsync(
@@ -387,6 +403,7 @@ public sealed class ActivationService
                 package.ReadLetterTemplate(),
                 "letter-template.docx",
                 WordMime,
+                writtenVaultHashes,
                 cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
 
         async Task RecordAsync(string key, Guid? documentId)
@@ -406,6 +423,7 @@ public sealed class ActivationService
         byte[]? content,
         string name,
         string mime,
+        ICollection<string> writtenVaultHashes,
         CancellationToken cancellationToken)
     {
         if (content is not { Length: > 0 })
@@ -414,6 +432,7 @@ public sealed class ActivationService
         }
 
         var hash = VaultStore.Write(_paths, vaultKey, content);
+        writtenVaultHashes.Add(hash);
         var document = new Document
         {
             Sha256 = hash,

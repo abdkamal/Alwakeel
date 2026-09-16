@@ -1,0 +1,5 @@
+.a-error-state {
+  display: flex;
+  justify-content: center;
+  padding-block: 24px;
+}

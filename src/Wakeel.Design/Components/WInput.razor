@@ -68,6 +68,7 @@
     private ElementReference _dateRef;
     private int? _pendingCaret;
     private string? _pendingValue;
+    private string? _pendingRaw;
     private int _inputSeq;
 
     /// <summary>Which HTML control to render: Text, Password, Number, Date, or Textarea.</summary>
@@ -179,6 +180,7 @@
 
         _pendingCaret = CaretForDigitCount(formatted, CountDigitsBefore(raw, caret));
         _pendingValue = formatted;
+        _pendingRaw = raw;
 
         await ValueChanged.InvokeAsync(formatted);
     }
@@ -192,6 +194,12 @@
     /// than only the caret — is what fixes an unbound field, where <see cref="Value"/> never changes
     /// and Blazor's diff therefore never touches the DOM on its own.
     /// </summary>
+    /// <remarks>
+    /// The raw text <see cref="OnDateInputAsync"/> processed travels along as a fourth argument so the
+    /// JS side can refuse to write when the element has already moved past it — two keystrokes fired
+    /// close enough together that this write would otherwise land after further characters were
+    /// typed, silently erasing them. See <c>wakeelUi.setInputValue</c> in app.js.
+    /// </remarks>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_pendingCaret is not int caret)
@@ -202,10 +210,12 @@
         _pendingCaret = null;
         var value = _pendingValue ?? string.Empty;
         _pendingValue = null;
+        var expectedRaw = _pendingRaw;
+        _pendingRaw = null;
 
         try
         {
-            await Js.InvokeVoidAsync("wakeelUi.setInputValue", _dateRef, value, caret);
+            await Js.InvokeVoidAsync("wakeelUi.setInputValue", _dateRef, value, caret, expectedRaw);
         }
         catch (Exception ex) when (ex is JSException or JSDisconnectedException or ObjectDisposedException)
         {

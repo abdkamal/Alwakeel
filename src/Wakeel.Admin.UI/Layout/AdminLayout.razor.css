@@ -1,0 +1,219 @@
+/* The administration shell: dark bar, tab strip, full-width page (DESIGN-GUIDE «أداة مدير النظام»). */
+
+.a-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--w-bg);
+  color: var(--w-text);
+}
+
+/* ── the dark bar ───────────────────────────────────────────────────────── */
+
+.a-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 28px;
+  min-height: 56px;
+  background: var(--w-sidebar);
+  color: var(--w-sidebar-text);
+}
+
+.a-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.a-topbar-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--w-radius);
+  background: var(--w-sidebar-selected);
+  color: var(--w-white);
+  cursor: pointer;
+}
+
+.a-topbar-home:hover {
+  background: var(--w-sidebar-hover);
+}
+
+.a-topbar-home:focus-visible,
+.a-topbar-icon:focus-visible,
+.a-tab:focus-visible {
+  outline: 2px solid var(--w-primary);
+  outline-offset: 2px;
+}
+
+.a-topbar-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.a-topbar-title {
+  font-size: var(--w-fs-section);
+  font-weight: 700;
+  color: var(--w-white);
+}
+
+.a-topbar-sub {
+  font-size: var(--w-fs-meta);
+  color: var(--w-sidebar-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.a-topbar-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.a-topbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--w-radius);
+  background: transparent;
+  color: var(--w-sidebar-text);
+  cursor: pointer;
+}
+
+.a-topbar-icon:hover {
+  background: var(--w-sidebar-hover);
+  color: var(--w-white);
+}
+
+.a-topbar-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.a-topbar-user-name {
+  font-size: var(--w-fs-body);
+  font-weight: 600;
+  color: var(--w-white);
+}
+
+.a-topbar-user-role {
+  font-size: var(--w-fs-meta);
+  color: var(--w-sidebar-muted);
+}
+
+/* ── the tab strip ──────────────────────────────────────────────────────── */
+
+.a-tabs {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0 28px;
+  background: var(--w-surface);
+  border-block-end: 1px solid var(--w-border);
+}
+
+.a-tab {
+  appearance: none;
+  border: 0;
+  border-block-end: 2px solid transparent;
+  background: transparent;
+  color: var(--w-muted);
+  font-family: inherit;
+  font-size: var(--w-fs-body);
+  font-weight: 500;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.a-tab:hover {
+  color: var(--w-text);
+}
+
+.a-tab-active {
+  color: var(--w-primary);
+  font-weight: 700;
+  border-block-end-color: var(--w-primary);
+}
+
+/* ── the page ───────────────────────────────────────────────────────────── */
+
+.a-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 28px;
+  min-width: 0;
+}
+
+.a-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.a-page-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.a-page-title {
+  margin: 0;
+  font-size: var(--w-fs-title);
+  font-weight: 700;
+  color: var(--w-text);
+}
+
+.a-page-sub {
+  margin: 0;
+  font-size: var(--w-fs-body);
+  color: var(--w-muted);
+}
+
+.a-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.a-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* A narrow window stacks the bar rather than squeezing the organisation line into nothing. */
+@media (max-width: 900px) {
+  .a-topbar,
+  .a-tabs,
+  .a-page {
+    padding-inline: 16px;
+  }
+
+  .a-tabs {
+    overflow-x: auto;
+  }
+
+  .a-topbar-user {
+    display: none;
+  }
+}

@@ -48,11 +48,59 @@ public sealed class ServiceRegistrationTests : IDisposable
     [InlineData(typeof(IOfficialNumberService))]
     [InlineData(typeof(IFinancialCycleService))]
     [InlineData(typeof(IClockCheckService))]
+    [InlineData(typeof(IAttentionService))]
+    [InlineData(typeof(IBadgeService))]
+    [InlineData(typeof(INotificationService))]
+    [InlineData(typeof(IReminderScheduler))]
+    [InlineData(typeof(IClockGuard))]
+    [InlineData(typeof(IHealthService))]
+    [InlineData(typeof(IQuickCaptureService))]
+    [InlineData(typeof(IMinuteTicker))]
+    [InlineData(typeof(IWordProbe))]
+    [InlineData(typeof(IScannerProbe))]
+    [InlineData(typeof(IDiskSpaceProbe))]
+    [InlineData(typeof(IRuntimeProbe))]
     public void AddWakeelCore_ResolvesEveryRegisteredService(Type serviceType)
     {
         using var scope = _provider.CreateScope();
         var resolved = scope.ServiceProvider.GetService(serviceType);
         Assert.NotNull(resolved);
+    }
+
+    [Fact]
+    public void AddWakeelCore_LeavesAPlatformProbeTheHostRegisteredFirstInPlace()
+    {
+        // Wakeel.Desktop registers its Windows probes before calling AddWakeelCore; Core's own
+        // TryAdd must not replace them with its "nothing is available" fallbacks.
+        var services = new ServiceCollection();
+        var hostProbe = new AlwaysInstalledWordProbe();
+        services.AddSingleton<IWordProbe>(hostProbe);
+        services.AddWakeelCore(options => options.Paths = WakeelPaths.ForRoot(_root));
+        services.AddScoped(_ => _session.Db);
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.Same(hostProbe, provider.GetRequiredService<IWordProbe>());
+    }
+
+    [Fact]
+    public void AddWakeelCore_RegistersTheDailyShellServicesAsScoped_SoEachSessionHasItsOwn()
+    {
+        // The clock guard, the badge service and the quick-capture service hold session state
+        // (the dismissed banner, the last badge numbers, the live undo tokens). Two scopes must
+        // not share them.
+        using var first = _provider.CreateScope();
+        using var second = _provider.CreateScope();
+
+        Assert.NotSame(first.ServiceProvider.GetRequiredService<IClockGuard>(), second.ServiceProvider.GetRequiredService<IClockGuard>());
+        Assert.NotSame(first.ServiceProvider.GetRequiredService<IBadgeService>(), second.ServiceProvider.GetRequiredService<IBadgeService>());
+        Assert.Same(first.ServiceProvider.GetRequiredService<IBadgeService>(), first.ServiceProvider.GetRequiredService<IBadgeService>());
+    }
+
+    private sealed class AlwaysInstalledWordProbe : IWordProbe
+    {
+        public Task<WordInfo> DetectAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new WordInfo(true, "Office 2016 أو أحدث"));
     }
 
     [Fact]

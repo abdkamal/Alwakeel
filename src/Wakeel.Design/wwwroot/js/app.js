@@ -118,8 +118,18 @@ window.wakeelUi = {
   /// an unbound field (whose Value parameter never changes, so Blazor's own diff never touches the
   /// `value` attribute), a rejected character, or the caret after a mid-string digit insertion
   /// (where Blazor's rewrite, or the browser's own reset, would otherwise bounce it to the end).
-  setInputValue(el, value, caret) {
+  ///
+  /// `expected` is the raw text the Blazor handler actually processed when it computed `value`/
+  /// `caret`. Two keystrokes fired close enough together (well under human/auto-repeat speed, e.g.
+  /// scripted input) can otherwise race: an older keystroke's write would land here after the
+  /// element has already moved on to further characters, silently erasing them. When `expected` is
+  /// given and no longer matches the element's live value, this write is stale and skipped rather
+  /// than clobbering what the person has typed since.
+  setInputValue(el, value, caret, expected) {
     if (!el) {
+      return;
+    }
+    if (expected !== undefined && expected !== null && el.value !== expected && el.value !== value) {
       return;
     }
     el.value = value;

@@ -300,6 +300,29 @@ public class WInputTests : WakeelTestContext
     }
 
     /// <summary>
+    /// verify3-design-verify.json (B1) low finding 1: the post-render write now carries the raw text
+    /// <see cref="WInput"/> actually processed as a fourth argument, so <c>wakeelUi.setInputValue</c>
+    /// (app.js) can refuse a write the element has already moved past — a keystroke close enough
+    /// behind another one that this write would otherwise land after further characters were typed
+    /// and silently erase them. bUnit's JSInterop mock does not execute app.js itself (that guard is
+    /// verified live, over CDP, against real keystrokes — see the package build notes), so this test
+    /// locks the C# side of the contract: the exact raw text the DOM must still hold for the write to
+    /// be honoured.
+    /// </summary>
+    [Fact]
+    public void DateType_PostRenderWrite_CarriesTheProcessedRawTextAsAStaleWriteGuard()
+    {
+        JSInterop.Setup<int>("wakeelUi.getSelectionStart", _ => true).SetResult(1);
+
+        var cut = Render<WInput>(p => p.Add(x => x.Type, WInputType.Date));
+
+        cut.Find("input").Input("1a");
+
+        var invocation = Assert.Single(JSInterop.Invocations, i => i.Identifier == "wakeelUi.setInputValue");
+        Assert.Equal("1a", invocation.Arguments[3]);
+    }
+
+    /// <summary>
     /// verify-design-split.json (this package's review) finding 2, low: the null-value guard fixed
     /// above only covers the very first keystroke on an unbound field (no @bind-Value/ValueChanged).
     /// Because <see cref="WInput.Value"/> then never changes, Blazor's diff never rewrites the `value`
@@ -352,12 +375,20 @@ public class WInputTests : WakeelTestContext
 
         pendingSelectionStart.SetResult(2);
 
-        cut.WaitForAssertion(() => Assert.Single(JSInterop.Invocations, i => i.Identifier == "wakeelUi.setInputValue"));
-
-        Assert.Equal(new[] { "12" }, values);
+        // Waited on the terminal, monotone condition rather than the invocation count: without the
+        // _inputSeq guard the count is also transiently 1 right after the first continuation lands
+        // (before the second one arrives), so a count-based wait can release early and only fail
+        // later, on the values assertion below, rather than failing where the race actually is.
+        cut.WaitForAssertion(() => Assert.Equal(new[] { "12" }, values));
 
         var invocation = Assert.Single(JSInterop.Invocations, i => i.Identifier == "wakeelUi.setInputValue");
         Assert.Equal("12", invocation.Arguments[1]);
         Assert.Equal(2, invocation.Arguments[2]);
+
+        // Only the newer keystroke's raw text ("12") ever reaches the interop call: the superseded
+        // "1" keystroke is dropped by _inputSeq before it stashes anything, so there is nothing stale
+        // left for wakeelUi.setInputValue's expected-text guard to have to catch here — the guard's
+        // own skip path is exercised live, over CDP, against real racing keystrokes.
+        Assert.Equal("12", invocation.Arguments[3]);
     }
 }

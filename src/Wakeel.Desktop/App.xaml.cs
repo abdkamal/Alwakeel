@@ -51,6 +51,15 @@ public partial class App : Application
                 services.AddWakeelDesign();
                 services.AddScoped<PageHeaderState>();
 
+                // The health center's Windows probes, registered BEFORE AddWakeelCore so its
+                // TryAdd leaves them in place instead of the "nothing is available" answers Core
+                // falls back to: whether Word is installed, whether a scanner is attached, how
+                // much room is left on the volume, and whether the display components are present.
+                services.AddSingleton<IWordProbe, WindowsWordProbe>();
+                services.AddSingleton<IScannerProbe, WiaScannerProbe>();
+                services.AddSingleton<IDiskSpaceProbe, WindowsDiskSpaceProbe>();
+                services.AddSingleton<IRuntimeProbe, WindowsRuntimeProbe>();
+
                 services.AddWakeelCore(options => options.Paths = installation);
 
                 // The two things only Windows can do, registered before AddWakeelAccount so its
@@ -95,6 +104,14 @@ public partial class App : Application
         // deliberately refuses to forward) without any command-line flag being passed to this
         // process at all. Only a validated --remote-debugging-port from our own argv may set it
         // again below.
+        //
+        // This is the right security default, but it is also a silent one: a support engineer who
+        // deliberately sets WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS in the environment before launch —
+        // --disable-gpu to work around a rendering fault on a customer machine, say — will find it
+        // has no effect, with nothing in the log explaining why (this runs before ConfigureLogging,
+        // so a warning here would currently have nowhere to go without reordering the two calls in
+        // OnStartup). Kept as-is deliberately: refusing to forward an unvalidated, inherited Chromium
+        // switch list outweighs that one debugging inconvenience.
         Environment.SetEnvironmentVariable("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", null);
 
         const string prefix = "--remote-debugging-port=";

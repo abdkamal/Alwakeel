@@ -1,4 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<!-- Microsoft.NET.Sdk.Razor, exactly as Wakeel.Desktop: the host serves the design system's
+     stylesheets and scripts and the admin scoped-CSS bundle as static web assets
+     (_content/Wakeel.Design/..., Wakeel.Admin.styles.css), which the plain SDK does not produce. -->
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <ItemGroup>
     <ProjectReference Include="..\Wakeel.Admin.UI\Wakeel.Admin.UI.csproj" />
@@ -26,6 +29,5 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.Sinks.File" />
-    <PackageReference Include="QRCoder" />
   </ItemGroup>
 </Project>
