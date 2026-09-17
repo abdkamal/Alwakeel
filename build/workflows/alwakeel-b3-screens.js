@@ -1,14 +1,14 @@
 export const meta = {
   name: 'alwakeel-b3-screens',
   description: 'B3 screens on top of the accepted B3 services: correspondence list/registration/details (W01, W13–W14, W20–W26), outgoing wizard/editor/print/exchange (W15–W19, W27, W93), documents/vault/OCR screens (W43–W46), search results (W47), then the B3 walkthrough + E2E — two parallel chains then one; every package reviewed, fixed and re-verified by Opus with a mandatory visual fidelity check',
-  phases: [{ title: 'Build' }, { title: 'Review' }, { title: 'Fix' }, { title: 'Verify' }, { title: 'Fix2' }, { title: 'Verify2' }],
+  phases: [{ title: 'Build' }, { title: 'Review' }, { title: 'Fix' }, { title: 'Verify' }, { title: 'Fix2' }, { title: 'Verify2' }, { title: 'Fix3' }, { title: 'Verify3' }],
 }
 const REPO = 'D:/AI/Administration2'
-const PROTOCOL = `RESTART PROTOCOL (mandatory — the connection sometimes drops and an agent is then restarted from scratch, while the working tree keeps everything written so far): (1) FIRST run 'git status --short' and read docs/build/progress/<your package key>.md if it exists — it lists the steps a previous attempt of THIS package completed; continue from the first unfinished step instead of starting over, and never delete or rewrite files that already implement a step correctly (read them and extend them). Uncommitted files that belong to another package's paths are that package's live work — leave them alone. (2) Do not read everything up front: read the spec lines and the code you need for the CURRENT step, write the code, build it, then move on; make your first code change within your first ten tool calls. (3) After every completed step (a screen, a test file, a green build) append one line to docs/build/progress/<your package key>.md (create it; it is the only file under docs/ you may write). (4) IMAGES: never open the full-size PNGs under design/exports/light or design/exports/dark (1–2 MB each; they overload the connection). View the small JPEG previews under design/exports/preview/light/W/<name>.jpg and design/exports/preview/dark/W/<name>.jpg (same file names as the PNGs, .jpg extension), only the screens of your own package, each at most once per comparison, right before you build or check that screen. (5) Screenshots you take must be JPEG or PNG at most 1366 px wide and viewed once.
+const PROTOCOL = `RESTART PROTOCOL (mandatory — the connection sometimes drops and an agent is then restarted from scratch, while the working tree keeps everything written so far): (1) FIRST run 'git status --short' and read docs/build/progress/<your package key>.md if it exists — it lists the steps a previous attempt of THIS package completed; continue from the first unfinished step instead of starting over, and never delete or rewrite files that already implement a step correctly (read them and extend them). Uncommitted files that belong to another package's paths are that package's live work — leave them alone. (2) Do not read everything up front: read the spec lines and the code you need for the CURRENT step, write the code, build it, then move on; make your first code change within your first ten tool calls. (3) After every completed step (a screen, a test file, a green build) append one line to docs/build/progress/<your package key>.md (create it; it is the only file under docs/ you may write). (4) IMAGES: never open the full-size PNGs under design/exports/light or design/exports/dark (1–2 MB each; they overload the connection). View the small JPEG previews under design/exports/preview/light/W/<name>.jpg and design/exports/preview/dark/W/<name>.jpg (same file names as the PNGs, .jpg extension), only the screens of your own package, each at most once per comparison, right before you build or check that screen. (5) Screenshots you take must be JPEG or PNG at most 1366 px wide and viewed once. (6) When a report is handed to you as {"see": "<path>"}, read that JSON file first — it is the archived report of the previous stage.
 
 DESIGN CONSISTENCY (owner's rule, 2026-09-16 — «انتبه للتصميم: لا يوجد تناسق وتنظيم في المكونات»): every screen is composed from Wakeel.Design components (src/Wakeel.Design/Components: WButton, WInput, WSelect, WCard, WChip, WBadge, WTabs, WTable, WKvRow, WStateCard, WDialog, WMenu, WStepper, WTree, WTimelineItem, WDocumentRow, WPager, WSearch, …). Hand-rolled lists, trees, tables, tabs, chips, forms, cards or dialogs inside a page are forbidden; page CSS may only arrange design components on the page grid and set page-specific spacing from the tokens. If a component is missing, add it to Wakeel.Design first (component + css + gallery entry + bUnit test), then use it. The screen is done only when its host screenshot, put beside the preview, shows the same anatomy: same regions and columns, same controls in the same places, same chips and states, no overlap, no clipping, aligned rows, consistent spacing. A builder writes the side-by-side comparison of every screen in its notes (deviation → fixed / accepted with reason). A reviewer opens the builder's screenshot and the preview together and reports every visible deviation as a finding: high for a hand-rolled component, medium for a layout, alignment, overlap or missing-control deviation, low for a spacing nuance.
 
-RULES: never add NuGet packages that are not already pinned in Directory.Packages.props (if one is truly required, report it in open_issues). Never edit Directory.Build.props, Directory.Packages.props, Wakeel.slnx, docs/ (except your progress file), or any path outside your allowed paths (csproj files inside your allowed paths may gain ProjectReferences only). Never run git commit/checkout/stash/reset/clean. Another agent edits other pages in the same working tree concurrently: build ONLY with the exact commands given ('dotnet test --no-dependencies' is rejected by this SDK; use 'dotnet build <tests> --no-dependencies && dotnet test <tests> --no-build'); when a build fails on a file lock or on a compile error inside a file you do not own, wait 60 seconds and retry (up to five times), then report it in open_issues instead of editing that file. A package that touches Blazor pages is not done until the host actually runs: activate a temporary data folder with tests/Wakeel.Walkthrough.Tests' FirstRunWorld (or a small test helper), launch src/Wakeel.Desktop/bin/Debug/net10.0-windows10.0.19041.0/Wakeel.Desktop.exe on it with --remote-debugging-port=<port> (use the port named in your package so concurrent packages never collide), --window-size=1366x768, --data-folder=<that folder> and --start-url=/route, confirm http://127.0.0.1:<port>/json/version answers, sign in over CDP, screenshot every screen light and dark (Page.captureScreenshot), LOOK at each beside its preview, read the host log in <data-folder>/logs for errors, then kill the process immediately — a host left running is a defect. Never touch C:\\ProgramData\\Wakeel of the real installation. All user-facing text is Arabic with no technical terms or error codes (item 15), every icon-only button has a tooltip, full RTL with bdi/isolate on Latin/numeric tokens (item 55), no mention of servers, ports, internet or PostgreSQL anywhere; Arabic strings only in src/Wakeel.Design/Text/Ar.*.cs partial files (add Ar.Correspondence.cs, Ar.Documents.cs, Ar.Search.cs). Identifiers, comments and XML docs in English. Work until the package is complete and its build/tests are green; do not stop early.`
+RULES: never add NuGet packages that are not already pinned in Directory.Packages.props (if one is truly required, report it in open_issues). Never edit Directory.Build.props, Directory.Packages.props, Wakeel.slnx, docs/ (except your progress file), or any path outside your allowed paths (csproj files inside your allowed paths may gain ProjectReferences only). Never run git commit/checkout/stash/reset/clean. Another agent edits other pages in the same working tree concurrently: build ONLY with the exact commands given ('dotnet test --no-dependencies' is rejected by this SDK; use 'dotnet build <tests> --no-dependencies && dotnet test <tests> --no-build'); when a build fails on a file lock or on a compile error inside a file you do not own, wait 60 seconds and retry (up to five times), then report it in open_issues instead of editing that file. A package that touches Blazor pages is not done until the host actually runs: activate a temporary data folder with tests/Wakeel.Walkthrough.Tests' FirstRunWorld (or a small test helper), launch src/Wakeel.Desktop/bin/Debug/net10.0-windows10.0.19041.0/Wakeel.Desktop.exe on it with --remote-debugging-port=<port> (use the port named in your package so concurrent packages never collide), --window-size=1366x768, --data-folder=<that folder> and --start-url=/route, confirm http://127.0.0.1:<port>/json/version answers, sign in over CDP, screenshot every screen light and dark (Page.captureScreenshot), LOOK at each beside its preview, read the host log in <data-folder>/logs for errors, then kill the process immediately — a host left running is a defect, and so is relaunching it more often than the work needs (the owner sees every window). Never touch C:\\ProgramData\\Wakeel of the real installation. All user-facing text is Arabic with no technical terms or error codes (item 15), every icon-only button has a tooltip, full RTL with bdi/isolate on Latin/numeric tokens (item 55), no mention of servers, ports, internet or PostgreSQL anywhere; Arabic strings only in src/Wakeel.Design/Text/Ar.*.cs partial files (add Ar.Correspondence.cs, Ar.Documents.cs, Ar.Search.cs). Identifiers, comments and XML docs in English. Work until the package is complete and its build/tests are green; do not stop early.`
 
 const COMMON = `Repository: ${REPO} (branch main, .NET 10 SDK 10.0.401, solution Wakeel.slnx, central package versions in Directory.Packages.props, TreatWarningsAsErrors=true). Governing documents: docs/build/packages/B3-correspondence-documents.md (the B3 specification), docs/design/SCREENS.md (rows W01, W13–W27, W43–W47, W93) and docs/design/DESIGN-GUIDE.md, docs/AGREEMENT.md (items 5, 7, 10, 11, 18, 19, 22, 30–36, 41, 49, 55, 57), docs/build/ARCHITECTURE.md (§8, §9, §10, §12), docs/build/DATA-MODEL.md (§2, §3, §12). Foundation — the ACCEPTED B3 services (read their progress files docs/build/progress/b3-*.md and public APIs before designing): Wakeel.Core Services/Correspondence (CorrespondenceService, DuplicateDetector, ReferralService, FollowUpService, CorrectionService, ExchangeService, TemplateService), Wakeel.Reports (LetterComposer, DerivedDocumentBuilder, HTML rendering), Wakeel.Desktop/Services (WordAutomation, WiaScanner, PrintToPdf), Wakeel.Core Services/Documents (IDocumentStore/VaultStore, DocumentService), Wakeel.Ocr (OcrService, queue), Wakeel.Search (SearchIndexer, HybridSearch, ModelsFolderWatcher); the shell from B2 (src/Wakeel.UI/Services/Shell, MainLayout, WTopBar search, badges, notifications) and the account services from B1. Local models for the host run: tools/tessdata and tools/models (git-ignored; the host reads them from the models folder — copy them into the temporary data folder's models/ before launching).\n\n${PROTOCOL}`
 
@@ -76,34 +76,64 @@ function builderPrompt(p) {
   return `You are the builder of work package ${p.title} of الوكيل v0.21 (package key: ${p.key}; your CDP port: ${p.port}). ${COMMON}\nAllowed paths (create/edit only here, plus docs/build/progress/${p.key}.md): ${p.paths}.\nBuild/test command: ${p.build}\n\nSPECIFICATION:\n${p.spec}\n\nWhen done, return: status, files_changed, tests_total, tests_passed, build_ok, open_issues (anything you could not do, with the reason), notes (the per-screen side-by-side comparison table and design decisions).`
 }
 function reviewPrompt(p, build, round) {
-  return `You are the Opus reviewer (round ${round}) of work package ${p.title} of الوكيل v0.21 (package key: ${p.key}; your CDP port: ${p.port}). ${COMMON}\nThe builder reported: ${JSON.stringify(build)}.\nRead the specification below and the governing docs, then read every file under ${p.paths} that the package touches and run exactly: ${p.build} (read the full output). VISUAL FIDELITY CHECK: launch the host yourself on a seeded temporary installation, screenshot every screen the package covers in light and dark, open each screenshot together with its preview, and report every visible deviation as a finding (high: a hand-rolled component where a Wakeel.Design one exists or should exist; medium: layout, alignment, overlap, clipping, missing control/column/chip/state; low: spacing nuance). Also check: (1) every spec item and screen is implemented (list missing ones), (2) correctness bugs and edge cases, (3) security: ${p.security}, (4) ${p.extraCheck}, (5) tests assert real behaviour (not tautologies), warnings-as-errors clean, (6) Arabic-only user text without technical terms, tooltips on icon-only buttons, RTL/bidi compliance. Do NOT modify any file (you may not write the progress file either). Kill the host when done. Return verdict ('accept' only when build+tests pass and there are no high or medium findings), build_ok, tests_ok, findings (severity, file, issue, precise fix), missing_spec_items, notes.\n\nSPECIFICATION:\n${p.spec}`
+  return `You are the Opus reviewer (round ${round}) of work package ${p.title} of الوكيل v0.21 (package key: ${p.key}; your CDP port: ${p.port}). ${COMMON}\nThe builder reported: ${JSON.stringify(build)}.\nRead the specification below and the governing docs, then read every file under ${p.paths} that the package touches and run exactly: ${p.build} (read the full output). VISUAL FIDELITY CHECK: launch the host yourself on a seeded temporary installation, screenshot every screen the package covers in light and dark, open each screenshot together with its preview, and report every visible deviation as a finding (high: a hand-rolled component where a Wakeel.Design one exists or should exist; medium: layout, alignment, overlap, clipping, missing control/column/chip/state; low: spacing nuance). Also check: (1) every spec item and screen is implemented (list missing ones), (2) correctness bugs and edge cases, (3) security: ${p.security}, (4) ${p.extraCheck}, (5) tests assert real behaviour (not tautologies), warnings-as-errors clean, (6) Arabic-only user text without technical terms, tooltips on icon-only buttons, RTL/bidi compliance. From round 2 on, first confirm that each finding of the previous round is really closed, then look for regressions; do not reopen supervisor rulings. Do NOT modify any file (you may not write the progress file either). Kill the host when done. Return verdict ('accept' only when build+tests pass and there are no high or medium findings), build_ok, tests_ok, findings (severity, file, issue, precise fix), missing_spec_items, notes.\n\nSPECIFICATION:\n${p.spec}`
 }
 function fixPrompt(p, review) {
   return `You are the builder of work package ${p.title} of الوكيل v0.21 (package key: ${p.key}; your CDP port: ${p.port}) returning to apply review findings. ${COMMON}\nAllowed paths (plus docs/build/progress/${p.key}.md): ${p.paths}. Build/test command: ${p.build}\nReview result to address (fix every high and medium finding and every missing spec item; fix low ones too unless genuinely out of scope): ${JSON.stringify(review)}\n\nOriginal specification for reference:\n${p.spec}\n\nAfter fixing, run the build/test command until green, re-screenshot what you changed and compare again. Return status, files_changed, tests_total, tests_passed, build_ok, open_issues, notes (what you changed per finding).`
 }
-function accepted(s) { const last = s && (s.verify2 || s.verify || s.review1); return !!(last && last.verdict === 'accept') }
-async function chain(p) {
-  const build = await agent(builderPrompt(p), { label: `build:${p.key}`, phase: 'Build', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-  if (!build) return { key: p.key, failed: 'build' }
-  const review1 = await agent(reviewPrompt(p, build, 1), { label: `review1:${p.key}`, phase: 'Review', schema: REVIEW_SCHEMA, model: 'opus', effort: 'high' })
-  const s = { key: p.key, build, review1 }
-  if (review1 && review1.verdict === 'fix') {
-    s.fix = await agent(fixPrompt(p, review1), { label: `fix:${p.key}`, phase: 'Fix', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-    s.verify = await agent(reviewPrompt(p, s.fix, 2), { label: `verify:${p.key}`, phase: 'Verify', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
-    if (s.verify && s.verify.verdict === 'fix') {
-      s.fix2 = await agent(fixPrompt(p, s.verify), { label: `fix2:${p.key}`, phase: 'Fix2', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-      s.verify2 = await agent(reviewPrompt(p, s.fix2, 3), { label: `verify2:${p.key}`, phase: 'Verify2', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
+const ORDER = ['build', 'review1', 'fix', 'verify', 'fix2', 'verify2', 'fix3', 'verify3']
+const PHASE = { build: 'Build', review1: 'Review', fix: 'Fix', verify: 'Verify', fix2: 'Fix2', verify2: 'Verify2', fix3: 'Fix3', verify3: 'Verify3' }
+function isReview(st) { return st.startsWith('review') || st.startsWith('verify') }
+// An agent that dies on a connection error returns null: start it again (the restart protocol makes the
+// new attempt continue from the working tree and the progress file). Three attempts, then give up.
+async function tryAgent(prompt, opts) {
+  for (let n = 1; n <= 3; n++) {
+    const r = await agent(prompt, n === 1 ? opts : { ...opts, label: `${opts.label}#${n}` })
+    if (r) return r
+    log(`${opts.label}: attempt ${n} returned nothing${n < 3 ? ' — starting it again' : ' — giving up'}`)
+  }
+  return null
+}
+// args = { skip: [package keys already accepted], resume: { '<package key>': { stage, file, state, rulings, extraPaths } } }
+//   stage: build|review1|fix|verify|fix2|verify2|fix3|verify3 — the stage to run first;
+//   file: archived report of the stage before it (handed over as {see: file}).
+async function chainFrom(p0, r0) {
+  const r = r0 || {}
+  const p = { ...p0,
+    paths: p0.paths + (r.extraPaths ? ', ' + r.extraPaths : ''),
+    spec: p0.spec + (r.state ? '\n\nSTATE OF THIS PACKAGE: ' + r.state : '') + (r.rulings ? '\n\nSUPERVISOR RULINGS FOR THIS ROUND (final, do not reopen): ' + r.rulings : '') }
+  const s = { key: p.key, accepted: false }
+  let prev = r.file ? { see: r.file } : null
+  for (let i = r.stage ? ORDER.indexOf(r.stage) : 0; i < ORDER.length; i++) {
+    const st = ORDER[i]
+    if (isReview(st)) {
+      const round = ORDER.slice(0, i + 1).filter(isReview).length
+      const rev = await tryAgent(reviewPrompt(p, prev, round), { label: `${st}:${p.key}`, phase: PHASE[st], schema: REVIEW_SCHEMA, model: 'opus', effort: round === 1 ? 'high' : 'medium' })
+      s[st] = rev
+      if (!rev) return { ...s, failed: st }
+      if (rev.verdict === 'accept') return { ...s, accepted: true }
+      prev = rev
+    } else {
+      const prompt = st === 'build' ? builderPrompt(p) : fixPrompt(p, prev)
+      const out = await tryAgent(prompt, { label: `${st}:${p.key}`, phase: PHASE[st], schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
+      s[st] = out
+      if (!out) return { ...s, failed: st }
+      prev = out
     }
   }
   return s
 }
-async function sequence(name, keys) {
+const RESUME = (args && args.resume) || {}
+const SKIP = (args && args.skip) || []
+async function sequence(name, names) {
   const out = []
-  for (const key of keys) {
-    log(`${name}: starting ${key}`)
-    const r = await chain(PACKAGES[key])
-    out.push(r)
-    if (!accepted(r)) { log(`${name}: ${key} not accepted — stopping the sequence for the supervisor`); break }
+  for (const n of names) {
+    const p = PACKAGES[n]
+    if (SKIP.includes(p.key)) { out.push({ key: p.key, skipped: true, accepted: true }); continue }
+    log(`${name}: ${p.key}${RESUME[p.key] ? ' (resuming at ' + RESUME[p.key].stage + ')' : ''}`)
+    const s = await chainFrom(p, RESUME[p.key])
+    out.push(s)
+    if (!s.accepted) { log(`${name}: ${p.key} not accepted${s.failed ? ' (stage ' + s.failed + ' died)' : ''} — stopping this sequence for the supervisor`); break }
   }
   return out
 }
@@ -112,7 +142,7 @@ const both = await parallel([
   () => sequence('correspondence', ['corr1', 'corr2']),
   () => sequence('documents and search', ['docs', 'search']),
 ])
-const ok = both.every(seq => seq && seq.length && seq.every(accepted))
+const ok = both.every((seq, i) => seq && seq.length === 2 && seq.every(s => s.accepted))
 if (!ok) { log('B3 screens: a chain was not accepted — the walkthrough waits for the supervisor'); return { screens: both } }
-const walk = await chain(PACKAGES.walkthrough)
+const walk = await sequence('walkthrough', ['walkthrough'])
 return { screens: both, walkthrough: walk }
