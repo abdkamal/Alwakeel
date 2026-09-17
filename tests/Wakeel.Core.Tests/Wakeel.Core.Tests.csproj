@@ -21,6 +21,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Wakeel.Core\Wakeel.Core.csproj" />
+
+    <!--
+      B3-1b: the letter composer lives in Wakeel.Reports and its tests live here, because the
+      solution file is not this package's to change.
+    -->
+    <ProjectReference Include="..\..\src\Wakeel.Reports\Wakeel.Reports.csproj" />
   </ItemGroup>
 
 </Project>

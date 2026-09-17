@@ -26,7 +26,7 @@ namespace Wakeel.Core.Services;
 /// an error code (AGREEMENT item 15).
 /// </para>
 /// </remarks>
-public static class CoreAr
+public static partial class CoreAr
 {
     // ---------------------------------------------------------------------------------------
     // Relative time (AGREEMENT item 20).

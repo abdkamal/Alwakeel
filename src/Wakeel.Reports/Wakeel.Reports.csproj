@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Wakeel.Core\Wakeel.Core.csproj" />
@@ -14,4 +14,16 @@
   <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" />
   </ItemGroup>
+
+  <!--
+    AGREEMENT item 57: the template built into الوكيل is the approved reference file itself
+    (docs/templates/correspondence/نموذج-المراسلة.docx), embedded from its own path rather than
+    copied into this project, so that the shipped default and the file the owner approved can
+    never drift apart.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\templates\correspondence\نموذج-المراسلة.docx"
+                      LogicalName="Wakeel.Reports.Letters.default-letter-template.docx" />
+  </ItemGroup>
+
 </Project>
