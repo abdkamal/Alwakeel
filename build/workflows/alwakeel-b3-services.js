@@ -1,10 +1,10 @@
 export const meta = {
   name: 'alwakeel-b3-services',
   description: 'B3 services (no screens): correspondence services, official-letter composer (item 57), vault + documents + OCR, hybrid search — one sequential chain of four Opus packages, each reviewed, fixed and re-verified by Opus; restart-safe prompts',
-  phases: [{ title: 'Build' }, { title: 'Review' }, { title: 'Fix' }, { title: 'Verify' }, { title: 'Fix2' }, { title: 'Verify2' }],
+  phases: [{ title: 'Build' }, { title: 'Review' }, { title: 'Fix' }, { title: 'Verify' }, { title: 'Fix2' }, { title: 'Verify2' }, { title: 'Fix3' }, { title: 'Verify3' }],
 }
 const REPO = 'D:/AI/Administration2'
-const PROTOCOL = `RESTART PROTOCOL (mandatory — the connection sometimes drops and an agent is then restarted from scratch, while the working tree keeps everything written so far): (1) FIRST run 'git status --short' and read docs/build/progress/<your package key>.md if it exists — it lists the steps a previous attempt of THIS package completed; continue from the first unfinished step instead of starting over, and never delete or rewrite files that already implement a step correctly (read them and extend them). Uncommitted files that belong to another package's paths are that package's live work — leave them alone. (2) Do not read everything up front: read the spec lines and the code you need for the CURRENT step, write the code, build it, then move on; make your first code change within your first ten tool calls. (3) After every completed step (a service, a test file, a green build) append one line to docs/build/progress/<your package key>.md (create it; it is the only file under docs/ you may write). (4) IMAGES: never open the full-size PNGs under design/exports; this package has no screens — if you need a screen's intent, read docs/design/SCREENS.md or view the small preview under design/exports/preview/light/W/ once. (5) Any screenshot you take must be JPEG or PNG at most 1366 px wide and viewed once.
+const PROTOCOL = `RESTART PROTOCOL (mandatory — the connection sometimes drops and an agent is then restarted from scratch, while the working tree keeps everything written so far): (1) FIRST run 'git status --short' and read docs/build/progress/<your package key>.md if it exists — it lists the steps a previous attempt of THIS package completed; continue from the first unfinished step instead of starting over, and never delete or rewrite files that already implement a step correctly (read them and extend them). Uncommitted files that belong to another package's paths are that package's live work — leave them alone. (2) Do not read everything up front: read the spec lines and the code you need for the CURRENT step, write the code, build it, then move on; make your first code change within your first ten tool calls. (3) After every completed step (a service, a test file, a green build) append one line to docs/build/progress/<your package key>.md (create it; it is the only file under docs/ you may write). (4) IMAGES: never open the full-size PNGs under design/exports; this package has no screens — if you need a screen's intent, read docs/design/SCREENS.md or view the small preview under design/exports/preview/light/W/ once. (5) Any screenshot you take must be JPEG or PNG at most 1366 px wide and viewed once. (6) When a report is handed to you as {"see": "<path>"}, read that JSON file first — it is the archived report of the previous stage.
 
 RULES: never add NuGet packages that are not already pinned in Directory.Packages.props (pinned for B3: Tesseract, PDFtoImage, SkiaSharp, Microsoft.ML.OnnxRuntime, Microsoft.ML.Tokenizers, DocumentFormat.OpenXml; if one more is truly required, report it in open_issues). Never edit Directory.Build.props, Directory.Packages.props, Wakeel.slnx, docs/ (except your progress file), or any path outside your allowed paths (csproj files inside your allowed paths may gain PackageReferences to pinned packages and ProjectReferences). Never run git commit/checkout/stash/reset/clean. Other agents edit other projects in the same working tree concurrently (design-system and screen packages): build ONLY with the exact commands given ('dotnet test --no-dependencies' is rejected by this SDK; use 'dotnet build <tests> --no-dependencies && dotnet test <tests> --no-build'); when a build fails on a file lock or on a compile error inside a project you do not own, wait 60 seconds and retry (up to five times), then report it in open_issues instead of editing that project. Never touch C:\\ProgramData\\Wakeel of the real installation: every test uses a temporary folder. All user-facing text is Arabic with no technical terms or error codes (item 15) — Core-layer strings live in src/Wakeel.Core/Services/CoreAr.cs (ratified in ARCHITECTURE §12), other layers' strings in their own Ar file; identifiers, comments and XML docs in English. Passwords, keys and seeds must never reach logs, the database in clear text, or memory longer than needed. Work until the package is complete and its build/tests are green; do not stop early.`
 
@@ -71,47 +71,57 @@ function reviewPrompt(p, build, round) {
 function fixPrompt(p, review) {
   return `You are the builder of work package ${p.title} of الوكيل v0.21 (package key: ${p.key}) returning to apply review findings. ${COMMON}\nAllowed paths (plus docs/build/progress/${p.key}.md): ${p.paths}. Build/test command: ${p.build}\nReview result to address (fix every high and medium finding and every missing spec item; fix low ones too unless genuinely out of scope): ${JSON.stringify(review)}\n\nOriginal specification for reference:\n${p.spec}\n\nAfter fixing, run the build/test command until green. Return status, files_changed, tests_total, tests_passed, build_ok, open_issues, notes (what you changed per finding).`
 }
-function accepted(s) { const last = s && (s.verify2 || s.verify || s.review1); return !!(last && last.verdict === 'accept') }
-async function chain(p) {
-  const build = await agent(builderPrompt(p), { label: `build:${p.key}`, phase: 'Build', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-  if (!build) return { key: p.key, failed: 'build' }
-  const review1 = await agent(reviewPrompt(p, build, 1), { label: `review1:${p.key}`, phase: 'Review', schema: REVIEW_SCHEMA, model: 'opus', effort: 'high' })
-  const s = { key: p.key, build, review1 }
-  if (review1 && review1.verdict === 'fix') {
-    s.fix = await agent(fixPrompt(p, review1), { label: `fix:${p.key}`, phase: 'Fix', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-    s.verify = await agent(reviewPrompt(p, s.fix, 2), { label: `verify:${p.key}`, phase: 'Verify', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
-    if (s.verify && s.verify.verdict === 'fix') {
-      s.fix2 = await agent(fixPrompt(p, s.verify), { label: `fix2:${p.key}`, phase: 'Fix2', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-      s.verify2 = await agent(reviewPrompt(p, s.fix2, 3), { label: `verify2:${p.key}`, phase: 'Verify2', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
+const ORDER = ['build', 'review1', 'fix', 'verify', 'fix2', 'verify2', 'fix3', 'verify3']
+const PHASE = { build: 'Build', review1: 'Review', fix: 'Fix', verify: 'Verify', fix2: 'Fix2', verify2: 'Verify2', fix3: 'Fix3', verify3: 'Verify3' }
+function isReview(st) { return st.startsWith('review') || st.startsWith('verify') }
+// An agent that dies on a connection error returns null: start it again (the restart protocol makes the
+// new attempt continue from the working tree and the progress file). Three attempts, then give up.
+async function tryAgent(prompt, opts) {
+  for (let n = 1; n <= 3; n++) {
+    const r = await agent(prompt, n === 1 ? opts : { ...opts, label: `${opts.label}#${n}` })
+    if (r) return r
+    log(`${opts.label}: attempt ${n} returned nothing${n < 3 ? ' — starting it again' : ' — giving up'}`)
+  }
+  return null
+}
+// args = { skip: [keys already accepted], resume: { '<key>': { stage, file, state, rulings, extraPaths } } }
+//   stage: build|review1|fix|verify|fix2|verify2|fix3|verify3 — the stage to run first;
+//   file: archived report of the stage before it (handed over as {see: file}).
+async function chainFrom(p0, r0) {
+  const r = r0 || {}
+  const p = { ...p0,
+    paths: p0.paths + (r.extraPaths ? ', ' + r.extraPaths : ''),
+    spec: p0.spec + (r.state ? '\n\nSTATE OF THIS PACKAGE: ' + r.state : '') + (r.rulings ? '\n\nSUPERVISOR RULINGS FOR THIS ROUND (final, do not reopen): ' + r.rulings : '') }
+  const s = { key: p.key, accepted: false }
+  let prev = r.file ? { see: r.file } : null
+  for (let i = r.stage ? ORDER.indexOf(r.stage) : 0; i < ORDER.length; i++) {
+    const st = ORDER[i]
+    if (isReview(st)) {
+      const round = ORDER.slice(0, i + 1).filter(isReview).length
+      const rev = await tryAgent(reviewPrompt(p, prev, round), { label: `${st}:${p.key}`, phase: PHASE[st], schema: REVIEW_SCHEMA, model: 'opus', effort: round === 1 ? 'high' : 'medium' })
+      s[st] = rev
+      if (!rev) return { ...s, failed: st }
+      if (rev.verdict === 'accept') return { ...s, accepted: true }
+      prev = rev
+    } else {
+      const prompt = st === 'build' ? builderPrompt(p) : fixPrompt(p, prev)
+      const out = await tryAgent(prompt, { label: `${st}:${p.key}`, phase: PHASE[st], schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
+      s[st] = out
+      if (!out) return { ...s, failed: st }
+      prev = out
     }
   }
   return s
 }
+const RESUME = (args && args.resume) || {}
+const SKIP = (args && args.skip) || []
 log('B3 services: correspondence → letter composer → vault/documents/OCR → hybrid search')
 const results = []
-let startIndex = 0
-// args.fixFirst = { key, reviewFile, rulings, extraPaths }: apply an archived verification to that package
-// (one or two more fix/verify rounds), then continue with the packages after it.
-if (args && args.fixFirst) {
-  const idx = PACKAGES.findIndex(x => x.key === args.fixFirst.key)
-  const p = PACKAGES[idx]
-  const p2 = { ...p, paths: p.paths + (args.fixFirst.extraPaths ? ', ' + args.fixFirst.extraPaths : ''), spec: p.spec + '\n\nSUPERVISOR RULINGS FOR THIS ROUND (final): ' + (args.fixFirst.rulings || '') }
-  const s = { key: p.key }
-  s.fix3 = await agent(fixPrompt(p2, { see: args.fixFirst.reviewFile }), { label: `fix3:${p.key}`, phase: 'Fix', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-  s.verify3 = await agent(reviewPrompt(p2, s.fix3, 4), { label: `verify3:${p.key}`, phase: 'Verify', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
-  if (s.verify3 && s.verify3.verdict === 'fix') {
-    s.fix4 = await agent(fixPrompt(p2, s.verify3), { label: `fix4:${p.key}`, phase: 'Fix2', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
-    s.verify4 = await agent(reviewPrompt(p2, s.fix4, 5), { label: `verify4:${p.key}`, phase: 'Verify2', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
-  }
+for (const p of PACKAGES) {
+  if (SKIP.includes(p.key)) { results.push({ key: p.key, skipped: true }); continue }
+  log(`B3 services: ${p.key}${RESUME[p.key] ? ' (resuming at ' + RESUME[p.key].stage + ')' : ''}`)
+  const s = await chainFrom(p, RESUME[p.key])
   results.push(s)
-  const last = s.verify4 || s.verify3
-  if (!last || last.verdict !== 'accept') { log(`B3 services: ${p.key} still not accepted — stopping for the supervisor`); return results }
-  startIndex = idx + 1
-}
-for (const p of PACKAGES.slice(startIndex)) {
-  log(`B3 services: starting ${p.key}`)
-  const r = await chain(p)
-  results.push(r)
-  if (!accepted(r)) { log(`B3 services: ${p.key} not accepted — stopping the sequence for the supervisor`); break }
+  if (!s.accepted) { log(`B3 services: ${p.key} not accepted${s.failed ? ' (stage ' + s.failed + ' died)' : ''} — stopping the sequence for the supervisor`); break }
 }
 return results

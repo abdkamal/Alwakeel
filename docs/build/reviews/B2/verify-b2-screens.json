@@ -1,0 +1,85 @@
+{
+  "verdict": "fix",
+  "build_ok": true,
+  "tests_ok": true,
+  "findings": [
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.UI/Pages/W94QuickCapture.razor.css",
+      "issue": "Every single (non-paired) field of the quick-capture dialog renders at 260 px — exactly half the dialog's 520 px content box — hugging the start edge and leaving the whole end half of the surface blank. Measured live in the host: dialog 560, .w94 520, .w94-kinds 520, .w94-row 520, but each standalone .w-field 260 px at left 683. Cause: the design system's default `.w-field { width: 260px }` (src/Wakeel.Design/Components/WInput.razor.css:5) is never overridden, and `.w94` is a flex column whose stretch is defeated by that fixed width. The export (design/exports/preview/light/W/W94 — الإدخال السريع.jpg) draws «العنوان»، «الربط بمراسلة (اختياري)» and «ملاحظة (اختياري)» spanning the full dialog width. Visible on the task form, the expense form («البيان»، «ملاحظة») and the appointment form.",
+      "fix": "In src/Wakeel.UI/Pages/W94QuickCapture.razor.css add `::deep .w94 > .w-field { width: 100%; }` next to the existing `::deep .w94-kinds { width: 100%; }` rule (the fields inside `.w94-row` keep their grid track because `max-width:100%` already clamps them). Do not change the WInput default, which other screens rely on."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.Design/Components/WTabs.razor.css",
+      "issue": "The selected tab is drawn as a text label with a coloured underline; every export of this package draws it as a filled pill carrying the count badge inside it. Confirmed side by side on four surfaces: W09 host («متأخر 1» underlined) vs W09 export («متأخر 12» as a filled green pill); W08 («الكل 6»), W12 («الكل 11») and the W10 bell panel («الكل 5») the same. It is the single most repeated visual deviation in the package.",
+      "fix": "Restyle the active state in WTabs/WTabItem's scoped CSS to the export's pill: background var(--w-primary), foreground var(--w-on-primary), border-radius var(--w-radius-pill), the count badge rendered inside the pill on a translucent ground, and drop the bottom-border underline on the active item (keep the inactive items as plain text). Add/extend the WTabs gallery entry and its bUnit test to pin the active class. Because WTabs is a shared B0 component, confirm the change with the design-system owner before it lands — but it must land somewhere, since it is wrong on every screen that uses tabs."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W09Overdue.razor",
+      "issue": "The export carries a header action «تصدير القائمة» and a second control strip under the tabs — «تصفية», «الأكثر تأخرًا أولًا» and the note «أطول تأخر: N يومًا · N سجلات تجاوزت أسبوعين» — none of which the host draws (it has «معالجة التالي» + «تحديث» and the local search only). The B2 spec's W09 row does not list them, so the export and the spec disagree.",
+      "fix": "Reconcile one of the two: either add the export's export/filter/sort strip to W09 using WButton + WSegmented (no new hand-rolled controls), or record in the package notes that the spec row overrides the export for W09. Leave the code as is until that decision is made."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W08AttentionCenter.razor",
+      "issue": "The monthly-report banner occupies two rows in the host — title + «لم تُحسب بنود الجاهزية بعد», then a full-width progress bar with «0%» beside it — where the export keeps the title, the bar, «80%» and «من 10 مكتملة 8» on one row with «فتح التقرير الشهري» at the end. Part of it is data-driven (no ReadinessService), but the bar's placement is layout.",
+      "fix": "Put WProgressBar in the banner's title row rather than its BodyContent (a `w08-banner` grid column sized to the export's ~200 px bar) so the banner stays one row tall once the readiness figure exists."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W08AttentionCenter.razor",
+      "issue": "The side column's «آخر مزامنة» card has no header action; the export draws a refresh control in that card's header.",
+      "fix": "Give the sync WCard a WSectionHeader with an icon WButton («تحديث حالة المزامنة» tooltip) that calls ReloadAsync, matching the export."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W10NotificationPanel.razor",
+      "issue": "The panel groups its rows under «اليوم» / «أمس» / «أقدم» WSectionHeaders; the export draws one continuous list with no day heads. Extra regions versus the preview.",
+      "fix": "Either drop the day heads (render panel.Groups flattened in the same order) or record the addition as accepted in the package notes with the reason."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Layout/MainLayout.razor",
+      "issue": "W11ClockBanner is rendered above the page header, so the clock warning pushes «مركز الانتباه» and its actions down; the export (W11 — تنبيه الساعة) draws the banner below the page header, inside the page content. Verified in the host on a seeded skewed clock.",
+      "fix": "Move `<W11ClockBanner />` below the `.w-page-header` block in MainLayout.razor (still above `.w-page-content`), which still satisfies the spec's «فوق المحتوى»."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W91StandardStates.razor.css",
+      "issue": "At 1366x768 the page scrolls: measured .w-page scrollHeight 726 vs clientHeight 712, so the third row of reference cards sits 14 px below the fold. The export fits all thirteen without scrolling.",
+      "fix": "Trim 4–6 px from .w91-grid's row gap or the page's vertical padding (tokens only) so the thirteenth row clears the fold."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W12HealthCenter.razor",
+      "issue": "Line 170 builds the suggested file name as an inline Arabic literal `$\"تقرير-الصحة-{stamp}.txt\"`. It is user-facing text (it is what the save dialog shows) and the package rule puts every Arabic UI string in src/Wakeel.Design/Text/Ar.*.cs.",
+      "fix": "Add `Ar.Health.ExportFileName(string stamp)` to Ar.Shell.cs and call it here."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W94QuickCapture.razor",
+      "issue": "The appointment form's time field uses the Latin format token `Placeholder=\"HH:mm\"` while the date field beside it uses the Arabic «يوم/شهر/سنة» mask placeholder — a technical token in user-facing text (item 15) and an inconsistency inside one row.",
+      "fix": "Replace the literal with an Ar.QuickCapture.TimePlaceholder constant reading «ساعة:دقيقة» (and keep the hh:mm parse unchanged)."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W08AttentionCenter.razor",
+      "issue": "W08, W09 and W12 read their data only in OnInitializedAsync and subscribe to nothing, so after a lock/unlock cycle the screen under the W06 overlay keeps its pre-lock snapshot until the person presses «تحديث». (No crash — every call routes through the ShellServices gate — but the numbers can be stale for as long as the screen stays open.)",
+      "fix": "Subscribe each of the three screens to ShellServices.Changed and call ReloadAsync/CheckAsync through InvokeAsync when the session re-opens, unsubscribing in Dispose."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.UI/Pages/W09Overdue.razor",
+      "issue": "Two small text/ornament nuances against the export: the table footer reads «عرض 1–1 من 1» where the export reads «عرض 1–8 من 12 سجلاً متأخرًا», and the «التأخر بالأيام» cell has no leading semantic dot, which the export draws in the bucket's colour.",
+      "fix": "Extend Ar.Table.ShowingRange with the record noun used by W09, and add the semantic dot to the .w09-late cell via a design token class rather than a page-local ornament."
+    }
+  ],
+  "missing_spec_items": [
+    "W08 monthly-report banner: the readiness percentage and the list of missing items are not shown (0% + «لم تُحسب بنود الجاهزية بعد») because ReadinessService does not exist yet. The spec explicitly allows this («أو 0 مؤقتًا»); re-check when B5 lands.",
+    "W94's «ملاحظة (اختياري)» for a task is written through the package-local ITaskNotes (src/Wakeel.UI/Services/Shell/TaskNotes.cs) in a second write, because IQuickCaptureService.CaptureTaskAsync takes no note parameter. The note belongs in the accepted Core capture call; TaskNotes should then be deleted, not moved.",
+    "W94 draws «المكلّف (اختياري)» where the export draws «الربط بمراسلة (اختياري)» — there are no correspondence records to link to until B4. Swap the field back when B4 lands."
+  ],
+  "notes": "BUILD/TESTS. `dotnet build src/Wakeel.Desktop` 0 warnings / 0 errors; `dotnet build tests/Wakeel.UI.Tests --no-dependencies` 0/0; `dotnet test tests/Wakeel.UI.Tests --no-build` 325 passed, 0 failed. TreatWarningsAsErrors is on and nothing was suppressed. I modified no file (git status is exactly what it was at the start; the Admin/Design/Core churn there belongs to concurrent packages).\n\nHOST RUNS. Two runs on freshly activated temporary data folders seeded through HostDataFolderSeed, Wakeel.Desktop.exe with --remote-debugging-port=9333 --window-size=1366x768 --data-folder=<temp> --start-url=/login, driven over CDP with a 1366x768 device-metrics override. Run 1 (ordinary seed): signed in, toured /w08 /w09 /w12 /w91 /w92 in dark and light, opened the bell panel and the quick-capture dialog in both themes, saved a real note and exercised «تراجع». Run 2 (WAKEEL_HOST_SKEW_CLOCK seed): W11 photographed in both themes and the W12 clock card cross-checked. Both logs hold exactly one line, «[INF] Wakeel desktop host starting up», and nothing else. Both processes killed; zero Wakeel.Desktop processes remain.\n\nLIVE EVIDENCE OF THE WIRING. Ctrl+N dispatched as a real Input.dispatchKeyEvent with the control modifier opened W94 from /w08 (the shell root really does hold focus). The bell panel showed a notification the host itself had created minutes earlier — «حان وقت النسخ الاحتياطي · قبل 3 دقائق» — which is ReminderScheduler running under BackgroundPassDispatcher, and the seeded meeting reminder «اجتماع قريب: لجنة المشتريات» sat above it. ClockGuard: on the skewed folder W11 rendered with its three parts and both buttons, and HealthService independently flipped W12's clock card, so guard and health agree. The undo strip measured white (255,255,255) «تراجع» on the strip's (49,115,93) ground — legible — and the undo round-tripped. A DOM sweep of every scrollable element on /w08 /w09 /w12 /w91 /w92 found ONE scroll container (.w-page) and zero horizontal overflow anywhere (the tooltip-overflow defect the builder fixed is genuinely gone; W08 1124/1124, W09 1124/1124). A sweep of every icon-only button found none without an accessible name.\n\nSIDE-BY-SIDE (host screenshot vs design/exports/preview/{light,dark}/W, each preview opened once).\nW08 — matches: column split (main to the start, side column to the end), four KPI cards in the export's order with the icon square on the end edge and semantic colours, tabs+search on the section-header row, the attention edge on the row's start, meetings as key/value rows with the hour at the end, sync/backup as chip rows. Deviations: tab pill (finding 2), banner laid out in two rows (finding 4), no refresh on the sync card (finding 5). Accepted: 0% readiness (spec), the expenses card below the fold (six seeded action rows where the export has three).\nW09 — matches: all seven spec'd columns in order, badge tabs, local search, «معالجة» in the last cell, footer range, pager when there is more than one page. Deviations: tab pill; the export's «تصدير القائمة» + filter/sort strip absent (finding 3); footer wording and the missing late-dot (finding 12).\nW10 — matches after the builder's fix: 380 px panel hanging from the bell, «الإشعارات»+count at the start, «تحديد الكل كمقروء» then the gear at the end, real «الكل 5»/«غير المقروء 4», kind icon square on the row's START edge and the unread dot on its END edge (verified against the export, which is drawn the same way), relative times, tinted cycle row, «عرض كل الإشعارات» footer. Deviations: tab pill; the extra day heads (finding 6).\nW11 — matches: clock icon on the start edge, title, explanation, numbering notice, «تصحيح الساعة» + «تجاهل مؤقتًا» with tooltips at the end. Deviations: the banner sits above the page header instead of below it (finding 7); the export folds the numbering notice into the body (two lines) where the spec asks for it as its own part (three lines) — accepted.\nW12 — matches: grid, status chips on the card's end edge, tinted grounds per state in both themes, and — after the builder's footer fix — «آخر فحص» aligned on every tile's start edge whether or not the tile carries an action. Deviations: tab pill. Accepted: the red summary strip the export does not draw is required verbatim by the spec's HealthService row; host cards are a little airier because the seeded messages are one line where the export's are two.\nW91 — matches: 5/5/3 in the export's order with the same icons, tints and buttons, and the «تحديث» header action. Deviation: 14 px of scroll (finding 8).\nW92 — matches: three short dialogs on the first row and the two field/version dialogs on the second, in the export's reading order, real WDialog surfaces inline, the danger notice strip legible in both themes, the conflict's two version cards with the incoming one tinted. Nothing above a nuance (the export puts a small error glyph inside each invalid field and a second line in the record-changed notice).\nW94 — matches: five kind tiles in the export's order with the same icons, the required stars, the helper lines, the two-up date/priority row (the select's caret is now visible on the field's end edge, where the export draws it), and the footer. Deviations: the half-width single fields (finding 1, the one real layout defect I found); «المكلّف» instead of «الربط بمراسلة» (B4).\n\nSECURITY / RULES. The only MarkupString in the whole package tree is WIcon's, fed from a compile-time IconRegistry lookup — no user data ever becomes markup. The health report is written only through a Windows SaveFileDialog the person drives; the file carries nothing but IHealthService.ExportText's Arabic sentences and a UTF-8 BOM; a refused write is reported as «تعذّر حفظ تقرير الصحة» with the reason left in the host log. «تصحيح الساعة» launches the compile-time constant ms-settings:dateandtime with UseShellExecute — no data path into a command line. Background passes go through ComponentBase.InvokeAsync (BackgroundPassDispatcher in MainLayout) and additionally through ShellServices' one-at-a-time gate, and both the guard and the scheduler are stopped explicitly in LockNow and SignOut before the session scope that owns them is disposed. No password, key or token appears in any UI state, log line or screen. No NuGet package was added. No technical term, error code, port, server or database wording anywhere in the Arabic strings. Pages are composed from Wakeel.Design components only — a grep for raw table/list/input/select/button/dialog/form markup in the eight screens and the layout returns nothing.\n\nVerdict is 'fix' only because of the two medium findings; the first is a genuine and easily fixed layout defect on the package's most-used dialog, the second is a design-system decision the package cannot make alone but that is wrong on four of its eight surfaces."
+}
