@@ -89,7 +89,26 @@ async function chain(p) {
 }
 log('B3 services: correspondence → letter composer → vault/documents/OCR → hybrid search')
 const results = []
-for (const p of PACKAGES) {
+let startIndex = 0
+// args.fixFirst = { key, reviewFile, rulings, extraPaths }: apply an archived verification to that package
+// (one or two more fix/verify rounds), then continue with the packages after it.
+if (args && args.fixFirst) {
+  const idx = PACKAGES.findIndex(x => x.key === args.fixFirst.key)
+  const p = PACKAGES[idx]
+  const p2 = { ...p, paths: p.paths + (args.fixFirst.extraPaths ? ', ' + args.fixFirst.extraPaths : ''), spec: p.spec + '\n\nSUPERVISOR RULINGS FOR THIS ROUND (final): ' + (args.fixFirst.rulings || '') }
+  const s = { key: p.key }
+  s.fix3 = await agent(fixPrompt(p2, { see: args.fixFirst.reviewFile }), { label: `fix3:${p.key}`, phase: 'Fix', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
+  s.verify3 = await agent(reviewPrompt(p2, s.fix3, 4), { label: `verify3:${p.key}`, phase: 'Verify', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
+  if (s.verify3 && s.verify3.verdict === 'fix') {
+    s.fix4 = await agent(fixPrompt(p2, s.verify3), { label: `fix4:${p.key}`, phase: 'Fix2', schema: BUILD_SCHEMA, model: p.model, effort: 'high' })
+    s.verify4 = await agent(reviewPrompt(p2, s.fix4, 5), { label: `verify4:${p.key}`, phase: 'Verify2', schema: REVIEW_SCHEMA, model: 'opus', effort: 'medium' })
+  }
+  results.push(s)
+  const last = s.verify4 || s.verify3
+  if (!last || last.verdict !== 'accept') { log(`B3 services: ${p.key} still not accepted — stopping for the supervisor`); return results }
+  startIndex = idx + 1
+}
+for (const p of PACKAGES.slice(startIndex)) {
   log(`B3 services: starting ${p.key}`)
   const r = await chain(p)
   results.push(r)

@@ -20,7 +20,7 @@
 قرارات (2026-09-16، بعد مراجعة B0):
 - `WakeelDb` يختم `created_at/updated_at/row_version/origin_device` تلقائيًا عند الحفظ؛ `Remove()` على كيان مزامَن يتحوّل إلى حذف منطقي (`deleted_at`) ولا يُنفَّذ حذف فعلي أبدًا.
 - مسار الاستيراد في المزامنة يُدرج السجلات الواردة بأختامها الأصلية كما جاءت من الجهاز المصدر عبر نطاق `WakeelDb.SuppressAuditStamps()`.
-- الفهارس الفريدة للمعرّفات الرسمية (`correspondence.official_number`، `assets.inventory_number`، `financial_cycles.start_date`، `monthly_reports.cycle_id`) غير مصفّاة، أي تشمل السجلات المحذوفة منطقيًا؛ الخدمات تبحث بـ`IgnoreDeleted()` وتعالج حالة «سجل مخفي يملك هذا الرقم» صراحةً (استرجاع أو رسالة عربية)، لا تُعاد الأرقام الرسمية أبدًا.
+- الفهارس الفريدة للمعرّفات الرسمية (`correspondence(direction, official_number)` — قرار 2026-09-17 B3: الفهرس مركّب لأن تسلسلي الوارد والصادر مستقلان (ARCHITECTURE §5) وقد يتطابق نص الرقم في اليوم نفسه؛ الترحيل 0003 —، `assets.inventory_number`، `financial_cycles.start_date`، `monthly_reports.cycle_id`) غير مصفّاة، أي تشمل السجلات المحذوفة منطقيًا؛ الخدمات تبحث بـ`IgnoreDeleted()` وتعالج حالة «سجل مخفي يملك هذا الرقم» صراحةً (استرجاع أو رسالة عربية)، لا تُعاد الأرقام الرسمية أبدًا.
 
 القيم المعدودة (الحالات والأنواع) تُخزَّن نصًا إنجليزيًا ثابتًا (`draft`, `new`…) وتُعرض بالعربية من `Ar.Enums` فقط (مصدر واحد للتسميات).
 
@@ -54,6 +54,8 @@
 |---|---|---|
 | `correspondence` | `id`, `direction` (in/out), `official_number`, `number_issued_at`, `external_number`, `external_date`, `subject`, `type`, `confidentiality` (public/private/secret/top_secret), `recipient_only`, `counterparty_kind`, `party_id`, `unit_id`, `party_name_snapshot`, `cc` (JSON), `status` (draft/new/in_progress/awaiting_reply/done/closed/cancelled/archived), `next_step_ar`, `due_at`, `linked_correspondence_id`, `case_id`, `meeting_id`, `template_id`, `body_text`, `approved_at`, `cancel_reason`, `close_note`, `archived_at`, `report_include`, `report_highlight`, `report_comment` | الرقم يُصدر مع الاعتماد فقط |
 | `correspondence_documents` | `id`, `correspondence_id`, `document_id`, `kind` (original/derived_print/attachment), `sort` | |
+
+قرار 2026-09-17 (B3): «حذف المسودة غير المرقّمة نهائيًا» (البند 19) يُنفَّذ حذفًا منطقيًا وفق قاعدة §0 (لا حذف فيزيائي لصف متزامن)؛ المرشّح العام يخفيها من كل شاشة وخدمة ولا يوجد أمر استرجاع، فالسلوك المرئي للمستخدم حذف نهائي. الحذف الفيزيائي مرفوض لأنه لا ينتشر عبر المزامنة.
 | `documents` | `id`, `sha256`, `size`, `mime`, `original_name`, `source` (scan/import/phone/generated/backup), `page_count`, `ocr_status` (pending/running/done/unsupported/failed), `ocr_lang`, `pinned_on_phone`, `derived_from_id` | فهرس الخزنة؛ البايتات في `vault\` بالاسم `sha256` |
 | `document_pages` | `id`, `document_id`, `page_no`, `text`, `words` (JSON مربعات), `confidence` | ناتج OCR؛ جدول رسمي مزامَن (أعمدة §0 ومحفّزات) لأن نص OCR ينتج على الهاتف أو على جهاز واحد ويجب أن يصل للآخر دون إعادة OCR؛ فريد `(document_id, page_no)` |
 | `document_links` | `id`, `document_id`, `entity_type`, `entity_id` | الوثائق المرتبطة بأي كيان؛ جدول رسمي مزامَن (أعمدة §0 ومحفّزات)؛ فريد `(document_id, entity_type, entity_id)` |
