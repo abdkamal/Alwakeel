@@ -46,7 +46,17 @@ public static class HealthActions
 /// <param name="Status">Traffic light: سليم / تحذير / عطل.</param>
 /// <param name="MessageAr">One Arabic sentence saying what was found (AGREEMENT item 15: no codes, no jargon).</param>
 /// <param name="ActionId">One of <see cref="HealthActions"/>, or empty when nothing can be done.</param>
-public sealed record HealthCard(string Component, string TitleAr, HealthStatus Status, string MessageAr, string ActionId);
+/// <remarks>
+/// A card says what was FOUND, never when the finding was made: the instant of the run is
+/// <see cref="HealthReport.CheckedAt"/>, which the health screen draws once as the header and
+/// once as the footer of every card («آخر فحص HH:mm»), exactly as the W12 mockup shows it.
+/// </remarks>
+public sealed record HealthCard(
+    string Component,
+    string TitleAr,
+    HealthStatus Status,
+    string MessageAr,
+    string ActionId);
 
 /// <summary>The whole health center for one run.</summary>
 /// <param name="Cards">Every card, in display order.</param>
@@ -280,9 +290,17 @@ public sealed class HealthService(
             var result = (await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false))?.ToString();
 
             var size = FileLength(paths.DbPath);
-            return string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase)
-                ? Card(HealthComponents.Database, CoreAr.HealthTitleDatabase, HealthStatus.Ok, CoreAr.HealthDatabaseOk(CoreAr.Size(size)), HealthActions.None)
-                : Card(HealthComponents.Database, CoreAr.HealthTitleDatabase, HealthStatus.Error, CoreAr.HealthDatabaseDamaged, HealthActions.RestoreBackup);
+            if (!string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase))
+            {
+                return Card(HealthComponents.Database, CoreAr.HealthTitleDatabase, HealthStatus.Error, CoreAr.HealthDatabaseDamaged, HealthActions.RestoreBackup);
+            }
+
+            // The card states the finding only — integrity and size. The spec's «آخر فحص» is the
+            // instant of THIS run, which HealthReport.CheckedAt already carries and the health
+            // screen draws as the footer of every card; a sentence that dated itself from the
+            // stored history would report the last CHANGE instead, and on a settled installation
+            // that is months old while the check itself just ran.
+            return Card(HealthComponents.Database, CoreAr.HealthTitleDatabase, HealthStatus.Ok, CoreAr.HealthDatabaseOk(CoreAr.Size(size)), HealthActions.None);
         }
         catch (Exception)
         {
@@ -465,7 +483,7 @@ public sealed class HealthService(
         var relative = ArabicRelativeTime.Describe(last.Value, utcNow);
         // Local days, like W08's «مضى N أيام»: the two surfaces must not disagree about the age
         // of the same backup during the hours between local midnight and the zone's offset.
-        var days = AttentionService.BackupAgeInDays(last.Value, utcNow);
+        var days = AttentionService.LocalDaysSince(last.Value, utcNow);
         return days >= BackupWarningDays
             ? Card(HealthComponents.Backup, CoreAr.HealthTitleBackup, HealthStatus.Warning, CoreAr.HealthBackupOld(relative), HealthActions.TakeBackup)
             : Card(HealthComponents.Backup, CoreAr.HealthTitleBackup, HealthStatus.Ok, CoreAr.HealthBackupOk(relative), HealthActions.None);
@@ -507,7 +525,7 @@ public sealed class HealthService(
         // user's own days, like every other age the shell shows.
         var newestOverall = synced.Max(d => d.LastSyncAt!.Value);
         var summary = string.Join("، ", parts);
-        return AttentionService.BackupAgeInDays(newestOverall, utcNow) >= SyncWarningDays
+        return AttentionService.LocalDaysSince(newestOverall, utcNow) >= SyncWarningDays
             ? Card(HealthComponents.Sync, CoreAr.HealthTitleSync, HealthStatus.Warning, CoreAr.HealthSyncOld(summary), HealthActions.OpenSync)
             : Card(HealthComponents.Sync, CoreAr.HealthTitleSync, HealthStatus.Ok, CoreAr.HealthSyncOk(summary), HealthActions.None);
     }

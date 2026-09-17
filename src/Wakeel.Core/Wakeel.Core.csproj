@@ -15,6 +15,15 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
+  <!--
+    B3-1: ExchangeService writes and reads .wakeel-msg containers, which are produced and opened
+    only by Wakeel.Crypto. Wakeel.Crypto references no project of its own, so this adds no cycle
+    and no new package: it is the same one-way dependency Wakeel.UI already has.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Wakeel.Crypto\Wakeel.Crypto.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Migrations\*.sql" />
   </ItemGroup>

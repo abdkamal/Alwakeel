@@ -153,7 +153,28 @@ public sealed class NotificationServiceTests : IDisposable
 
         var panel = await _world.Notifications.GetPanelAsync(Now, limit: 10);
 
-        Assert.Equal(10, panel.Total);
+        Assert.Equal(10, panel.Groups.Values.Sum(g => g.Count));
         Assert.Equal("إشعار 0", panel.Groups[NotificationDayGroup.Today][0].TitleAr);
+    }
+
+    [Fact]
+    public async Task ThePanelsTotalCountsEveryRow_NotOnlyThePageItFetched()
+    {
+        // W10's «الكل N» tab reads the panel's own total. Counted over the fetched page it would
+        // stop growing at the limit and quietly report a hundred notifications forever.
+        const int Limit = 10;
+        for (var i = 0; i < Limit + 5; i++)
+        {
+            await _world.Notifications.CreateAsync(NotificationKinds.General, $"إشعار {i}", createdAt: Now.AddMinutes(-i));
+        }
+
+        var panel = await _world.Notifications.GetPanelAsync(Now, limit: Limit);
+
+        Assert.Equal(Limit + 5, panel.Total);
+        Assert.Equal(Limit + 5, panel.Unread);
+        Assert.Equal(Limit, panel.Groups.Values.Sum(g => g.Count));
+
+        // The bell agrees with the panel's own header: both count the table, not a page of it.
+        Assert.Equal(await _world.Notifications.GetUnreadCountAsync(), panel.Unread);
     }
 }

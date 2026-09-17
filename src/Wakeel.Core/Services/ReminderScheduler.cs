@@ -175,7 +175,8 @@ public sealed class ReminderScheduler(
     WakeelDb db,
     INotificationService notifications,
     ISettingsService settings,
-    IBadgeService badges) : IReminderScheduler
+    IBadgeService badges,
+    Correspondence.IFollowUpService followUps) : IReminderScheduler
 {
     /// <summary>How far back a pass will still raise a reminder it missed.</summary>
     public static readonly TimeSpan Lookback = TimeSpan.FromHours(12);
@@ -392,7 +393,7 @@ public sealed class ReminderScheduler(
         // reminder and the card on screen can never disagree about how old the last backup is.
         var backupAgeDays = lastBackup is null
             ? int.MaxValue
-            : AttentionService.BackupAgeInDays(lastBackup.Value, utcNow, zone);
+            : AttentionService.LocalDaysSince(lastBackup.Value, utcNow, zone);
         if (backupAgeDays >= BackupReminderDays)
         {
             await RaiseAsync(
@@ -404,6 +405,15 @@ public sealed class ReminderScheduler(
                 entityId: null,
                 dueAt: null).ConfigureAwait(false);
         }
+
+        // --- Correspondence follow-ups (B3-1) -----------------------------------------------------
+        // The agreed next date of a follow-up is a reminder like any other, but the query and the
+        // Arabic wording belong to the correspondence package, so the pass is asked for rather
+        // than rewritten here. It uses this scheduler's own key convention and look-back window,
+        // so running it twice in one window raises nothing twice.
+        var followUpRun = await followUps.RunDueRemindersAsync(utcNow, cancellationToken).ConfigureAwait(false);
+        created += followUpRun.Created;
+        skipped += followUpRun.Skipped;
 
         if (created > 0)
         {

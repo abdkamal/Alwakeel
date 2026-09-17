@@ -1,6 +1,7 @@
 using Wakeel.Core.Data;
 using Wakeel.Core.Data.Entities;
 using Wakeel.Core.Services;
+using Wakeel.Core.Services.Correspondence;
 
 namespace Wakeel.Core.Tests;
 
@@ -27,7 +28,9 @@ internal sealed class DailyShellWorld : IDisposable
         Notifications = new NotificationService(Db, Settings, Ids, Clock);
         ClockCheck = new ClockCheckService(Db);
         ClockGuard = new ClockGuard(ClockCheck, TimeProvider.System);
-        Reminders = new ReminderScheduler(Db, Notifications, Settings, Badges);
+        Audit = new AuditService(Db, Clock);
+        FollowUps = new FollowUpService(Db, Audit, Notifications);
+        Reminders = new ReminderScheduler(Db, Notifications, Settings, Badges, FollowUps);
         Cycles = new FinancialCycleService(Db);
         QuickCapture = new QuickCaptureService(Db, Clock, Ids, Cycles, Badges);
         Word = new FakeWordProbe();
@@ -58,6 +61,11 @@ internal sealed class DailyShellWorld : IDisposable
     public IClockCheckService ClockCheck { get; }
 
     public ClockGuard ClockGuard { get; }
+
+    public IAuditService Audit { get; }
+
+    /// <summary>The correspondence follow-up pass the reminder scheduler runs alongside its own.</summary>
+    public IFollowUpService FollowUps { get; }
 
     public IReminderScheduler Reminders { get; }
 

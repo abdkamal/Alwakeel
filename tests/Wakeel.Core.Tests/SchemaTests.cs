@@ -233,7 +233,11 @@ public sealed class SchemaTests : IDisposable
     [InlineData("ux_assets_inventory_number")]
     [InlineData("ux_financial_cycles_start_date")]
     [InlineData("ux_monthly_reports_cycle_id")]
-    [InlineData("ux_correspondence_official_number")]
+    // Renamed by 0003_correspondence_number_index.sql: the uniqueness is measured per sequence
+    // (incoming/outgoing), because the two independent yearly sequences of ARCHITECTURE.md §5
+    // legitimately produce the same number text on the same day and device. The "never filtered
+    // on deleted_at" policy this check exists for is unchanged.
+    [InlineData("ux_correspondence_direction_official_number")]
     public void UniqueIndexesOnOfficialIdentifiers_AreNotFilteredOnDeletedAt(string indexName)
     {
         // The single policy stated in the header of 0001_initial.sql: an official identifier

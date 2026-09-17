@@ -314,6 +314,70 @@ public sealed class AttentionServiceTests : IDisposable
         Assert.Equal(many.Count, snapshot.Counts.Total);
     }
 
+    [Fact]
+    public async Task APendingPhoneExpense_CarriesTheNameOfTheEmployeeWhoseDeviceSentIt()
+    {
+        // W08's «مصروفات الهاتف بانتظار التأكيد» table leads with «الموظف», but a phone expense
+        // records the DEVICE that spent the money. The name has to be reached through it, in the
+        // same pass, or the first column of that table renders blank on every row.
+        var muhammad = AddPhone(3, "محمد عوض");
+        var rana = AddPhone(4, "رنا حمدان");
+
+        _world.AddWithStamps(
+            ExpenseFrom(muhammad, "الصالات دولية — مناقصة الطريق"),
+            ExpenseFrom(rana, "رصيد شحن — هاتف المكتب الأرضي"));
+
+        var snapshot = await _world.Attention.GetSnapshotAsync(Now);
+        var pending = snapshot.NeedsActionToday
+            .Where(i => i.Kind == AttentionEntityKind.PhoneExpense)
+            .ToList();
+
+        Assert.Equal(2, pending.Count);
+        Assert.Equal("محمد عوض", Assert.Single(pending, i => i.TitleAr == "الصالات دولية — مناقصة الطريق").AssigneeAr);
+        Assert.Equal("رنا حمدان", Assert.Single(pending, i => i.TitleAr == "رصيد شحن — هاتف المكتب الأرضي").AssigneeAr);
+    }
+
+    [Fact]
+    public async Task APendingPhoneExpense_LeavesTheEmployeeBlankWhenTheDeviceHasNoName()
+    {
+        // A device that was never given a holder leaves the cell empty, exactly as a removed party
+        // does — never a placeholder, and never a name invented for a phone nobody is named on.
+        _world.AddWithStamps(ExpenseFrom(AddPhone(5, string.Empty), "مصروف من جهاز بلا اسم"));
+
+        var snapshot = await _world.Attention.GetSnapshotAsync(Now);
+        var row = Assert.Single(snapshot.NeedsActionToday, i => i.Kind == AttentionEntityKind.PhoneExpense);
+
+        Assert.Null(row.AssigneeAr);
+    }
+
+    private Guid AddPhone(int deviceNo, string employeeName)
+    {
+        var device = new Device
+        {
+            DeviceNo = deviceNo,
+            EmployeeNo = deviceNo,
+            EmployeeName = employeeName,
+            Role = InstallationRole.Director,
+            Kind = DeviceKind.Phone,
+            IssuedAt = Now.AddYears(-1),
+            PairedAt = Now.AddMonths(-1),
+            SyncScope = SyncScope.Full,
+        };
+        _world.Db.Devices.Add(device);
+        _world.Db.SaveChanges();
+        return device.Id;
+    }
+
+    private PhoneExpense ExpenseFrom(Guid deviceId, string purpose) => new()
+    {
+        PhoneDeviceId = deviceId,
+        Amount = 4500,
+        Purpose = purpose,
+        At = Now.AddDays(-1),
+        Status = PhoneExpenseStatus.Pending,
+        UpdatedAt = Now.AddHours(-1),
+    };
+
     private TaskItem OpenTask(string title, DateTime? due, DateTime? updated = null) => new()
     {
         Title = title,

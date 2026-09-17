@@ -63,6 +63,23 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHealthService, HealthService>();
         services.AddScoped<IQuickCaptureService, QuickCaptureService>();
 
+        // B3-1 — the correspondence services. Scoped for the same reason as the rest: they read
+        // and write through WakeelDb, which only exists once a DbSession is open.
+        services.AddScoped<Correspondence.IDuplicateDetector, Correspondence.DuplicateDetector>();
+        services.AddScoped<Correspondence.ICorrespondenceService, Correspondence.CorrespondenceService>();
+        services.AddScoped<Correspondence.IFollowUpService, Correspondence.FollowUpService>();
+        services.AddScoped<Correspondence.ICorrectionService, Correspondence.CorrectionService>();
+        services.AddScoped<Correspondence.IExchangeService, Correspondence.ExchangeService>();
+
+        // The referral service takes an OPTIONAL document builder: the letter package registers
+        // one (OpenXML on the official template) and an installation without it still records
+        // referrals, simply producing no print copy. The container's constructor selection
+        // ignores C# default parameter values, so the optional dependency is supplied by hand.
+        services.AddScoped<Correspondence.IReferralService>(provider => new Correspondence.ReferralService(
+            provider.GetRequiredService<WakeelDb>(),
+            provider.GetRequiredService<IAuditService>(),
+            provider.GetService<Correspondence.IDerivedDocumentBuilder>()));
+
         // The minute tick is Scoped like everything it drives. A singleton ticker would outlive
         // the session it was started for: after a sign-out its timer would keep firing into the
         // previous session's scheduler — whose database session has closed — and the container

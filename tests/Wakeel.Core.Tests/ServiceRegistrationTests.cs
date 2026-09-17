@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Wakeel.Core.Data;
 using Wakeel.Core.Services;
+using Wakeel.Core.Services.Correspondence;
 
 namespace Wakeel.Core.Tests;
 
@@ -60,6 +61,15 @@ public sealed class ServiceRegistrationTests : IDisposable
     [InlineData(typeof(IScannerProbe))]
     [InlineData(typeof(IDiskSpaceProbe))]
     [InlineData(typeof(IRuntimeProbe))]
+
+    // B3-1 — the correspondence services. IReferralService is registered through a factory
+    // because its document builder is optional, so resolving it is worth proving too.
+    [InlineData(typeof(IDuplicateDetector))]
+    [InlineData(typeof(ICorrespondenceService))]
+    [InlineData(typeof(IReferralService))]
+    [InlineData(typeof(IFollowUpService))]
+    [InlineData(typeof(ICorrectionService))]
+    [InlineData(typeof(IExchangeService))]
     public void AddWakeelCore_ResolvesEveryRegisteredService(Type serviceType)
     {
         using var scope = _provider.CreateScope();

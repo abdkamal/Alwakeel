@@ -264,6 +264,12 @@ public sealed class AttentionService(WakeelDb db, ISettingsService settings) : I
         var partyIds = new HashSet<Guid>();
         var partyPlaceholders = new List<(int Index, Guid PartyId)>();
 
+        // Phone expenses carry the device that spent the money, not the person; «الموظف» is the
+        // first column of the W08 «مصروفات الهاتف بانتظار التأكيد» table. The device ids are
+        // collected the same way and resolved in ONE extra query after the reads.
+        var deviceIds = new HashSet<Guid>();
+        var devicePlaceholders = new List<(int Index, Guid DeviceId)>();
+
         // --- Correspondence: open items with a due date, or open items gone quiet. ------------
         var correspondence = await db.Correspondence.AsNoTracking()
             .Where(c => (c.Status == CorrespondenceStatus.New
@@ -429,7 +435,7 @@ public sealed class AttentionService(WakeelDb db, ISettingsService settings) : I
         // --- Phone expenses awaiting confirmation (AGREEMENT item 50). --------------------------
         var expenses = await db.PhoneExpenses.AsNoTracking()
             .Where(e => e.Status == PhoneExpenseStatus.Pending)
-            .Select(e => new { e.Id, e.Purpose, e.Amount, e.At, e.UpdatedAt })
+            .Select(e => new { e.Id, e.Purpose, e.Amount, e.At, e.UpdatedAt, e.PhoneDeviceId })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         foreach (var row in expenses)
         {
@@ -446,9 +452,11 @@ public sealed class AttentionService(WakeelDb db, ISettingsService settings) : I
                 AttentionBucket.PendingConfirmation,
                 NextStepAr: null,
                 row.UpdatedAt));
+            RememberDevice(row.PhoneDeviceId);
         }
 
         await FillPartyNamesAsync(items, partyIds, partyPlaceholders, cancellationToken).ConfigureAwait(false);
+        await FillEmployeeNamesAsync(items, deviceIds, devicePlaceholders, cancellationToken).ConfigureAwait(false);
         return items;
 
         // Records the party of the row just appended, so it can be named after the reads.
@@ -461,6 +469,18 @@ public sealed class AttentionService(WakeelDb db, ISettingsService settings) : I
 
             partyIds.Add(id);
             partyPlaceholders.Add((items.Count - 1, id));
+        }
+
+        // Records the device of the row just appended, so its holder can be named after the reads.
+        void RememberDevice(Guid deviceId)
+        {
+            if (deviceId == Guid.Empty)
+            {
+                return;
+            }
+
+            deviceIds.Add(deviceId);
+            devicePlaceholders.Add((items.Count - 1, deviceId));
         }
     }
 
@@ -491,6 +511,38 @@ public sealed class AttentionService(WakeelDb db, ISettingsService settings) : I
             if (names.TryGetValue(partyId, out var name) && !string.IsNullOrWhiteSpace(name))
             {
                 items[index] = items[index] with { PartyAr = name };
+            }
+        }
+    }
+
+    /// <summary>
+    /// Names the «الموظف» column of the phone-expense rows, which reference the device that spent
+    /// the money rather than the person holding it. One query for the whole pass; a row whose
+    /// device has since been removed — or that was never given a holder — keeps a null name, so
+    /// W08 renders the cell empty instead of inventing an employee.
+    /// </summary>
+    private async Task FillEmployeeNamesAsync(
+        List<AttentionItem> items,
+        HashSet<Guid> deviceIds,
+        List<(int Index, Guid DeviceId)> placeholders,
+        CancellationToken cancellationToken)
+    {
+        if (deviceIds.Count == 0)
+        {
+            return;
+        }
+
+        var ids = deviceIds.ToList();
+        var names = await db.Devices.AsNoTracking()
+            .Where(d => ids.Contains(d.Id))
+            .Select(d => new { d.Id, d.EmployeeName })
+            .ToDictionaryAsync(d => d.Id, d => d.EmployeeName, cancellationToken).ConfigureAwait(false);
+
+        foreach (var (index, deviceId) in placeholders)
+        {
+            if (names.TryGetValue(deviceId, out var name) && !string.IsNullOrWhiteSpace(name))
+            {
+                items[index] = items[index] with { AssigneeAr = name };
             }
         }
     }
@@ -536,26 +588,32 @@ public sealed class AttentionService(WakeelDb db, ISettingsService settings) : I
             return new BackupState(null, null, Overdue: true, CoreAr.BackupNever);
         }
 
-        var days = BackupAgeInDays(last.Value, utcNow);
+        var days = LocalDaysSince(last.Value, utcNow);
         var overdue = days >= BackupOverdueDays;
         return new BackupState(last, days, overdue, CoreAr.BackupTakenAt(ArabicRelativeTime.Describe(last.Value, utcNow)));
     }
 
     /// <summary>
-    /// Whole days between the last backup and today, counted in the user's own days.
+    /// Whole days between an instant in the past and today, counted in the user's own days. The
+    /// general age helper: the backup card, the backup reminder and the sync card all age their
+    /// own instant with it, and none of them owns it.
     /// </summary>
     /// <remarks>
     /// The count is local for the same reason <see cref="AttentionWindow.DaysLate"/> is: measured
-    /// against UTC dates, «مضى 7 أيام» and the overdue flag would change a few hours after
-    /// «متأخر» does on the very same screen, because in a zone ahead of UTC the local day starts
-    /// before the UTC day. Between local midnight and the offset the two would simply disagree.
+    /// against UTC dates, «مضى 7 أيام» and any threshold derived from it would change a few hours
+    /// after «متأخر» does on the very same screen, because in a zone ahead of UTC the local day
+    /// starts before the UTC day. Between local midnight and the offset the two would simply
+    /// disagree. An instant in the future counts as zero days rather than a negative age.
     /// </remarks>
-    internal static int BackupAgeInDays(DateTime lastBackupAt, DateTime utcNow, TimeZoneInfo? zone = null)
+    /// <param name="instant">The past moment being aged — a backup, a sync, anything dated.</param>
+    /// <param name="utcNow">The instant «اليوم» is measured from.</param>
+    /// <param name="zone">The zone the days are counted in; the device's own zone by default.</param>
+    internal static int LocalDaysSince(DateTime instant, DateTime utcNow, TimeZoneInfo? zone = null)
     {
         var timeZone = zone ?? TimeZoneInfo.Local;
         var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(ArabicRelativeTime.ToUtc(utcNow), timeZone).Date;
-        var backupLocal = TimeZoneInfo.ConvertTimeFromUtc(ArabicRelativeTime.ToUtc(lastBackupAt), timeZone).Date;
-        var days = (int)(todayLocal - backupLocal).TotalDays;
+        var thenLocal = TimeZoneInfo.ConvertTimeFromUtc(ArabicRelativeTime.ToUtc(instant), timeZone).Date;
+        var days = (int)(todayLocal - thenLocal).TotalDays;
         return days > 0 ? days : 0;
     }
 }

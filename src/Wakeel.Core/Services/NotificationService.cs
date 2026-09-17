@@ -59,8 +59,15 @@ public sealed record NotificationView(
 
 /// <summary>The notification panel's content: the day groups, the unread count and whether to play a sound.</summary>
 /// <param name="Groups">Day group to its notifications, newest first; an empty group is omitted.</param>
-/// <param name="Total">Notifications shown (dismissed ones are excluded).</param>
-/// <param name="Unread">Unread notifications among them — the bell's badge.</param>
+/// <param name="Total">
+/// Every notification the panel's filter matches, not only the page held in <paramref name="Groups"/>:
+/// the «الكل» tab on W10 must keep counting past the page size. <paramref name="Groups"/> carries at
+/// most the requested limit; this is the real number behind it.
+/// </param>
+/// <param name="Unread">
+/// Every unread, undismissed notification — the bell's badge, counted over the whole table rather
+/// than over the fetched page, so the panel's own header agrees with the tab badges.
+/// </param>
 /// <param name="SoundEnabled">The current «صوت التنبيهات» setting, so the caller knows whether to play one.</param>
 public sealed record NotificationPanel(
     IReadOnlyDictionary<NotificationDayGroup, IReadOnlyList<NotificationView>> Groups,
@@ -177,6 +184,12 @@ public sealed class NotificationService(WakeelDb db, ISettingsService settings, 
             query = query.Where(n => n.ReadAt == null);
         }
 
+        // Both figures are counted over the table, never over the page: a panel that read its own
+        // header off the fetched rows would silently stop growing at the limit.
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var unread = await db.Notifications.AsNoTracking()
+            .CountAsync(n => n.DismissedAt == null && n.ReadAt == null, cancellationToken).ConfigureAwait(false);
+
         var rows = await query
             .OrderByDescending(n => n.CreatedAt)
             .Take(limit)
@@ -184,7 +197,6 @@ public sealed class NotificationService(WakeelDb db, ISettingsService settings, 
 
         var localToday = TimeZoneInfo.ConvertTimeFromUtc(utcNow, zone).Date;
         var groups = new Dictionary<NotificationDayGroup, List<NotificationView>>();
-        var unread = 0;
         foreach (var row in rows)
         {
             var created = ArabicRelativeTime.ToUtc(row.CreatedAt);
@@ -213,15 +225,11 @@ public sealed class NotificationService(WakeelDb db, ISettingsService settings, 
             }
 
             list.Add(view);
-            if (row.ReadAt is null)
-            {
-                unread++;
-            }
         }
 
         var soundEnabled = await settings.GetSoundsEnabledAsync(cancellationToken).ConfigureAwait(false);
         var readOnlyGroups = groups.ToDictionary(g => g.Key, g => (IReadOnlyList<NotificationView>)g.Value);
-        return new NotificationPanel(readOnlyGroups, rows.Count, unread, soundEnabled);
+        return new NotificationPanel(readOnlyGroups, total, unread, soundEnabled);
     }
 
     public Task<int> GetUnreadCountAsync(CancellationToken cancellationToken = default) =>

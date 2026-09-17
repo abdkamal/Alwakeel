@@ -75,6 +75,10 @@ public sealed class HealthServiceTests : IDisposable
         Assert.Equal(HealthStatus.Ok, card.Status);
         Assert.StartsWith("سليمة — الحجم", card.MessageAr, StringComparison.Ordinal);
         Assert.Equal(HealthActions.None, card.ActionId);
+
+        // The spec's «آخر فحص» is the instant of the run, carried once by the report and drawn by
+        // the screen as every card's footer, so no card sentence dates itself.
+        Assert.Equal(ArabicRelativeTime.ToUtc(Now), report.CheckedAt);
     }
 
     [Fact]
@@ -126,7 +130,7 @@ public sealed class HealthServiceTests : IDisposable
         var card = Card(await _world.Health.CheckAsync(Now), HealthComponents.Space);
 
         Assert.Equal(HealthStatus.Warning, card.Status);
-        Assert.Equal("المتاح 1 غيغابايت من 120 غيغابايت فقط؛ فرّغ مساحة", card.MessageAr);
+        Assert.Equal(CoreAr.HealthSpaceLow("1 غيغابايت", "120 غيغابايت"), card.MessageAr);
         Assert.Equal(HealthActions.FreeSpace, card.ActionId);
     }
 
@@ -227,7 +231,7 @@ public sealed class HealthServiceTests : IDisposable
         var card = Card(await _world.Health.CheckAsync(Now), HealthComponents.Sync);
 
         Assert.Equal(HealthStatus.Ok, card.Status);
-        Assert.Contains("الحاسوب: قبل ساعتين", card.MessageAr, StringComparison.Ordinal);
+        Assert.Contains(CoreAr.HealthSyncDevice(CoreAr.HealthDevicePc, "قبل ساعتين"), card.MessageAr, StringComparison.Ordinal);
         Assert.Contains("الهاتف:", card.MessageAr, StringComparison.Ordinal);
     }
 
