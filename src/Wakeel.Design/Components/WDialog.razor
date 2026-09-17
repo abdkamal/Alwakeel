@@ -3,29 +3,19 @@
 @implements IAsyncDisposable
 @inject IJSRuntime Js
 
-@if (Open)
+@if (Inline)
+{
+    @* The reference sheet of W92 draws the same dialogs in place, without scrim or modality, so the
+       sheet and the real thing can never drift apart. *@
+    <div class="w-dialog w-dialog--inline @Class" style="@WidthStyle" role="group" aria-labelledby="@_titleId">
+        @Surface
+    </div>
+}
+else if (Open)
 {
     <div class="w-dialog-scrim" @onclick="HandleScrimClickAsync">
-        <div class="w-dialog" role="@(Kind == WDialogKind.Danger ? "alertdialog" : "dialog")" aria-modal="true" aria-labelledby="@_titleId" @onclick:stopPropagation="true" @ref="_dialogRef">
-            <div class="w-dialog-head">
-                <h2 id="@_titleId" class="w-dialog-title">@Title</h2>
-                <button type="button" class="w-dialog-close" aria-label="@Ar.Buttons.Close" @onclick="RequestCloseAsync">
-                    <WIcon Name="x" Size="18" />
-                </button>
-            </div>
-            @if (!string.IsNullOrEmpty(Desc))
-            {
-                <p class="w-dialog-desc">@Desc</p>
-            }
-            @if (ChildContent is not null)
-            {
-                <div class="w-dialog-body">@ChildContent</div>
-            }
-            <div class="w-dialog-actions">
-                <WButton Variant="@(Kind == WDialogKind.Danger ? WButtonVariant.Danger : WButtonVariant.Primary)"
-                         Icon="@ResolvedConfirmIcon" Label="@ConfirmLabel" OnClick="HandleConfirmAsync" />
-                <WButton Variant="WButtonVariant.Secondary" Icon="@ResolvedCancelIcon" Label="@CancelLabel" OnClick="RequestCloseAsync" />
-            </div>
+        <div class="w-dialog @Class" style="@WidthStyle" role="@(Kind == WDialogKind.Danger ? "alertdialog" : "dialog")" aria-modal="true" aria-labelledby="@_titleId" @onclick:stopPropagation="true" @ref="_dialogRef">
+            @Surface
         </div>
     </div>
 }
@@ -67,9 +57,24 @@
     /// <summary>Cancel button icon. Defaults to an x mark.</summary>
     [Parameter] public string? CancelIcon { get; set; }
 
+    /// <summary>
+    /// Confirm button tooltip: what pressing it will actually do, when the label alone does not say
+    /// it. Defaults to the label, so a caller that has nothing to add changes nothing.
+    /// </summary>
+    [Parameter] public string? ConfirmTooltip { get; set; }
+
+    /// <summary>Cancel button tooltip; defaults to the label.</summary>
+    [Parameter] public string? CancelTooltip { get; set; }
+
     private string ResolvedConfirmIcon => ConfirmIcon ?? (Kind == WDialogKind.Danger ? "ban" : "check");
 
     private string ResolvedCancelIcon => CancelIcon ?? "x";
+
+    private string ResolvedConfirmTooltip =>
+        string.IsNullOrWhiteSpace(ConfirmTooltip) ? ConfirmLabel : ConfirmTooltip;
+
+    private string ResolvedCancelTooltip =>
+        string.IsNullOrWhiteSpace(CancelTooltip) ? CancelLabel : CancelTooltip;
 
     /// <summary>Raised when the confirm button is clicked.</summary>
     [Parameter] public EventCallback OnConfirm { get; set; }
@@ -80,8 +85,65 @@
     /// <summary>When true (default), clicking the scrim behind the dialog closes it like Cancel.</summary>
     [Parameter] public bool CloseOnScrimClick { get; set; } = true;
 
+    /// <summary>
+    /// A consequence the person must read before choosing, emphasised under the description
+    /// (e.g. «إجراء نهائي لا يمكن التراجع عنه»).
+    /// </summary>
+    [Parameter] public string? Notice { get; set; }
+
+    /// <summary>
+    /// Draws the dialog's surface in the page instead of over it, with no scrim and no modality:
+    /// the shape the reference sheet of W92 needs. <see cref="Open"/> is ignored in this mode.
+    /// </summary>
+    [Parameter] public bool Inline { get; set; }
+
+    /// <summary>Additional CSS classes on the dialog surface, so a sheet can place it on its grid.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>
+    /// Widest the surface may be, in pixels. A dialog that asks for two fields side by side (W94)
+    /// needs more room than the 440 a one-question confirmation wants; leaving it null keeps that
+    /// default.
+    /// </summary>
+    [Parameter] public int? MaxWidthPx { get; set; }
+
+    private string? WidthStyle => MaxWidthPx is { } px ? $"max-width:{px}px" : null;
+
+    /// <summary>Head, description, notice, body and actions — identical modal or inline.</summary>
+    private RenderFragment Surface => @<text>
+        <div class="w-dialog-head">
+            <h2 id="@_titleId" class="w-dialog-title">@Title</h2>
+            <button type="button" class="w-dialog-close" aria-label="@Ar.Buttons.Close" title="@Ar.Buttons.Close" @onclick="RequestCloseAsync">
+                <WIcon Name="x" Size="18" />
+            </button>
+        </div>
+        @if (!string.IsNullOrEmpty(Desc))
+        {
+            <p class="w-dialog-desc">@Desc</p>
+        }
+        @if (!string.IsNullOrEmpty(Notice))
+        {
+            <p class="w-dialog-notice">@Notice</p>
+        }
+        @if (ChildContent is not null)
+        {
+            <div class="w-dialog-body">@ChildContent</div>
+        }
+        <div class="w-dialog-actions">
+            <WButton Variant="@(Kind == WDialogKind.Danger ? WButtonVariant.Danger : WButtonVariant.Primary)"
+                     Icon="@ResolvedConfirmIcon" Label="@ConfirmLabel" Tooltip="@ResolvedConfirmTooltip" OnClick="HandleConfirmAsync" />
+            <WButton Variant="WButtonVariant.Secondary" Icon="@ResolvedCancelIcon" Label="@CancelLabel" Tooltip="@ResolvedCancelTooltip" OnClick="RequestCloseAsync" />
+        </div>
+    </text>;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (Inline)
+        {
+            // An inline surface is part of the page: it traps nothing and releases nothing.
+            return;
+        }
+
         if (Open && !_wasOpen)
         {
             _wasOpen = true;

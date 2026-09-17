@@ -279,4 +279,111 @@ public class FirstRunGuardTests : FirstRunScreenContext
             () => Assert.Contains(Ar.FirstRun.Recovery.CodeVerified, cut.Markup, StringComparison.Ordinal),
             TimeSpan.FromSeconds(10));
     }
+
+    // -------------------------------------------------------------------------------------------
+    // W07, the recovered-but-not-signed-in outcome (verify-b2-carryover finding 2). Recovery has
+    // already replaced the password on disk at this point, so the dialog must never offer to submit
+    // again: it says what happened once, in the same tone in both shapes, and its one button closes.
+    //
+    // The outcome is reached by taking the installation identity out of the database before the
+    // attempt. LoginService.OpenSessionAsync refuses to open a session over a database that carries
+    // no identity, which is exactly the "saved, then could not reopen" shape the outcome describes —
+    // and unlike a file-permission trick it is deterministic on every machine.
+    // -------------------------------------------------------------------------------------------
+
+    private async Task<string> ActivateThenBreakTheIdentityAsync()
+    {
+        var code = await ActivateAsync();
+        Session.Db.Installation.RemoveRange(Session.Db.Installation);
+        Session.Db.SaveChanges();
+        Session.SignOut();
+        return code;
+    }
+
+    private static async Task RecoverThroughTheDialogAsync(
+        IRenderedComponent<W07RecoveryDialog> cut,
+        string code,
+        bool issueNewSheet)
+    {
+        var inputs = cut.FindComponents<WInput>();
+        var codeInput = inputs.First(i => i.Instance.Label == Ar.FirstRun.Recovery.CodeLabel(RecoveryCode.TotalCharacters));
+        await cut.InvokeAsync(() => codeInput.Instance.ValueChanged.InvokeAsync(code));
+        cut.WaitForAssertion(
+            () => Assert.Contains(Ar.FirstRun.Recovery.CodeVerified, cut.Markup, StringComparison.Ordinal),
+            TimeSpan.FromSeconds(10));
+
+        if (issueNewSheet)
+        {
+            var checkbox = cut.FindComponents<WCheckbox>()
+                .First(c => c.Instance.Label == Ar.FirstRun.Recovery.IssueNewSheet);
+            await cut.InvokeAsync(() => checkbox.Instance.ValueChanged.InvokeAsync(true));
+        }
+
+        const string NewPassword = "كلمة-المرور-الجديدة-2026";
+        var passwordInputs = cut.FindComponents<WInput>()
+            .Where(i => i.Instance.Type == WInputType.Password)
+            .ToList();
+        await cut.InvokeAsync(() => passwordInputs[0].Instance.ValueChanged.InvokeAsync(NewPassword));
+        await cut.InvokeAsync(() => passwordInputs[1].Instance.ValueChanged.InvokeAsync(NewPassword));
+
+        await cut.InvokeAsync(() => cut.FindComponent<WDialog>().Instance.OnConfirm.InvokeAsync());
+    }
+
+    [Fact]
+    public async Task A_recovery_that_could_not_reopen_the_workspace_says_so_once_and_only_offers_to_close()
+    {
+        var code = await ActivateThenBreakTheIdentityAsync();
+
+        var closed = 0;
+        var cut = Render<W07RecoveryDialog>(p => p
+            .Add(x => x.Open, true)
+            .Add(x => x.OnClose, () => closed++));
+
+        await RecoverThroughTheDialogAsync(cut, code, issueNewSheet: false);
+
+        cut.WaitForAssertion(
+            () => Assert.Contains(Ar.FirstRun.Recovery.SucceededNotSignedIn, cut.Markup, StringComparison.Ordinal),
+            TimeSpan.FromSeconds(10));
+
+        // No sheet was asked for, so the closing button must not claim one was saved.
+        var dialog = cut.FindComponent<WDialog>();
+        Assert.Equal(Ar.Buttons.Close, dialog.Instance.ConfirmLabel);
+        Assert.DoesNotContain(Ar.FirstRun.Recovery.NewSheetDone, cut.Markup, StringComparison.Ordinal);
+
+        // The form is gone with it: there is nothing left to fill in, and the sentence is drawn in
+        // the same Warning tone the sheet branch uses for the identical outcome.
+        Assert.Empty(cut.FindAll(".w07-steps"));
+        Assert.Empty(cut.FindComponents<WInput>());
+        Assert.Contains("w-card--warning", cut.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("w-card--danger", cut.Markup, StringComparison.Ordinal);
+
+        // Pressing it closes the dialog instead of running the recovery a second time.
+        await cut.InvokeAsync(() => dialog.Instance.OnConfirm.InvokeAsync());
+        Assert.Equal(1, closed);
+    }
+
+    [Fact]
+    public async Task The_same_outcome_with_a_new_sheet_shows_the_sheet_and_closes_on_I_saved_it()
+    {
+        var code = await ActivateThenBreakTheIdentityAsync();
+
+        var closed = 0;
+        var cut = Render<W07RecoveryDialog>(p => p
+            .Add(x => x.Open, true)
+            .Add(x => x.OnClose, () => closed++));
+
+        await RecoverThroughTheDialogAsync(cut, code, issueNewSheet: true);
+
+        cut.WaitForAssertion(
+            () => Assert.Contains(Ar.FirstRun.Recovery.SucceededNotSignedIn, cut.Markup, StringComparison.Ordinal),
+            TimeSpan.FromSeconds(10));
+
+        // The sheet is on screen, so here the closing button IS «حفظتُ الورقة الجديدة».
+        var dialog = cut.FindComponent<WDialog>();
+        Assert.Equal(Ar.FirstRun.Recovery.NewSheetDone, dialog.Instance.ConfirmLabel);
+        Assert.Contains(Ar.FirstRun.Recovery.NewSheetTitle, cut.Markup, StringComparison.Ordinal);
+
+        await cut.InvokeAsync(() => dialog.Instance.OnConfirm.InvokeAsync());
+        Assert.Equal(1, closed);
+    }
 }

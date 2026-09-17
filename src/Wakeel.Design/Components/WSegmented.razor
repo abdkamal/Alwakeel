@@ -1,12 +1,22 @@
 @namespace Wakeel.Design.Components
 
-<div class="w-segmented" role="tablist">
+@* A one-line choice between a handful of alternatives. The plain form is a row of text pills (the
+   theme switch of W85); the stacked form draws an icon above each label (the five kinds of W94), so
+   both shapes in the product come out of the same control instead of being redrawn per screen. *@
+<div class="w-segmented @(Stacked ? "w-segmented--stacked" : null) @Class" role="tablist">
     @foreach (var option in Options)
     {
         <button type="button" role="tab" class="w-segmented-item @(IsSelected(option.Value) ? "w-segmented-item--selected" : null)"
                 aria-selected="@(IsSelected(option.Value) ? "true" : "false")"
+                title="@TooltipFor(option)"
                 @onclick="() => SelectAsync(option.Value)">
-            @option.Label
+            @if (IconFor(option.Value) is { Length: > 0 } icon)
+            {
+                <span class="w-segmented-icon" aria-hidden="true">
+                    <WIcon Name="@icon" Size="18" />
+                </span>
+            }
+            <span class="w-segmented-label">@option.Label</span>
         </button>
     }
 </div>
@@ -21,7 +31,23 @@
     /// <summary>Raised with the newly selected value (use with @bind-SelectedValue).</summary>
     [Parameter] public EventCallback<string> SelectedValueChanged { get; set; }
 
+    /// <summary>Lucide icon name per option value, for the forms that carry icons.</summary>
+    [Parameter] public IReadOnlyDictionary<string, string>? Icons { get; set; }
+
+    /// <summary>Draws the icon above the label instead of beside it, and gives every option equal width.</summary>
+    [Parameter] public bool Stacked { get; set; }
+
+    /// <summary>Additional CSS classes, so the calling screen can place the control.</summary>
+    [Parameter] public string? Class { get; set; }
+
     private bool IsSelected(string value) => string.Equals(SelectedValue, value, StringComparison.Ordinal);
+
+    private string? IconFor(string value) =>
+        Icons is not null && Icons.TryGetValue(value, out var icon) ? icon : null;
+
+    // The label is always visible, so the tooltip only repeats it — which is what a person hovering
+    // a truncated stacked tile needs, and costs nothing on the plain form.
+    private static string TooltipFor((string Value, string Label) option) => option.Label;
 
     private Task SelectAsync(string value) => SelectedValueChanged.InvokeAsync(value);
 }

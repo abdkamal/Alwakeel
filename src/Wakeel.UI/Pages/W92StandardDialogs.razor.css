@@ -1,0 +1,61 @@
+.w92 {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* The export's two rows: the three short dialogs share the first (a third of the width each), the
+   two that carry fields or two versions share the second (a half each). Six tracks give both
+   splits out of one grid, and all five surfaces fit the window without scrolling. */
+.w92-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.w92-cell { display: flex; grid-column: span 2; }
+.w92-cell[data-dialog="validation"],
+.w92-cell[data-dialog="conflict"] { grid-column: span 3; }
+
+/* Narrower than the three-up width the row becomes two-up, then a single column. */
+@media (max-width: 1180px) {
+    .w92-grid { grid-template-columns: repeat(2, 1fr); }
+    .w92-cell,
+    .w92-cell[data-dialog="validation"],
+    .w92-cell[data-dialog="conflict"] { grid-column: span 1; }
+}
+
+@media (max-width: 760px) {
+    .w92-grid { grid-template-columns: 1fr; }
+}
+::deep .w92-cell > .w-dialog { width: 100%; }
+
+.w92-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.w92-versions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.w92-version-amount {
+    display: block;
+    font-size: var(--w-fs-section);
+    font-weight: 700;
+}
+
+.w92-version-when {
+    display: block;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+@media (max-width: 720px) {
+    .w92-fields,
+    .w92-versions { grid-template-columns: 1fr; }
+}

@@ -34,7 +34,7 @@
 
 .w08-columns {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 1fr 300px;
     gap: 16px;
     align-items: start;
 }
@@ -50,31 +50,10 @@
     min-width: 0;
 }
 
-.w08-meeting {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding-block: 8px;
-    border-bottom: 1px solid var(--w-border);
-}
-.w08-meeting:last-child { border-bottom: 0; }
-
-.w08-meeting-time {
-    font-weight: 700;
-    color: var(--w-primary);
-    flex-shrink: 0;
-    min-width: 44px;
-}
-
-.w08-meeting-text { min-width: 0; }
-.w08-meeting-title { margin: 0; font-weight: 600; }
-.w08-meeting-meta { margin: 2px 0 0; font-size: var(--w-fs-meta); color: var(--w-muted); }
-
-.w08-status-detail {
-    margin: 0;
-    font-size: var(--w-fs-meta);
-    color: var(--w-muted);
-}
+/* A meeting is a WKvRow whose key is the hour: the two lines of the value stack under each other
+   while the hour stays on the row's opposite edge. */
+.w08-meeting-title { display: block; font-weight: 600; }
+.w08-meeting-meta { display: block; margin-block-start: 2px; font-size: var(--w-fs-meta); color: var(--w-muted); }
 
 .w08-due--danger { color: var(--w-danger); font-weight: 600; }
 .w08-due--warning { color: var(--w-warning); font-weight: 600; }
@@ -90,14 +69,21 @@
     text-align: center;
 }
 
-::deep .w08-chevron-icon { color: var(--w-muted); }
+::deep .w08-open { color: var(--w-muted); }
 
-.w08-expenses-actions {
+/* Tabs and the local search sit beside the section title on ONE row, the way the export draws
+   them: nothing wraps onto a second line, the search is what gives up width first, and a genuinely
+   narrow window scrolls the tab strip inside itself instead of stacking the row. */
+.w08-filters {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    min-width: 0;
 }
+
+.w08-filters > * { min-width: 0; }
 
 .w08-expense-meta {
     margin-top: 2px;
@@ -107,3 +93,26 @@
 
 ::deep .w08-expense-confirm { color: var(--w-success); }
 ::deep .w08-expense-reject { color: var(--w-danger); }
+
+/* A KPI card is the way into its W09 tab. The button, the focus ring and the hover belong to
+   WKpiCard itself now; the page only says how the card fills its grid cell. */
+::deep .w08-kpi { height: 100%; }
+
+/* The section title keeps one line: the tabs and the search share the rest of the row and wrap
+   under it together when the window is too narrow for all three. */
+::deep .w08-col-main .w-section-header { align-items: center; gap: 16px; }
+::deep .w08-col-main .w-section-header-title { white-space: nowrap; }
+::deep .w08-col-main .w-section-header-text { flex: 0 0 auto; }
+.w08-filters { flex: 1 1 auto; }
+
+/* Inside the filter row: the search shrinks, the tabs keep their labels, the footer link does not
+   wrap onto its own line. */
+.w08-filters ::deep .w-search { flex: 1 1 160px; min-width: 110px; }
+.w08-filters ::deep .w-tabs { flex: 0 1 auto; overflow-x: auto; }
+::deep .w08-view-all-expenses { flex: none; white-space: nowrap; }
+
+/* Seven columns at 1366 without a horizontal scrollbar: nothing is pinned to a width it does not
+   need, and the sentence columns wrap instead of pushing the table wider than its card. */
+::deep .w08-col-main .w-table { table-layout: auto; min-width: 0; }
+::deep .w08-col-main .w-table td,
+::deep .w08-col-main .w-table th { min-width: 0; white-space: normal; overflow-wrap: anywhere; }

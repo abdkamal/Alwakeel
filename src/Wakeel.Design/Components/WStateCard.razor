@@ -1,7 +1,7 @@
 @namespace Wakeel.Design.Components
 
 <div class="w-state-card">
-    <span class="w-state-icon" aria-hidden="true">
+    <span class="w-state-icon w-state-icon--@VariantSlug" aria-hidden="true">
         <WIcon Name="@Icon" Size="20" />
     </span>
     <p class="w-state-title">@Title</p>
@@ -33,6 +33,21 @@
 
     /// <summary>Raised when the action button is clicked.</summary>
     [Parameter] public EventCallback OnAction { get; set; }
+
+    /// <summary>
+    /// The tone the icon carries, so the card says at a glance whether this is a failure, a warning
+    /// or a good outcome. Neutral by default, which is the plain grey circle.
+    /// </summary>
+    [Parameter] public WSemanticVariant Variant { get; set; } = WSemanticVariant.Neutral;
+
+    private string VariantSlug => Variant switch
+    {
+        WSemanticVariant.Info => "info",
+        WSemanticVariant.Warning => "warning",
+        WSemanticVariant.Danger => "danger",
+        WSemanticVariant.Success => "success",
+        _ => "neutral",
+    };
 
     private Task HandleActionAsync(MouseEventArgs args) => OnAction.InvokeAsync();
 }

@@ -1,0 +1,57 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Text
+
+@* The toast an immediate save raises (AGREEMENT item 32): what was saved, and a «تراجع» that takes
+   it back while the undo window is still open. WToast carries no action of its own, so this is the
+   design system's toast-with-action — same ground, same lift, one primary action and a close. *@
+@if (!string.IsNullOrEmpty(Text))
+{
+    <div class="w-undo" role="status">
+        <WIcon Name="@Icon" Size="18" Class="w-undo-icon" />
+        <span class="w-undo-text">@Text</span>
+        @if (CanUndo)
+        {
+            <WButton Variant="WButtonVariant.Text"
+                     Icon="arrow-right"
+                     Label="@UndoLabel"
+                     Tooltip="@UndoTooltip"
+                     Class="w-undo-action"
+                     OnClick="HandleUndoAsync" />
+        }
+        <WButton Variant="WButtonVariant.Icon"
+                 Icon="x"
+                 Tooltip="@CloseTooltip"
+                 Class="w-undo-close"
+                 OnClick="HandleCloseAsync" />
+    </div>
+}
+
+@code {
+    /// <summary>What was saved, in the words the saving service chose.</summary>
+    [Parameter] public string? Text { get; set; }
+
+    /// <summary>Whether the undo button is still worth offering.</summary>
+    [Parameter] public bool CanUndo { get; set; } = true;
+
+    /// <summary>Icon at the start of the strip.</summary>
+    [Parameter] public string Icon { get; set; } = "check-circle";
+
+    /// <summary>Label of the undo action.</summary>
+    [Parameter] public string UndoLabel { get; set; } = Ar.QuickCapture.Undo;
+
+    /// <summary>Tooltip of the undo action.</summary>
+    [Parameter] public string UndoTooltip { get; set; } = Ar.QuickCapture.UndoTooltip;
+
+    /// <summary>Tooltip of the closing cross.</summary>
+    [Parameter] public string CloseTooltip { get; set; } = Ar.Buttons.Close;
+
+    /// <summary>Raised when «تراجع» is pressed.</summary>
+    [Parameter] public EventCallback OnUndo { get; set; }
+
+    /// <summary>Raised when the strip is dismissed.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Task HandleUndoAsync(MouseEventArgs args) => OnUndo.InvokeAsync();
+
+    private Task HandleCloseAsync(MouseEventArgs args) => OnClose.InvokeAsync();
+}

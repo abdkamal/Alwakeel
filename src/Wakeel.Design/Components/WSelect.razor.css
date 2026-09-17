@@ -42,9 +42,12 @@
 .w-field-control:disabled { background: var(--w-disabled-bg); color: var(--w-disabled); }
 .w-field-control:focus-visible { outline: 2px solid var(--w-primary); outline-offset: 1px; }
 
+/* The caret hangs off the field's END edge, which is the side the control reserves 34px of padding
+   on. Pinning it to the START edge instead put it underneath the right-aligned value, where it was
+   invisible and the two overlapped. */
 .w-select-caret {
     position: absolute;
-    inset-inline-start: 10px;
+    inset-inline-end: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--w-muted);

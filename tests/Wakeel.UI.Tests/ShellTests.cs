@@ -74,38 +74,24 @@ public class ShellTests : WakeelTestContext
         Assert.Equal("dark", invocation.Arguments[0]);
     }
 
-    [Fact]
-    public void W08AttentionCenter_Renders_FixedSampleKpis()
-    {
-        var cut = Render<W08AttentionCenter>();
-
-        Assert.Contains("بانتظار تأكيدي", cut.Markup);
-        Assert.Contains("متأخر", cut.Markup);
-        Assert.Contains("سامر أبو غزالة", cut.Markup);
-    }
-
-    [Fact]
-    public void W08AttentionCenter_AttentionRow_UsesAttentionRowStyle()
-    {
-        var cut = Render<W08AttentionCenter>();
-
-        Assert.Contains("w-table-row--attention", cut.Markup);
-    }
-
     /// <summary>
-    /// verify-design-split.json (B1-POLISH-DESIGN review) low finding: the «الكل» tab's count badge
-    /// must track <see cref="Ar.AttentionCenter.TodayActionCount"/> rather than a literal that can
-    /// drift from the section header's own count when the sample data changes.
+    /// W08 is live now: it reads IAttentionService, so with no session open it draws the
+    /// closed-session state and nothing of the B0 fixed sample. The loaded screen is covered
+    /// against real rows in <c>Shell/AttentionScreenTests</c>; what this pins is that the sample
+    /// data — the four hard-coded KPI numbers, the three action rows and the two expense rows —
+    /// is gone for good.
     /// </summary>
     [Fact]
-    public void W08AttentionCenter_AllTabBadge_MatchesTodayActionCount()
+    public void W08AttentionCenter_NoLongerDrawsTheB0SampleDataset()
     {
         var cut = Render<W08AttentionCenter>();
 
-        var firstTabBadge = cut.FindAll(".w-tab")[0].QuerySelector(".w-badge");
-
-        Assert.NotNull(firstTabBadge);
-        Assert.Equal(Ar.AttentionCenter.TodayActionCount.ToString(), firstTabBadge!.TextContent);
+        Assert.Contains(Ar.Shell.SessionClosedTitle, cut.Markup);
+        Assert.DoesNotContain(Ar.AttentionCenter.ActionRow1Subject, cut.Markup);
+        Assert.DoesNotContain(Ar.AttentionCenter.ActionRow1Assignee, cut.Markup);
+        Assert.DoesNotContain(Ar.AttentionCenter.Expense1Employee, cut.Markup);
+        Assert.Empty(cut.FindAll(".w-table"));
+        Assert.Empty(cut.FindAll(".w-kpi"));
     }
 
     [Fact]
@@ -118,39 +104,5 @@ public class ShellTests : WakeelTestContext
 
         Assert.Equal("مركز الانتباه", headerState.Title);
         Assert.Equal(WSidebar.Keys.Attention, headerState.NavKey);
-    }
-
-    /// <summary>
-    /// Regression for the B0-closeout review's expenses-table finding: header and body column counts
-    /// must agree (5 each: الموظف/البيان/التاريخ/المبلغ plus a visually-hidden actions label), and
-    /// dates must be isolated in &lt;bdi&gt; per AGREEMENT item 55.
-    /// </summary>
-    [Fact]
-    public void W08AttentionCenter_ExpensesTable_HasFiveMatchingHeaderAndBodyColumns()
-    {
-        var cut = Render<W08AttentionCenter>();
-
-        var table = cut.FindAll(".w-table").Last(t => t.QuerySelector(".w08-expense-meta") is not null);
-
-        var headerCells = table.QuerySelectorAll("thead th");
-        Assert.Equal(5, headerCells.Length);
-        Assert.Equal("الموظف", headerCells[0].TextContent.Trim());
-        Assert.Equal("البيان", headerCells[1].TextContent.Trim());
-        Assert.Equal("التاريخ", headerCells[2].TextContent.Trim());
-        Assert.Equal("المبلغ", headerCells[3].TextContent.Trim());
-        Assert.Contains("إجراءات الموافقة", headerCells[4].QuerySelector(".w-visually-hidden")!.TextContent);
-
-        var bodyRows = table.QuerySelectorAll("tbody tr");
-        Assert.Equal(2, bodyRows.Length);
-        foreach (var row in bodyRows)
-        {
-            Assert.Equal(5, row.QuerySelectorAll("td").Length);
-        }
-
-        var firstRowDate = bodyRows[0].QuerySelectorAll("td")[2];
-        Assert.Equal("11/09/2026", firstRowDate.QuerySelector("bdi")!.TextContent);
-
-        var secondRowDate = bodyRows[1].QuerySelectorAll("td")[2];
-        Assert.Equal("10/09/2026", secondRowDate.QuerySelector("bdi")!.TextContent);
     }
 }

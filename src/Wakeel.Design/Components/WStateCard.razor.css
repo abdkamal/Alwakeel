@@ -3,8 +3,10 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 8px;
-    padding: 22px 18px;
+    /* Density follows the export: at 1366x768 all thirteen reference states of W91 fit the window
+       without scrolling, which a 22px block padding plus the icon's extra margin did not allow. */
+    gap: 6px;
+    padding: 16px;
     background: var(--w-surface);
     border: 1px solid var(--w-border);
     border-radius: var(--w-radius-lg);
@@ -14,15 +16,21 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: var(--w-surface2);
     color: var(--w-muted);
-    margin-bottom: 4px;
 }
 
 .w-state-title { font-weight: 700; }
 .w-state-desc { color: var(--w-muted); font-size: var(--w-fs-meta); max-width: 26ch; unicode-bidi: plaintext; }
 
-::deep .w-state-action { margin-top: 6px; }
+::deep .w-state-action { margin-top: 4px; }
+
+/* The tone of the state: the icon's circle, so the sheet (and every screen) shows at a glance
+   whether this is a failure, a warning or a good outcome. Neutral keeps the plain grey circle. */
+.w-state-icon--info { background: var(--w-info-soft); color: var(--w-info); }
+.w-state-icon--warning { background: var(--w-warning-soft); color: var(--w-warning); }
+.w-state-icon--danger { background: var(--w-danger-soft); color: var(--w-danger); }
+.w-state-icon--success { background: var(--w-success-soft); color: var(--w-success); }

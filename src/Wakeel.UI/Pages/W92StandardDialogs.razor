@@ -1,0 +1,103 @@
+@page "/w92"
+@using Wakeel.Design.Text
+@using Wakeel.UI.Services
+@implements IDisposable
+@inject PageHeaderState HeaderState
+@inject IToastService Toasts
+
+@* W92 — الحوارات القياسية. The reference sheet of the five dialogs the product is allowed to ask
+   with: an ordinary confirmation, a dangerous one, a field-validation refusal, a sync conflict that
+   must be resolved, and a record that changed under the person's hands. Each is the real WDialog
+   drawn in place (Inline), so the sheet can never show a shape the product does not use. *@
+<div class="w92">
+    <div class="w92-grid">
+        @foreach (var dialog in Dialogs)
+        {
+            <div class="w92-cell" data-dialog="@dialog.Key">
+                <WDialog Inline="true"
+                         Kind="@(dialog.Key == "danger" ? WDialogKind.Danger : WDialogKind.Normal)"
+                         Title="@dialog.Title"
+                         Desc="@dialog.Desc"
+                         Notice="@dialog.Notice"
+                         ConfirmLabel="@dialog.ConfirmLabel"
+                         ConfirmIcon="@dialog.ConfirmIcon"
+                         ConfirmTooltip="@dialog.ConfirmTooltip"
+                         CancelLabel="@dialog.CancelLabel"
+                         CancelIcon="x"
+                         CancelTooltip="@dialog.CancelTooltip"
+                         OnConfirm="@(() => Choose(dialog.ConfirmLabel))"
+                         OnCancel="@(() => Choose(dialog.CancelLabel))">
+                    @if (dialog.Key == "validation")
+                    {
+                        <div class="w92-fields">
+                            <WInput Label="@Ar.StandardDialogs.ValidationFieldDate" Required="true"
+                                    Error="@Ar.StandardDialogs.ValidationFieldDateError" Type="WInputType.Date" />
+                            <WInput Label="@Ar.StandardDialogs.ValidationFieldPhone" Required="true"
+                                    Value="@Ar.StandardDialogs.ValidationSamplePhone"
+                                    Error="@Ar.StandardDialogs.ValidationFieldPhoneError" />
+                        </div>
+                    }
+                    else if (dialog.Key == "conflict")
+                    {
+                        <div class="w92-versions">
+                            <WCard Variant="WSemanticVariant.Success" Title="@Ar.StandardDialogs.ConflictIncoming">
+                                <bdi class="w92-version-amount">@Ar.StandardDialogs.ConflictSampleIncomingAmount</bdi>
+                                <bdi class="w92-version-when">@Ar.StandardDialogs.ConflictSampleIncomingWhen</bdi>
+                            </WCard>
+                            <WCard Title="@Ar.StandardDialogs.ConflictMine">
+                                <bdi class="w92-version-amount">@Ar.StandardDialogs.ConflictSampleMineAmount</bdi>
+                                <bdi class="w92-version-when">@Ar.StandardDialogs.ConflictSampleMineWhen</bdi>
+                            </WCard>
+                        </div>
+                    }
+                </WDialog>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private sealed record DialogEntry(
+        string Key,
+        string Title,
+        string Desc,
+        string? Notice,
+        string ConfirmLabel,
+        string ConfirmIcon,
+        string ConfirmTooltip,
+        string CancelLabel,
+        string CancelTooltip);
+
+    // Reading order follows the export: the three short dialogs share the first row, the two that
+    // carry fields or two versions share the wider second row.
+    private static readonly DialogEntry[] Dialogs =
+    [
+        new("normal", Ar.StandardDialogs.NormalTitle, Ar.StandardDialogs.NormalDesc,
+            null, Ar.StandardDialogs.NormalConfirm, "check", Ar.StandardDialogs.NormalConfirmTooltip,
+            Ar.Buttons.Cancel, Ar.Buttons.Cancel),
+        new("danger", Ar.StandardDialogs.DangerTitle, Ar.StandardDialogs.DangerDesc,
+            Ar.StandardDialogs.DangerNotice, Ar.StandardDialogs.DangerConfirm, "ban", Ar.StandardDialogs.DangerConfirmTooltip,
+            Ar.Buttons.Cancel, Ar.Buttons.Cancel),
+        new("record-changed", Ar.StandardDialogs.RecordChangedTitle, Ar.StandardDialogs.RecordChangedDesc,
+            Ar.StandardDialogs.RecordChangedNotice(Ar.StandardDialogs.RecordChangedSampleWhen),
+            Ar.StandardDialogs.RecordChangedRefresh, "refresh-cw", Ar.StandardDialogs.RecordChangedRefreshTooltip,
+            Ar.StandardDialogs.RecordChangedKeepEditing, Ar.StandardDialogs.RecordChangedKeepEditingTooltip),
+        new("validation", Ar.StandardDialogs.ValidationTitle, Ar.StandardDialogs.ValidationDesc,
+            null, Ar.StandardDialogs.ValidationConfirm, "check", Ar.StandardDialogs.ValidationConfirmTooltip,
+            Ar.Buttons.Cancel, Ar.Buttons.Cancel),
+        new("conflict", Ar.StandardDialogs.ConflictTitle, Ar.StandardDialogs.ConflictDesc,
+            null, Ar.StandardDialogs.ConflictTakeIncoming, "check", Ar.StandardDialogs.ConflictTakeIncomingTooltip,
+            Ar.StandardDialogs.ConflictKeepMine, Ar.StandardDialogs.ConflictKeepMineTooltip),
+    ];
+
+    /// <summary>The five dialog identifiers, so a matching test can name the one it is checking.</summary>
+    public static IReadOnlyList<string> Keys => [.. Dialogs.Select(d => d.Key)];
+
+    protected override void OnInitialized() =>
+        HeaderState.Set(Ar.StandardDialogs.Title, Ar.StandardDialogs.Sub, navKey: null, owner: this);
+
+    /// <summary>A reference sheet decides nothing; it reports which button was pressed.</summary>
+    private void Choose(string choice) => Toasts.Show(Ar.StandardDialogs.Chosen(choice), WSemanticVariant.Info);
+
+    public void Dispose() => HeaderState.Clear(this);
+}

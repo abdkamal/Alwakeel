@@ -1,0 +1,61 @@
+.w-notification-panel-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: transparent;
+}
+
+.w-notification-panel {
+    /* Hangs from the bell: the panel is rendered inside the bell button's own box (WTopBar's
+       BellPanel slot), so it needs no knowledge of the shell around it — no sidebar width, no
+       screen coordinate. */
+    position: absolute;
+    z-index: 91;
+    inset-block-start: calc(100% + 8px);
+    inset-inline-start: 0;
+    width: 380px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 88px);
+    display: flex;
+    flex-direction: column;
+    background: var(--w-surface);
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+}
+
+.w-notification-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px;
+    border-block-end: 1px solid var(--w-border);
+}
+
+.w-notification-panel-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--w-fs-section);
+    font-weight: 700;
+    color: var(--w-text);
+}
+
+.w-notification-panel-actions { display: inline-flex; align-items: center; gap: 4px; }
+
+.w-notification-panel-tabs { padding: 8px 12px 0; }
+
+.w-notification-panel-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.w-notification-panel-foot {
+    padding: 8px 12px;
+    border-block-start: 1px solid var(--w-border);
+    display: flex;
+    justify-content: center;
+}

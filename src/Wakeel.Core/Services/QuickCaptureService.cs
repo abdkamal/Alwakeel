@@ -44,7 +44,12 @@ public sealed record QuickCaptureResult(
 public interface IQuickCaptureService
 {
     /// <summary>Creates a task. <paramref name="titleAr"/> is required; everything else is optional.</summary>
-    Task<QuickCaptureResult> CaptureTaskAsync(string titleAr, DateTime? dueAt = null, TaskPriority priority = TaskPriority.Normal, string? assigneeAr = null, CancellationToken cancellationToken = default);
+    /// <param name="noteAr">
+    /// The optional longer sentence W94 collects under «ملاحظة (اختياري)». It is written in the same
+    /// save as the task itself, so the undo token removes the note with the task rather than leaving
+    /// half of the capture behind.
+    /// </param>
+    Task<QuickCaptureResult> CaptureTaskAsync(string titleAr, DateTime? dueAt = null, TaskPriority priority = TaskPriority.Normal, string? assigneeAr = null, string? noteAr = null, CancellationToken cancellationToken = default);
 
     /// <summary>Creates a free-text note.</summary>
     Task<QuickCaptureResult> CaptureNoteAsync(string textAr, CancellationToken cancellationToken = default);
@@ -103,6 +108,7 @@ public sealed class QuickCaptureService(
         DateTime? dueAt = null,
         TaskPriority priority = TaskPriority.Normal,
         string? assigneeAr = null,
+        string? noteAr = null,
         CancellationToken cancellationToken = default)
     {
         var title = Required(titleAr, nameof(titleAr));
@@ -114,6 +120,7 @@ public sealed class QuickCaptureService(
             Priority = priority,
             Status = WorkTaskStatus.Open,
             AssigneeName = string.IsNullOrWhiteSpace(assigneeAr) ? null : assigneeAr.Trim(),
+            Description = string.IsNullOrWhiteSpace(noteAr) ? null : noteAr.Trim(),
             SourceDeviceKind = DeviceKind.Pc,
         };
         db.Tasks.Add(row);

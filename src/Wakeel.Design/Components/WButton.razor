@@ -1,43 +1,21 @@
 @namespace Wakeel.Design.Components
 @using Wakeel.Design.Text
 
-@if (Variant == WButtonVariant.Split)
+@* A Tooltip is honoured by EVERY variant, not only the icon-only one: a labelled button whose
+   label is a single word («معالجة», «تأكيد», «رفض») still needs the sentence that says what
+   pressing it will do, and the design guide puts that sentence in a tooltip. The bubble wraps
+   whichever button shape the variant draws. Only the icon-only variant additionally takes the
+   tooltip as its accessible NAME, because it has no visible label of its own — on the others an
+   aria-label would silently replace the label the person can actually read. *@
+@if (!string.IsNullOrEmpty(Tooltip))
 {
-    <span class="w-btn-split-wrap">
-        <button type="@Type" class="w-btn w-btn--primary w-btn-split-main @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
-            @BodyMarkup
-        </button>
-        <button type="button" class="w-btn w-btn--primary w-btn-split-caret" disabled="@IsDisabled" aria-expanded="@(_splitOpen ? "true" : "false")" @onclick="ToggleSplit">
-            <WIcon Name="chevron-down" Size="16" />
-        </button>
-        @if (_splitOpen && SplitContent is not null)
-        {
-            <div class="w-btn-split-menu">@SplitContent</div>
-        }
-    </span>
-}
-else if (Variant == WButtonVariant.Icon)
-{
-    if (!string.IsNullOrEmpty(Tooltip))
-    {
-        <WTooltip Text="@Tooltip">
-            <button type="@Type" class="w-btn w-btn--icon @Class" disabled="@IsDisabled" aria-label="@Tooltip" @onclick="HandleClickAsync">
-                @BodyMarkup
-            </button>
-        </WTooltip>
-    }
-    else
-    {
-        <button type="@Type" class="w-btn w-btn--icon @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
-            @BodyMarkup
-        </button>
-    }
+    <WTooltip Text="@Tooltip">
+        @ButtonMarkup
+    </WTooltip>
 }
 else
 {
-    <button type="@Type" class="w-btn @VariantClass @(Loading ? "w-btn--loading" : null) @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
-        @BodyMarkup
-    </button>
+    @ButtonMarkup
 }
 
 @code {
@@ -112,6 +90,37 @@ else
     }
 
     private void ToggleSplit() => _splitOpen = !_splitOpen;
+
+    /// <summary>The button itself, in whichever shape the variant draws; the tooltip wraps this.</summary>
+    private RenderFragment ButtonMarkup => @<text>
+        @if (Variant == WButtonVariant.Split)
+        {
+            <span class="w-btn-split-wrap">
+                <button type="@Type" class="w-btn w-btn--primary w-btn-split-main @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
+                    @BodyMarkup
+                </button>
+                <button type="button" class="w-btn w-btn--primary w-btn-split-caret" disabled="@IsDisabled" aria-expanded="@(_splitOpen ? "true" : "false")" @onclick="ToggleSplit">
+                    <WIcon Name="chevron-down" Size="16" />
+                </button>
+                @if (_splitOpen && SplitContent is not null)
+                {
+                    <div class="w-btn-split-menu">@SplitContent</div>
+                }
+            </span>
+        }
+        else if (Variant == WButtonVariant.Icon)
+        {
+            <button type="@Type" class="w-btn w-btn--icon @Class" disabled="@IsDisabled" aria-label="@Tooltip" @onclick="HandleClickAsync">
+                @BodyMarkup
+            </button>
+        }
+        else
+        {
+            <button type="@Type" class="w-btn @VariantClass @(Loading ? "w-btn--loading" : null) @Class" disabled="@IsDisabled" @onclick="HandleClickAsync">
+                @BodyMarkup
+            </button>
+        }
+    </text>;
 
     private RenderFragment BodyMarkup => @<text>
         @if (Variant == WButtonVariant.Icon)

@@ -16,6 +16,45 @@
 }
 
 .w-kpi-label { font-size: var(--w-fs-meta); color: var(--w-muted); font-weight: 600; }
-.w-kpi-icon { color: var(--w-muted); }
+/* The icon sits in a tinted rounded square, as the exports draw every KPI row; the tint follows
+   the card's own tone so the square says the same thing as the number under it. */
+.w-kpi-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--w-radius);
+    background: var(--w-surface2);
+    color: var(--w-muted);
+    flex: none;
+}
+
+.w-kpi-icon--info { background: var(--w-info-soft); color: var(--w-info); }
+.w-kpi-icon--warning { background: var(--w-warning-soft); color: var(--w-warning); }
+.w-kpi-icon--danger { background: var(--w-danger-soft); color: var(--w-danger); }
+.w-kpi-icon--success { background: var(--w-success-soft); color: var(--w-success); }
 .w-kpi-value { font-size: var(--w-fs-title); font-weight: 700; }
 .w-kpi-sub { font-size: var(--w-fs-meta); color: var(--w-muted); }
+
+/* A KPI that leads somewhere. It keeps the card's own box exactly — only the affordances are
+   added — so a row of cards looks the same whether or not its members are clickable. */
+.w-kpi--action {
+    text-align: inherit;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color var(--w-dur-fast) var(--w-ease), background var(--w-dur-fast) var(--w-ease);
+}
+
+.w-kpi--action:hover { border-color: var(--w-primary); background: var(--w-surface-alt); }
+
+.w-kpi--action:focus-visible {
+    outline: 2px solid var(--w-focus);
+    outline-offset: 2px;
+}
+
+.w-kpi-value--danger { color: var(--w-danger); }
+.w-kpi-value--warning { color: var(--w-warning); }
+.w-kpi-value--info { color: var(--w-info); }
+.w-kpi-value--success { color: var(--w-success); }

@@ -1,0 +1,91 @@
+@namespace Wakeel.Design.Components
+
+@* One tile of the health center's grid (W12): the component's name, a status chip, the one Arabic
+   sentence saying what was found, an optional action, and the footer that dates the run. *@
+<div class="w-health-card w-health-card--@VariantClass">
+@* Head order follows the export: the component's icon leads its title on the card's START edge and
+   the status chip hangs off the END edge, so a grid of tiles reads as one column of names with one
+   column of states beside it. The title is bidi-isolated because component names are Latin runs
+   («Word 2019») inside an Arabic paragraph (AGREEMENT item 55). *@
+    <div class="w-health-head">
+        <span class="w-health-title">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <span class="w-health-icon" aria-hidden="true">
+                    <WIcon Name="@Icon" Size="18" />
+                </span>
+            }
+            <bdi class="w-health-title-text">@Title</bdi>
+        </span>
+        <WChip Variant="@ChipVariant" Label="@StatusLabel" />
+    </div>
+    <p class="w-health-message">@ChildContent</p>
+    @* Footer order follows the export: the run's time sits on the card's START edge in every tile,
+       whether or not that tile can be acted on, so the column of timestamps reads straight down the
+       grid instead of jumping edge to edge; the action, when there is one, hangs off the END edge. *@
+    <div class="w-health-foot">
+        @if (!string.IsNullOrEmpty(FooterText))
+        {
+            <span class="w-health-checked">@FooterText</span>
+        }
+        @if (!string.IsNullOrEmpty(ActionLabel))
+        {
+            <WButton Variant="WButtonVariant.Secondary"
+                     Icon="@ActionIcon"
+                     Label="@ActionLabel"
+                     Tooltip="@ActionTooltip"
+                     OnClick="HandleActionAsync"
+                     Class="w-health-action" />
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>Component name, e.g. «قاعدة البيانات».</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>Lucide icon name drawn beside the title.</summary>
+    [Parameter] public string? Icon { get; set; }
+
+    /// <summary>Traffic light of this component.</summary>
+    [Parameter] public WSemanticVariant Variant { get; set; } = WSemanticVariant.Success;
+
+    /// <summary>Arabic word for the status, drawn in the chip («سليم» / «تحذير» / «عطل»).</summary>
+    [Parameter, EditorRequired] public string StatusLabel { get; set; } = string.Empty;
+
+    /// <summary>The finding itself; bidi-isolated runs belong inside this content.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Label of the card's one action, or null when nothing can be done.</summary>
+    [Parameter] public string? ActionLabel { get; set; }
+
+    /// <summary>Icon of that action.</summary>
+    [Parameter] public string? ActionIcon { get; set; } = "refresh-cw";
+
+    /// <summary>Tooltip explaining what the action will do.</summary>
+    [Parameter] public string? ActionTooltip { get; set; }
+
+    /// <summary>Raised when the action is pressed.</summary>
+    [Parameter] public EventCallback OnAction { get; set; }
+
+    /// <summary>Footer line, e.g. «آخر فحص 10:24».</summary>
+    [Parameter] public string? FooterText { get; set; }
+
+    private WChipVariant ChipVariant => Variant switch
+    {
+        WSemanticVariant.Danger => WChipVariant.Danger,
+        WSemanticVariant.Warning => WChipVariant.Warning,
+        WSemanticVariant.Info => WChipVariant.Info,
+        _ => WChipVariant.Success,
+    };
+
+    private string VariantClass => Variant switch
+    {
+        WSemanticVariant.Danger => "danger",
+        WSemanticVariant.Warning => "warning",
+        WSemanticVariant.Info => "info",
+        _ => "ok",
+    };
+
+    private Task HandleActionAsync(MouseEventArgs args) => OnAction.InvokeAsync();
+}

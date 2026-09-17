@@ -1,0 +1,343 @@
+@page "/w12"
+@using System.Globalization
+@using Wakeel.Core.Data
+@using Wakeel.Core.Services
+@using Wakeel.Design.Text
+@using Wakeel.UI.Services
+@using Wakeel.UI.Services.Shell
+@implements IDisposable
+@inject PageHeaderState HeaderState
+@inject ShellServices Shell
+@inject ISystemSettingsLauncher SystemSettings
+@inject IFileSaveService Files
+@inject IToastService Toasts
+@inject IClock Clock
+@inject TimeProvider Time
+
+@* W12 — مركز الصحة: one card per component HealthService checks, the worst status first in the
+   summary, and the two things the person can do about it — run the checks again, or save the
+   findings as a file to send on. *@
+<div class="w12">
+    @if (!Shell.IsOpen)
+    {
+        <WStateCard Icon="lock" Title="@Ar.Shell.SessionClosedTitle" Desc="@Ar.Shell.SessionClosedDesc" />
+    }
+    else if (_failed)
+    {
+        <WStateCard Icon="alert-circle" Title="@Ar.Shell.ReadFailedTitle" Desc="@Ar.Shell.ReadFailedDesc"
+                    ActionLabel="@Ar.Buttons.Retry" OnAction="CheckAsync" />
+    }
+    else if (_report is null)
+    {
+        <WStateCard Icon="clock" Title="@Ar.States.LoadingTitle" Desc="@Ar.States.LoadingDesc" />
+    }
+    else
+    {
+        @* The one line above the grid, as a strip rather than a card: a summary that says one
+           sentence should not occupy a card the size of the checks it summarises. *@
+        <WBanner Variant="@SummaryVariant" Icon="@SummaryIcon" Title="@_report.SummaryAr" Class="w12-summary" />
+
+        <div class="w12-filters">
+            <WTabs>
+                @foreach (var tab in Tabs)
+                {
+                    <WTabItem Label="@tab.Label" Count="@CountFor(tab.Key)" Active="@(_tab == tab.Key)"
+                              OnClick="@(() => _tab = tab.Key)" />
+                }
+            </WTabs>
+            <WSearch @bind-Value="_search" Placeholder="@Ar.Health.SearchPlaceholder" />
+        </div>
+
+        @if (Visible.Count == 0)
+        {
+            <WStateCard Icon="search" Title="@Ar.Health.NoMatches" Desc="@Ar.Health.NoMatchesDesc" />
+        }
+        else
+        {
+            <div class="w12-grid">
+                @foreach (var card in Visible)
+                {
+                    <WHealthCard Title="@card.TitleAr"
+                                 Icon="@IconFor(card.Component)"
+                                 Variant="@VariantFor(card.Status)"
+                                 StatusLabel="@StatusLabel(card.Status)"
+                                 ActionLabel="@ActionLabel(card.ActionId)"
+                                 ActionIcon="@ActionIcon(card.ActionId)"
+                                 ActionTooltip="@ActionLabel(card.ActionId)"
+                                 FooterText="@Ar.Health.LastCheck(ArabicRelativeTime.TimeText(_report.CheckedAt))"
+                                 OnAction="@(() => RunActionAsync(card.ActionId))">
+                        @Bidi.Wrap(card.MessageAr)
+                    </WHealthCard>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private sealed record FilterTab(string Key, string Label);
+
+    private static readonly FilterTab[] Tabs =
+    [
+        new("all", Ar.Health.TabAll),
+        new("warning", Ar.Health.TabWarnings),
+        new("error", Ar.Health.TabErrors),
+        new("ok", Ar.Health.TabOk),
+    ];
+
+    /// <summary>How often the open screen re-runs the checks by itself, as its header says.</summary>
+    public static readonly TimeSpan RecheckInterval = TimeSpan.FromMinutes(15);
+
+    private HealthReport? _report;
+    private string _tab = "all";
+    private string? _search;
+    private bool _failed;
+    private ITimer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Shell.Changed += HandleShellChanged;
+        PublishHeader();
+        await CheckAsync(announce: false);
+
+        // The header promises a re-check every quarter of an hour; this is what keeps that promise
+        // while the screen is open. The pass goes through InvokeAsync because it touches the same
+        // database session the renderer uses.
+        _timer = Time.CreateTimer(
+            _ => _ = InvokeAsync(() => CheckAsync(announce: false)),
+            null,
+            RecheckInterval,
+            RecheckInterval);
+    }
+
+    /// <summary>
+    /// The session opened again after a lock: the checks run once more, so the cards say what the
+    /// machine looks like now rather than what it looked like before the screen was locked.
+    /// </summary>
+    /// <remarks>
+    /// Deferred to the next render, never done inside the event: the session announces the unlock
+    /// while it is still writing to the database the checks would read.
+    /// </remarks>
+    private void HandleShellChanged() => _ = InvokeAsync(() =>
+    {
+        _recheckOnRender = true;
+        StateHasChanged();
+    });
+
+    private bool _recheckOnRender;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_recheckOnRender && !firstRender)
+        {
+            _recheckOnRender = false;
+            await CheckAsync(announce: false);
+            StateHasChanged();
+        }
+    }
+
+    private void PublishHeader()
+    {
+        var checkedAt = _report is null
+            ? ArabicRelativeTime.DateTimeText(Clock.UtcNow)
+            : ArabicRelativeTime.DateTimeText(_report.CheckedAt);
+        HeaderState.Set(
+            Ar.Health.Title,
+            Ar.Health.Sub(checkedAt, CoreAr.N((int)RecheckInterval.TotalMinutes)),
+            HeaderActions,
+            navKey: null,
+            owner: this);
+    }
+
+    private RenderFragment HeaderActions => @<text>
+        <WButton Variant="WButtonVariant.Primary" Label="@Ar.Health.CheckNow" Icon="activity"
+                 Tooltip="@Ar.Health.CheckNowTooltip" Class="w12-check" OnClick="CheckAsync" />
+        <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Health.Export" Icon="download"
+                 Tooltip="@Ar.Health.ExportTooltip" Class="w12-export" OnClick="ExportAsync" />
+    </text>;
+
+    private Task CheckAsync() => CheckAsync(announce: true);
+
+    private async Task CheckAsync(bool announce)
+    {
+        if (!Shell.IsOpen)
+        {
+            return;
+        }
+
+        _failed = false;
+        try
+        {
+            // Through the gate: the shell's background passes use the same database object, and it
+            // refuses a second operation while a first is still running.
+            _report = await Shell.RunExclusiveAsync(() => Shell.Health.CheckAsync(Clock.UtcNow));
+            PublishHeader();
+            if (announce)
+            {
+                Toasts.Show(Ar.Health.Checked, WSemanticVariant.Success);
+            }
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            _failed = true;
+        }
+    }
+
+    private async Task ExportAsync()
+    {
+        if (_report is null || !Shell.IsOpen)
+        {
+            return;
+        }
+
+        var text = Shell.Health.ExportText(_report);
+        var stamp = _report.CheckedAt.ToLocalTime().ToString("yyyy-MM-dd-HHmm", CultureInfo.InvariantCulture);
+        try
+        {
+            var saved = await Files.SaveTextAsync(Ar.Health.ExportFileName(stamp), text);
+            Toasts.Show(
+                saved is null ? Ar.Health.ExportCancelled : Ar.Health.Exported,
+                saved is null ? WSemanticVariant.Warning : WSemanticVariant.Success);
+        }
+        catch (IOException)
+        {
+            // A folder that refuses the write; nothing technical is shown (AGREEMENT item 15).
+            Toasts.Show(Ar.Health.ExportFailed, WSemanticVariant.Danger);
+        }
+    }
+
+    private Task RunActionAsync(string actionId)
+    {
+        if (actionId == HealthActions.FixClock)
+        {
+            Toasts.Show(
+                SystemSettings.OpenDateAndTime() ? Ar.Clock.FixOpened : Ar.Clock.FixFailed,
+                WSemanticVariant.Info);
+            return Task.CompletedTask;
+        }
+
+        // Backups, the vault, the models folder and the sync screen belong to later packages; until
+        // one of them exists the card says so plainly rather than pretending it did something.
+        Toasts.Show(Ar.Health.ActionNotReadyYet, WSemanticVariant.Info);
+        return Task.CompletedTask;
+    }
+
+    private int CountFor(string key)
+    {
+        var cards = _report?.Cards ?? [];
+        return key switch
+        {
+            "warning" => cards.Count(c => c.Status == HealthStatus.Warning),
+            "error" => cards.Count(c => c.Status == HealthStatus.Error),
+            "ok" => cards.Count(c => c.Status == HealthStatus.Ok),
+            _ => cards.Count,
+        };
+    }
+
+    private IReadOnlyList<HealthCard> Visible
+    {
+        get
+        {
+            IEnumerable<HealthCard> cards = _report?.Cards ?? [];
+            cards = _tab switch
+            {
+                "warning" => cards.Where(c => c.Status == HealthStatus.Warning),
+                "error" => cards.Where(c => c.Status == HealthStatus.Error),
+                "ok" => cards.Where(c => c.Status == HealthStatus.Ok),
+                _ => cards,
+            };
+
+            if (!string.IsNullOrWhiteSpace(_search))
+            {
+                var needle = _search!.Trim();
+                cards = cards.Where(c =>
+                    c.TitleAr.Contains(needle, StringComparison.OrdinalIgnoreCase)
+                    || c.MessageAr.Contains(needle, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return [.. cards];
+        }
+    }
+
+    private WSemanticVariant SummaryVariant => _report?.Overall switch
+    {
+        HealthStatus.Error => WSemanticVariant.Danger,
+        HealthStatus.Warning => WSemanticVariant.Warning,
+        _ => WSemanticVariant.Success,
+    };
+
+    private string SummaryIcon => _report?.Overall switch
+    {
+        HealthStatus.Error => "x-circle",
+        HealthStatus.Warning => "alert-triangle",
+        _ => "check-circle",
+    };
+
+    /// <summary>The Arabic word shown in a card's status chip.</summary>
+    public static string StatusLabel(HealthStatus status) => status switch
+    {
+        HealthStatus.Error => Ar.Health.StatusError,
+        HealthStatus.Warning => Ar.Health.StatusWarning,
+        _ => Ar.Health.StatusOk,
+    };
+
+    private static WSemanticVariant VariantFor(HealthStatus status) => status switch
+    {
+        HealthStatus.Error => WSemanticVariant.Danger,
+        HealthStatus.Warning => WSemanticVariant.Warning,
+        _ => WSemanticVariant.Success,
+    };
+
+    /// <summary>The icon one checked component is drawn with.</summary>
+    public static string IconFor(string component) => component switch
+    {
+        HealthComponents.Database => "database",
+        HealthComponents.Vault => "lock",
+        HealthComponents.Word => "file-text",
+        HealthComponents.Scanner => "scan",
+        HealthComponents.Models => "cpu",
+        HealthComponents.Clock => "clock",
+        HealthComponents.Space => "hard-drive",
+        HealthComponents.Backup => "save",
+        HealthComponents.Sync => "refresh-cw",
+        HealthComponents.Runtime => "layout-grid",
+        _ => "info",
+    };
+
+    /// <summary>The label of a card's action, or null when the card offers none.</summary>
+    public static string? ActionLabel(string actionId) => actionId switch
+    {
+        HealthActions.RestoreBackup => Ar.Health.ActionRestoreBackup,
+        HealthActions.TakeBackup => Ar.Health.ActionTakeBackup,
+        HealthActions.OpenVault => Ar.Health.ActionOpenVault,
+        HealthActions.OpenModelsFolder => Ar.Health.ActionOpenModelsFolder,
+        HealthActions.FixClock => Ar.Health.ActionFixClock,
+        HealthActions.FreeSpace => Ar.Health.ActionFreeSpace,
+        HealthActions.OpenSync => Ar.Health.ActionOpenSync,
+        HealthActions.InstallWord => Ar.Health.ActionInstallWord,
+        HealthActions.ConnectScanner => Ar.Health.ActionConnectScanner,
+        HealthActions.ReinstallRuntime => Ar.Health.ActionReinstallRuntime,
+        _ => null,
+    };
+
+    private static string ActionIcon(string actionId) => actionId switch
+    {
+        HealthActions.RestoreBackup or HealthActions.TakeBackup => "save",
+        HealthActions.OpenVault => "key",
+        HealthActions.OpenModelsFolder => "refresh-cw",
+        HealthActions.FixClock => "clock",
+        HealthActions.FreeSpace => "trash-2",
+        HealthActions.OpenSync => "refresh-cw",
+        HealthActions.InstallWord => "check",
+        HealthActions.ConnectScanner => "scan",
+        _ => "refresh-cw",
+    };
+
+    public void Dispose()
+    {
+        Shell.Changed -= HandleShellChanged;
+        _timer?.Dispose();
+        _timer = null;
+        HeaderState.Clear(this);
+    }
+}

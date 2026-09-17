@@ -1,0 +1,39 @@
+/* The sheet's thirteen reference cards fit 1366x768 without scrolling, as the export shows them
+   all at once — that is the whole point of a reference sheet. Three rows of cards at the 16px
+   spacing the rest of the shell uses came to 14px more than the window holds, so the ROW gap (and
+   the gap between the sheet's own blocks) is one step tighter here; the column gap stays 16px, so
+   nothing about the cards' width changes. */
+.w91 {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.w91-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(180px, 1fr));
+    column-gap: 16px;
+    row-gap: 8px;
+    align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+    .w91-grid { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
+}
+
+@media (max-width: 760px) {
+    .w91-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+}
+
+.w91-cell {
+    display: flex;
+    min-width: 0;
+}
+
+.w91-cell ::deep .w-state-card {
+    flex: 1;
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-lg);
+    background: var(--w-surface);
+    padding: 16px;
+}

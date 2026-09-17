@@ -1,0 +1,98 @@
+@namespace Wakeel.UI.Pages
+@using Wakeel.Core.Services
+@using Wakeel.UI.Services.Shell
+@implements IDisposable
+@inject ShellServices Shell
+@inject ISystemSettingsLauncher SystemSettings
+@inject IToastService Toasts
+
+@* W11 — تنبيه الساعة. Banner.Clock sits above the content of every screen while the machine clock
+   fails its check, and stays until the clock is corrected; «تجاهل مؤقتًا» only hides it for this
+   session, and official numbering stays blocked either way (AGREEMENT item 20). *@
+@if (_state.Visible)
+{
+    <WBanner Variant="WSemanticVariant.Warning"
+             Icon="clock"
+             Title="@_state.TitleAr"
+             Body="@_state.BodyAr"
+             Notice="@_state.NumberingNoticeAr"
+             Class="w11">
+        <Actions>
+            <WButton Variant="WButtonVariant.Secondary" Icon="clock" Label="@Ar.Clock.Fix"
+                     Tooltip="@Ar.Clock.FixTooltip" Class="w11-fix" OnClick="FixAsync" />
+            <WButton Variant="WButtonVariant.Text" Icon="eye-off" Label="@Ar.Clock.Dismiss"
+                     Tooltip="@Ar.Clock.DismissTooltip" Class="w11-dismiss" OnClick="Dismiss" />
+        </Actions>
+    </WBanner>
+}
+
+@code {
+    private ClockBannerState _state = ClockBannerState.Unknown;
+    private IClockGuard? _guard;
+
+    protected override void OnInitialized() => Attach();
+
+    protected override void OnParametersSet() => Attach();
+
+    private void Attach()
+    {
+        if (!Shell.IsOpen)
+        {
+            Detach();
+            _state = ClockBannerState.Unknown;
+            return;
+        }
+
+        var guard = Shell.Clock;
+        if (ReferenceEquals(guard, _guard))
+        {
+            _state = guard.State;
+            return;
+        }
+
+        Detach();
+        _guard = guard;
+        _guard.StateChanged += HandleStateChanged;
+        _state = _guard.State;
+    }
+
+    private void Detach()
+    {
+        if (_guard is not null)
+        {
+            _guard.StateChanged -= HandleStateChanged;
+            _guard = null;
+        }
+    }
+
+    // The ten-minute re-check raises this from the background pass, which may land off the renderer
+    // thread; InvokeAsync brings it back before anything touches component state.
+    private void HandleStateChanged(object? sender, ClockBannerState state) =>
+        InvokeAsync(() =>
+        {
+            _state = state;
+            StateHasChanged();
+        });
+
+    private Task FixAsync()
+    {
+        if (SystemSettings.OpenDateAndTime())
+        {
+            Toasts.Show(Ar.Clock.FixOpened, WSemanticVariant.Info);
+        }
+        else
+        {
+            Toasts.Show(Ar.Clock.FixFailed, WSemanticVariant.Warning);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void Dismiss()
+    {
+        _guard?.DismissForSession();
+        _state = _guard?.State ?? _state;
+    }
+
+    public void Dispose() => Detach();
+}

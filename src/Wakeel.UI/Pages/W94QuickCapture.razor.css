@@ -1,0 +1,28 @@
+.w94 {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* The dialog decides the width; a min-width here only pushed the two-up rows past the
+       surface and put a horizontal scrollbar under them. */
+    min-width: 0;
+}
+
+/* The five kinds are a stacked WSegmented; the page only says it spans the dialog's width. */
+::deep .w94-kinds { width: 100%; }
+
+.w94-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 640px) {
+    .w94-row { grid-template-columns: 1fr; }
+}
+
+/* Every single field spans the dialog, as the export draws «العنوان»، «المكلّف» and «ملاحظة».
+   The design system's default field is 260px — exactly half of this dialog's content box — so the
+   whole end half of every single-field row was blank. The child combinator keeps the fields inside
+   .w94-row on their grid track, and the WInput/WSelect default is untouched: other screens lay
+   their forms out in 260px columns and rely on it. */
+.w94 > ::deep .w-field { width: 100%; }

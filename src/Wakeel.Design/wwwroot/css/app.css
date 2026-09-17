@@ -95,6 +95,23 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
   border: 0;
 }
 
+/* النقطة الدلالية التي تسبق قيمة في جدول أو سطر: لونها من رموز النظام لا من الشاشة */
+.w-dot::before {
+  content: "";
+  display: inline-block;
+  inline-size: 8px;
+  block-size: 8px;
+  margin-inline-end: 6px;
+  border-radius: var(--w-radius-pill);
+  background: currentColor;
+  vertical-align: 1px;
+}
+
+.w-dot--danger { color: var(--w-danger); }
+.w-dot--warning { color: var(--w-warning); }
+.w-dot--success { color: var(--w-success); }
+.w-dot--muted { color: var(--w-muted); }
+
 /* طباعة */
 @media print {
   body { background: #fff; }

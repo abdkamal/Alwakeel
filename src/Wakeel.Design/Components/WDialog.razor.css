@@ -68,3 +68,24 @@
     gap: 8px;
     margin-top: 6px;
 }
+
+/* The consequence strip: the dark line a dialog carries when what it is about to do cannot be
+   taken back, or when it must name the version that arrived. */
+.w-dialog-notice {
+    background: var(--w-text);
+    color: var(--w-bg);
+    border-radius: var(--w-radius);
+    padding: 8px 10px;
+    font-size: var(--w-fs-meta);
+    font-weight: 600;
+}
+
+/* Inline (W92's reference sheet): the same surface, sitting in the page with a border instead of
+   the modal's lift, and free to be as wide as its grid cell. */
+.w-dialog--inline {
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    border: 1px solid var(--w-border);
+    box-shadow: none;
+}

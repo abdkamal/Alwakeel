@@ -1,0 +1,67 @@
+.w09 {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* The export's second control strip: search, type filter and sort toggle at the strip's start, the
+   summary sentence pushed to its end. The fields keep the design system's own 260px column; only
+   their arrangement on the page is decided here. */
+.w09-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.w09-summary {
+    margin-inline-start: auto;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+/* The type cell: the kind's glyph leads the chip on the row's start edge, as the export draws it. */
+.w09-type-cell {
+    white-space: nowrap;
+}
+
+.w09-kind-icon {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-inline-end: 8px;
+    color: var(--w-muted);
+}
+
+.w09-type-cell ::deep .w-chip {
+    vertical-align: middle;
+}
+
+.w09-number {
+    margin-top: 2px;
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+.w09-due--danger { color: var(--w-danger); font-weight: 600; }
+.w09-due--warning { color: var(--w-warning); font-weight: 600; }
+
+.w09-late {
+    font-weight: 600;
+    color: var(--w-danger);
+}
+
+.w09-action-cell {
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* Seven columns fit at 1366 without a horizontal scrollbar: the sentence columns wrap inside their
+   cell instead of forcing the table wider than the card around it. The action cell keeps its one
+   line, because a button that wraps reads as two. */
+::deep .w-table th,
+::deep .w-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.w09-action-cell { white-space: nowrap; }

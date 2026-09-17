@@ -1,0 +1,70 @@
+.w-health-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: var(--w-radius-lg);
+    border: 1px solid var(--w-border);
+    background: var(--w-surface);
+    min-width: 0;
+}
+
+.w-health-card--warning {
+    border-color: var(--w-warning-border);
+    background: var(--w-warning-soft);
+}
+
+.w-health-card--danger {
+    border-color: var(--w-danger-border);
+    background: var(--w-danger-soft);
+}
+
+.w-health-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.w-health-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--w-text);
+    min-width: 0;
+}
+
+.w-health-title-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.w-health-icon {
+    display: inline-flex;
+    color: var(--w-muted);
+    flex: none;
+}
+
+.w-health-message {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.w-health-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px solid var(--w-border);
+}
+
+.w-health-checked {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}

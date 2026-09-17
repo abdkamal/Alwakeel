@@ -1,0 +1,251 @@
+@namespace Wakeel.UI.Pages
+@using Wakeel.Core.Services
+@using Wakeel.UI.Services.Shell
+@inject ShellServices Shell
+@inject NavigationManager Nav
+@inject IToastService Toasts
+
+@* W10 — لوحة الإشعارات. A 380-wide panel that drops out of the bell in the top bar. It is not a
+   routed page: it lives over whatever screen is open, exactly as SCREENS.md draws it over W08. *@
+<WNotificationPanel Open="@Open" Title="@Ar.Notifications.Title" Count="@_unread" OnClose="CloseAsync" Class="w10">
+    <HeadActions>
+        <WButton Variant="WButtonVariant.Text" Icon="check" Label="@Ar.Notifications.MarkAllRead"
+                 Tooltip="@Ar.Notifications.MarkAllReadTooltip" Class="w10-mark-all" OnClick="MarkAllReadAsync" />
+        <WButton Variant="WButtonVariant.Icon" Icon="settings" Tooltip="@Ar.Notifications.SettingsTooltip"
+                 Class="w10-settings" OnClick="OpenSettingsAsync" />
+    </HeadActions>
+    <Tabs>
+        <WTabs>
+            <WTabItem Label="@Ar.Notifications.TabAll" Count="@_total" Active="@(!_unreadOnly)" OnClick="@(() => SwitchAsync(false))" />
+            <WTabItem Label="@Ar.Notifications.TabUnread" Count="@_unread" Active="@_unreadOnly" OnClick="@(() => SwitchAsync(true))" />
+        </WTabs>
+    </Tabs>
+    <ChildContent>
+        @if (_loading)
+        {
+            <WStateCard Icon="clock" Title="@Ar.States.LoadingTitle" Desc="@Ar.States.LoadingDesc" />
+        }
+        else if (_failed)
+        {
+            <WStateCard Icon="alert-circle" Title="@Ar.Shell.ReadFailedTitle" Desc="@Ar.Shell.ReadFailedDesc"
+                        ActionLabel="@Ar.Buttons.Retry" OnAction="ReloadAsync" />
+        }
+        else if (_rows.Count == 0)
+        {
+            <WStateCard Icon="bell"
+                        Title="@(_unreadOnly ? Ar.Notifications.EmptyUnreadTitle : Ar.Notifications.EmptyTitle)"
+                        Desc="@(_unreadOnly ? Ar.Notifications.EmptyUnreadDesc : Ar.Notifications.EmptyDesc)" />
+        }
+        else
+        {
+            @* One continuous list, newest first, the way the export draws the panel. The service's
+               day groups still decide the ORDER — today's rows, then yesterday's, then the older
+               ones — but the panel is 380 px wide and a day heading every few rows broke it into
+               more regions than it has room for. *@
+            @foreach (var item in Rows)
+            {
+                <WNotificationItem Icon="@IconFor(item.Kind)"
+                                       KindLabel="@Ar.Notifications.KindLabel(item.Kind)"
+                                       RelativeTime="@item.RelativeAr"
+                                       Unread="@(!item.IsRead)"
+                                       Variant="@VariantFor(item.Kind)"
+                                       Tooltip="@Ar.Notifications.OpenTooltip(item.TitleAr)"
+                                       OnClick="@(() => OpenAsync(item))">
+                        <Title>@Bidi.Wrap(item.TitleAr)</Title>
+                        <Body>
+                            @if (!string.IsNullOrEmpty(item.BodyAr))
+                            {
+                                @Bidi.Wrap(item.BodyAr)
+                            }
+                        </Body>
+                    </WNotificationItem>
+            }
+        }
+    </ChildContent>
+    <FooterContent>
+        <WButton Variant="WButtonVariant.Text" Icon="chevron-left" IconPosition="WIconPosition.Trailing"
+                 Label="@Ar.Notifications.ViewAll" Tooltip="@Ar.Notifications.ViewAllTooltip"
+                 Class="w10-view-all" OnClick="OpenAllAsync" />
+    </FooterContent>
+</WNotificationPanel>
+
+@code {
+    /// <summary>
+    /// The panel's rows in the one order it shows them: today's first, then yesterday's, then the
+    /// older ones. The service still groups them by day — that grouping is what orders this list —
+    /// but the panel itself draws no day headings, as the export draws none.
+    /// </summary>
+    private readonly List<NotificationView> _rows = [];
+
+    private IReadOnlyList<NotificationView> Rows => _rows;
+    private bool _unreadOnly;
+    private bool _loading;
+    private bool _failed;
+    private int _total;
+    private int _unread;
+    private bool _wasOpen;
+
+    /// <summary>How many rows one opening of the panel fetches; older ones stay behind «عرض كل الإشعارات».</summary>
+    public const int PageSize = 30;
+
+    /// <summary>Whether the panel is dropped down.</summary>
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>Raised when the panel closes itself (scrim, settings link, opening a record).</summary>
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    /// <summary>Raised whenever the unread count may have changed, so the bell badge is re-read.</summary>
+    [Parameter] public EventCallback OnCountsChanged { get; set; }
+
+    /// <summary>The instant relative times are measured from; the shell passes the device clock.</summary>
+    [Parameter] public DateTime Now { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Where the «الإعدادات» link goes (W86, once the settings package builds it).</summary>
+    public const string SettingsRoute = "/w86";
+
+    /// <summary>
+    /// Where «عرض كل الإشعارات» goes: the full list, which no package has built yet.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately NOT the settings route. The footer promises the rest of the notifications, and a
+    /// link that quietly lands on the settings screen instead would be a worse answer than the
+    /// honest «الصفحة غير موجودة» this gives until the list exists.
+    /// </remarks>
+    public const string AllNotificationsRoute = "/notifications";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Open && !_wasOpen)
+        {
+            _wasOpen = true;
+            await ReloadAsync();
+        }
+        else if (!Open)
+        {
+            _wasOpen = false;
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (!Shell.IsOpen)
+        {
+            _failed = true;
+            return;
+        }
+
+        _loading = true;
+        _failed = false;
+        try
+        {
+            // Through the gate: the shell's background passes use the same database object, and it
+            // refuses a second operation while a first is still running.
+            var panel = await Shell.RunExclusiveAsync(
+                () => Shell.Notifications.GetPanelAsync(Now, _unreadOnly, PageSize));
+            _rows.Clear();
+            foreach (var group in new[] { NotificationDayGroup.Today, NotificationDayGroup.Yesterday, NotificationDayGroup.Older })
+            {
+                if (panel.Groups.TryGetValue(group, out var rows))
+                {
+                    _rows.AddRange(rows);
+                }
+            }
+
+            _total = panel.Total;
+            _unread = panel.Unread;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            _failed = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SwitchAsync(bool unreadOnly)
+    {
+        if (_unreadOnly == unreadOnly)
+        {
+            return;
+        }
+
+        _unreadOnly = unreadOnly;
+        await ReloadAsync();
+    }
+
+    private async Task MarkAllReadAsync()
+    {
+        if (!Shell.IsOpen)
+        {
+            return;
+        }
+
+        await Shell.RunExclusiveAsync(() => Shell.Notifications.MarkAllReadAsync(Now));
+        Toasts.Show(Ar.Notifications.AllMarkedRead, WSemanticVariant.Success);
+        await ReloadAsync();
+        await OnCountsChanged.InvokeAsync();
+    }
+
+    private async Task OpenAsync(NotificationView item)
+    {
+        if (Shell.IsOpen && !item.IsRead)
+        {
+            await Shell.RunExclusiveAsync(() => Shell.Notifications.MarkReadAsync(item.Id, Now));
+            await OnCountsChanged.InvokeAsync();
+        }
+
+        await CloseAsync();
+
+        if (RecordRoutes.For(item.EntityType, item.EntityId) is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    private Task OpenSettingsAsync()
+    {
+        Nav.NavigateTo(SettingsRoute);
+        return CloseAsync();
+    }
+
+    private Task OpenAllAsync()
+    {
+        Nav.NavigateTo(AllNotificationsRoute);
+        return CloseAsync();
+    }
+
+    private async Task CloseAsync()
+    {
+        Open = false;
+        _wasOpen = false;
+        await OpenChanged.InvokeAsync(false);
+    }
+
+    /// <summary>The icon one notification kind is drawn with.</summary>
+    public static string IconFor(string kind) => kind switch
+    {
+        NotificationKinds.Meeting => "users",
+        NotificationKinds.Appointment => "calendar",
+        NotificationKinds.TaskDue => "check-square",
+        NotificationKinds.CommitmentDue => "flag",
+        NotificationKinds.FinancialCycle => "bar-chart-3",
+        NotificationKinds.Backup => "hard-drive",
+        NotificationKinds.Clock => "clock",
+        NotificationKinds.PhoneExpense => "wallet",
+        NotificationKinds.Sync => "refresh-cw",
+        _ => "bell",
+    };
+
+    /// <summary>
+    /// The tint one notification row carries. The two that say something is running out — the
+    /// financial cycle (AGREEMENT item 52) and the clock (item 20) — are drawn on a warning ground,
+    /// the way W10 shows them; everything else is a plain row.
+    /// </summary>
+    public static WSemanticVariant VariantFor(string kind) => kind switch
+    {
+        NotificationKinds.FinancialCycle or NotificationKinds.Clock => WSemanticVariant.Warning,
+        _ => WSemanticVariant.Neutral,
+    };
+}

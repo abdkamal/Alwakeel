@@ -1,0 +1,79 @@
+@namespace Wakeel.Design.Components
+
+@* The full-width strip that sits above a screen's content and says something the person must
+   read before working: the clock warning of W11, the monthly-report reminder of W08. WBannerClock
+   is the fixed, text-free variant the component gallery draws; this one carries live sentences and
+   its own actions, which a banner raised from real state always does. *@
+<div class="w-banner w-banner--@VariantClass @Class" role="@(Variant == WSemanticVariant.Danger ? "alert" : "status")">
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <span class="w-banner-icon" aria-hidden="true">
+            <WIcon Name="@Icon" Size="20" />
+        </span>
+    }
+    <div class="w-banner-text">
+        <p class="w-banner-title">@Title</p>
+        @if (!string.IsNullOrEmpty(Body))
+        {
+            <p class="w-banner-body">@Body</p>
+        }
+        @if (BodyContent is not null)
+        {
+            <div class="w-banner-body">@BodyContent</div>
+        }
+        @if (!string.IsNullOrEmpty(Notice))
+        {
+            <p class="w-banner-notice">@Notice</p>
+        }
+    </div>
+    @if (TrailingContent is not null)
+    {
+        <div class="w-banner-trailing">@TrailingContent</div>
+    }
+    @if (Actions is not null)
+    {
+        <div class="w-banner-actions">@Actions</div>
+    }
+</div>
+
+@code {
+    /// <summary>Semantic colour of the strip.</summary>
+    [Parameter] public WSemanticVariant Variant { get; set; } = WSemanticVariant.Warning;
+
+    /// <summary>Lucide icon name shown at the start of the strip.</summary>
+    [Parameter] public string? Icon { get; set; }
+
+    /// <summary>The one sentence that says what happened.</summary>
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    /// <summary>The explanation under it.</summary>
+    [Parameter] public string? Body { get; set; }
+
+    /// <summary>Rich content under the title, for a banner that carries a progress bar or links.</summary>
+    [Parameter] public RenderFragment? BodyContent { get; set; }
+
+    /// <summary>A consequence the person must know about, emphasised (e.g. «لن تُصدر أرقام رسمية حتى التصحيح»).</summary>
+    [Parameter] public string? Notice { get; set; }
+
+    /// <summary>
+    /// A figure that belongs on the banner's own row rather than under its title — the monthly
+    /// report's readiness bar of W08. It sits between the sentence and the buttons, so the strip
+    /// stays one row tall; <see cref="BodyContent"/> is the slot for content that may wrap.
+    /// </summary>
+    [Parameter] public RenderFragment? TrailingContent { get; set; }
+
+    /// <summary>The banner's buttons, at its end.</summary>
+    [Parameter] public RenderFragment? Actions { get; set; }
+
+    /// <summary>Additional CSS classes appended to the strip, so the calling screen can place it.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    private string VariantClass => Variant switch
+    {
+        WSemanticVariant.Info => "info",
+        WSemanticVariant.Success => "success",
+        WSemanticVariant.Danger => "danger",
+        WSemanticVariant.Warning => "warning",
+        _ => "neutral",
+    };
+}

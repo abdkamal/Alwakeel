@@ -124,3 +124,44 @@ public enum WAutosaveState
 /// <param name="Text">Arabic message text.</param>
 /// <param name="Variant">Semantic color/icon.</param>
 public sealed record WToastMessage(Guid Id, string Text, WSemanticVariant Variant);
+
+/// <summary>
+/// Display data for one row of a <c>WTree</c>, produced by its <c>RowOf</c> delegate. The tree is
+/// generic over the caller's own item type; this record is the single place where that item is
+/// translated into the row anatomy the design system draws (icon, name, level chip, meta text,
+/// state chip, badge), so every hierarchy screen — the organisation structure, unit pickers,
+/// document folders — renders with identical spacing and states.
+/// </summary>
+/// <param name="Name">The node's Arabic name, shown isolated (bidi) and highlighted on a search match.</param>
+public sealed record WTreeRow(string Name)
+{
+    /// <summary>Lucide icon name drawn before the name (e.g. "landmark", "building", "folder-open").</summary>
+    public string? Icon { get; init; }
+
+    /// <summary>Level chip label (e.g. «دائرة»). When null the chip is omitted.</summary>
+    public string? LevelLabel { get; init; }
+
+    /// <summary>Level chip colour. When null the tree derives it from the node's depth.</summary>
+    public WChipVariant? LevelVariant { get; init; }
+
+    /// <summary>Trailing meta text on the far side of the row (e.g. the head's name).</summary>
+    public string? Meta { get; init; }
+
+    /// <summary>Trailing state text (e.g. «بلا رئيس معيّن»). When null no state chip is drawn.</summary>
+    public string? StateLabel { get; init; }
+
+    /// <summary>Colour of the state chip; warning by default.</summary>
+    public WChipVariant StateVariant { get; init; } = WChipVariant.Warning;
+
+    /// <summary>Lucide icon shown inside the state chip (e.g. "alert-triangle").</summary>
+    public string? StateIcon { get; init; }
+
+    /// <summary>Optional trailing count badge (e.g. the number of units under this branch).</summary>
+    public int? Badge { get; init; }
+
+    /// <summary>Tints the whole row with the attention colour (the state that needs the operator's eye).</summary>
+    public bool Attention { get; init; }
+
+    /// <summary>Dims the row (an out-of-service node that is still part of the hierarchy).</summary>
+    public bool Dimmed { get; init; }
+}

@@ -1,0 +1,36 @@
+.w-undo {
+    position: fixed;
+    inset-block-end: 20px;
+    inset-inline-end: 20px;
+    z-index: 210;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 260px;
+    max-width: 420px;
+    padding: 10px 14px;
+    border-radius: var(--w-radius-lg);
+    background: var(--w-success-fill);
+    color: var(--w-on-fill);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.w-undo-icon { flex: none; }
+
+.w-undo-text {
+    flex: 1;
+    font-size: var(--w-fs-body);
+}
+
+/* ::deep reaches the button's own scope; the space form is the one Blazor's rewriter understands
+   (the parenthesised form is emitted verbatim and dropped by every browser). */
+.w-undo ::deep .w-undo-action,
+.w-undo ::deep .w-undo-close {
+    color: var(--w-on-fill);
+    flex: none;
+}
+
+.w-undo ::deep .w-undo-action {
+    font-weight: 700;
+    text-decoration: underline;
+}

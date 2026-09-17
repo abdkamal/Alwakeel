@@ -1,0 +1,81 @@
+.w-notification {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 0;
+    border-block-end: 1px solid var(--w-border);
+    background: transparent;
+    text-align: start;
+    font-family: inherit;
+    color: var(--w-text);
+    cursor: pointer;
+}
+
+.w-notification:last-child { border-block-end: 0; }
+.w-notification:hover { background: var(--w-surface2); }
+.w-notification:focus-visible { outline: 2px solid var(--w-focus); outline-offset: -2px; }
+
+.w-notification-dot {
+    width: 8px;
+    height: 8px;
+    margin-block-start: 6px;
+    flex-shrink: 0;
+    border-radius: var(--w-radius-pill);
+    background: var(--w-success);
+}
+
+.w-notification-dot--read { background: transparent; }
+
+.w-notification-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.w-notification-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.w-notification-kind { font-size: var(--w-fs-meta); color: var(--w-muted); font-weight: 600; }
+.w-notification-time { font-size: var(--w-fs-meta); color: var(--w-muted); flex-shrink: 0; }
+
+.w-notification-title {
+    font-size: var(--w-fs-body);
+    color: var(--w-text);
+    overflow-wrap: anywhere;
+}
+
+.w-notification--unread .w-notification-title { font-weight: 700; }
+
+.w-notification-body {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+    overflow-wrap: anywhere;
+}
+
+.w-notification-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--w-radius);
+    background: var(--w-surface2);
+    color: var(--w-muted);
+}
+
+/* A row that must stand out carries its colour on the whole row and on the icon square. */
+.w-notification--warning { background: var(--w-warning-soft); }
+.w-notification--warning .w-notification-icon { background: var(--w-warning-fill); color: var(--w-on-fill); }
+.w-notification--danger { background: var(--w-danger-soft); }
+.w-notification--danger .w-notification-icon { background: var(--w-danger-fill); color: var(--w-on-fill); }
+.w-notification--info .w-notification-icon { background: var(--w-info-soft); color: var(--w-info); }
+.w-notification--success .w-notification-icon { background: var(--w-success-soft); color: var(--w-success); }

@@ -1,0 +1,67 @@
+@namespace Wakeel.Design.Components
+
+@* One row of the notification panel (W10): the kind's icon square on the row's START edge, then
+   what kind it is and when it arrived on the first line, what happened on the second, the detail on
+   the third, and — while it is unread — a dot on the END edge. That is the order the export draws;
+   a row always leads somewhere, so it is a button. *@
+<button type="button"
+        class="w-notification @(Unread ? "w-notification--unread" : null) @(Variant == WSemanticVariant.Neutral ? null : $"w-notification--{VariantSlug}") @Class"
+        title="@Tooltip"
+        @onclick="OnClick">
+    <span class="w-notification-icon" aria-hidden="true">
+        <WIcon Name="@Icon" Size="16" />
+    </span>
+    <span class="w-notification-text">
+        <span class="w-notification-line">
+            <span class="w-notification-kind">@KindLabel</span>
+            <bdi class="w-notification-time">@RelativeTime</bdi>
+        </span>
+        <span class="w-notification-title">@Title</span>
+        @if (Body is not null)
+        {
+            <span class="w-notification-body">@Body</span>
+        }
+    </span>
+    <span class="w-notification-dot @(Unread ? null : "w-notification-dot--read")" aria-hidden="true"></span>
+</button>
+
+@code {
+    /// <summary>Lucide icon name of the notification's kind.</summary>
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+
+    /// <summary>The kind in words, on the first line (e.g. «مراسلة واردة»).</summary>
+    [Parameter, EditorRequired] public string KindLabel { get; set; } = string.Empty;
+
+    /// <summary>When it arrived, already phrased (e.g. «قبل 10 دقائق»); isolated as a bdi.</summary>
+    [Parameter, EditorRequired] public string RelativeTime { get; set; } = string.Empty;
+
+    /// <summary>What happened. Pass it already bidi-wrapped when it can hold Latin or digits.</summary>
+    [Parameter, EditorRequired] public RenderFragment Title { get; set; } = default!;
+
+    /// <summary>The detail line under the title, when there is one.</summary>
+    [Parameter] public RenderFragment? Body { get; set; }
+
+    /// <summary>Whether the row is still unread: the dot, the heavier title and the tinted ground.</summary>
+    [Parameter] public bool Unread { get; set; }
+
+    /// <summary>Semantic tint for a row that must stand out (a cycle about to close, a failed sync).</summary>
+    [Parameter] public WSemanticVariant Variant { get; set; } = WSemanticVariant.Neutral;
+
+    /// <summary>What the row says on hover; a row with no other label needs one.</summary>
+    [Parameter] public string? Tooltip { get; set; }
+
+    /// <summary>Opening the record the notification is about.</summary>
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    /// <summary>Additional CSS classes.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    private string VariantSlug => Variant switch
+    {
+        WSemanticVariant.Info => "info",
+        WSemanticVariant.Success => "success",
+        WSemanticVariant.Danger => "danger",
+        WSemanticVariant.Warning => "warning",
+        _ => "neutral",
+    };
+}

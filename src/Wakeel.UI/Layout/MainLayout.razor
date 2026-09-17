@@ -2,23 +2,41 @@
 @namespace Wakeel.UI.Layout
 @using Wakeel.Design.Components
 @using Wakeel.UI.Services
+@using Wakeel.UI.Services.Shell
 @using Wakeel.Design.Text
 @using Wakeel.Design.Bidi
+@using Wakeel.UI.Pages
 @using Wakeel.UI.Pages.Account
 @using Wakeel.Core.Data
+@using Wakeel.Core.Services
 @implements IDisposable
 @inject PageHeaderState HeaderState
 @inject ThemeService Theme
 @inject NavigationManager Nav
 @inject AccountSession Session
 @inject LockService Locks
+@inject ShellServices Shell
+@inject ShellCommands Commands
+@inject IClock Clock
+@inject IToastService Toasts
+@inject TimeProvider Time
 
-@* Anything the person does anywhere in the shell resets the idle timer W06 measures against. *@
-<div class="w-shell" @onclick="MarkActivity" @onkeydown="MarkActivity" @onpointerdown="MarkActivity">
-    <WSidebar SelectedKey="@HeaderState.NavKey" Badges="@SampleBadges" SyncStatusText="@Ar.Footer.Synced" Version="v0.21" OnNavigate="HandleNavigate" />
+@* Anything the person does anywhere in the shell resets the idle timer W06 measures against.
+   The root also carries the keyboard: it is focusable (tabindex="-1") so a click anywhere inside
+   it lands focus here rather than on the document body, which is what lets Ctrl+N reach this
+   handler from every screen (W94). *@
+<div class="w-shell" tabindex="-1" @ref="_shellRef"
+     @onclick="MarkActivity" @onkeydown="HandleKeyDownAsync" @onpointerdown="MarkActivity">
+    <WSidebar SelectedKey="@HeaderState.NavKey" Badges="@Badges" SyncStatusText="@Ar.Footer.Synced" Version="v0.21" OnNavigate="HandleNavigate" />
     <div class="w-shell-main">
-        <WTopBar UserName="@UserName" UserRole="@UserRole" NotificationCount="@SampleNotificationCount"
-                 OnLock="LockNow" OnSignOut="SignOut" />
+        <WTopBar UserName="@UserName" UserRole="@UserRole" NotificationCount="@BellCount"
+                 OnBellClick="ToggleNotifications" OnLock="LockNow" OnSignOut="SignOut">
+            <BellPanel>
+                @* W10: the bell's own panel, hanging from the bell itself. *@
+                <W10NotificationPanel Open="@_notificationsOpen" OpenChanged="HandleNotificationsOpenChanged"
+                                      OnCountsChanged="RefreshBadgesAsync" Now="@Clock.UtcNow" />
+            </BellPanel>
+        </WTopBar>
         <div class="w-page">
             @if (!string.IsNullOrEmpty(HeaderState.Title))
             {
@@ -36,6 +54,10 @@
                     }
                 </div>
             }
+            @* W11 sits under the page's own header and over the page's content, on every screen,
+               while the clock is wrong — the place the export draws it. Above the header it pushed
+               the screen's title and its actions down the window. *@
+            <W11ClockBanner />
             <div class="w-page-content">
                 @Body
             </div>
@@ -43,11 +65,29 @@
     </div>
     <WToastHost />
 
+    @* W94: Ctrl+N from anywhere, and the «إدخال سريع» button of W08. *@
+    <W94QuickCapture Open="@_quickCaptureOpen" OpenChanged="HandleQuickCaptureOpenChanged"
+                     OnCaptured="HandleCapturedAsync" />
+
+    <WUndoToast Text="@_undoText" CanUndo="@(_undoToken is not null)" OnUndo="UndoAsync" OnClose="ClearUndo" />
+
     @* W06: the automatic lock lays itself over whatever screen is open, and draws nothing until it does. *@
     <W06LockOverlay />
 </div>
 
 @code {
+    private ElementReference _shellRef;
+    private bool _notificationsOpen;
+    private bool _quickCaptureOpen;
+    private string? _undoText;
+    private string? _undoToken;
+    private IBadgeService? _badges;
+    private ITimer? _undoTimer;
+    private bool _hadSession;
+    private bool _needsStart;
+    private IReadOnlyDictionary<string, int>? _liveBadges;
+    private int _bell;
+
     /// <summary>Tells the session the person is still here, so the idle timer starts again from now.</summary>
     private void MarkActivity() => Session.MarkActivity();
 
@@ -65,18 +105,31 @@
         : Ar.Sample.UserRole;
 
     /// <summary>«قفل الجهاز» from the user menu: the same lock the idle timer performs (W06).</summary>
-    private void LockNow() => Locks.LockNow();
+    private void LockNow()
+    {
+        StopBackgroundWork();
+        Locks.LockNow();
+    }
 
     /// <summary>«تسجيل الخروج»: the database closes, every key is wiped, and W05 asks again.</summary>
-    private void SignOut()
+    private async Task SignOut()
     {
-        Session.SignOut();
+        StopBackgroundWork();
+
+        // Closing the session disposes the database object the shell's background work shares, so it
+        // is closed between passes rather than under one.
+        await Shell.RunExclusiveAsync(() =>
+        {
+            Session.SignOut();
+            return Task.CompletedTask;
+        });
+
         Nav.NavigateTo("/login");
     }
 
     // Fixed sample counts (DESIGN-GUIDE.md's single fixed sample dataset for v0.21 — organization
     // "هيئة تنمية المناطق الريفية" / office "مكتب مدير دائرة التخطيط" / user "أحمد الخطيب") shown
-    // across every screen until a page wires live counts from Wakeel.Core.
+    // before a session is open, which is the only time the shell has nothing real to count.
     private static readonly IReadOnlyDictionary<string, int> SampleBadges = new Dictionary<string, int>(StringComparer.Ordinal)
     {
         [WSidebar.Keys.GroupDailyWork] = 18,
@@ -88,13 +141,317 @@
 
     private const int SampleNotificationCount = 3;
 
+    // Once a session HAS been open, the sample numbers are never shown again: a locked or signed-out
+    // shell that still displayed invented counts of real office work would be telling the person
+    // something untrue about their own day. It shows nothing instead.
+    private static readonly IReadOnlyDictionary<string, int> NoBadges =
+        new Dictionary<string, int>(StringComparer.Ordinal);
+
+    /// <summary>Sidebar and group badges: the live counts once a session is open, the sample before.</summary>
+    private IReadOnlyDictionary<string, int> Badges =>
+        _liveBadges ?? (_hadSession ? NoBadges : SampleBadges);
+
+    /// <summary>The bell's badge: unread, undismissed notifications.</summary>
+    private int BellCount =>
+        _liveBadges is not null ? _bell : (_hadSession ? 0 : SampleNotificationCount);
+
     protected override async Task OnInitializedAsync()
     {
         HeaderState.Changed += HandleChanged;
+        Shell.Changed += HandleShellChanged;
+        Commands.QuickCaptureRequested += HandleQuickCaptureRequested;
+        Commands.NotificationsRequested += HandleNotificationsRequested;
         await Theme.InitializeAsync();
+        _needsStart = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Put the keyboard inside the shell, so Ctrl+N works before the person has clicked
+            // anything. A focus that cannot be taken (no DOM, as in a unit-test host) is not a
+            // failure.
+            try
+            {
+                await _shellRef.FocusAsync();
+            }
+            catch (InvalidOperationException)
+            {
+                // No rendered element to focus; the «إدخال سريع» button of W08 is the other way in.
+            }
+            catch (JSException)
+            {
+                // No interop available in this host.
+            }
+        }
+
+        // The session opened or closed. Starting the background work HERE — after a render, on the
+        // renderer's own thread — and never from inside the event handler is what keeps it from
+        // overlapping the session operation that raised the event: AccountSession announces an
+        // unlock in the middle of LockService.UnlockAsync, while that method is still writing to
+        // the very database the clock re-check and the badge count would reach for.
+        if (_needsStart)
+        {
+            _needsStart = false;
+            await StartBackgroundWorkAsync();
+            StateHasChanged();
+        }
     }
 
     private void HandleChanged() => InvokeAsync(StateHasChanged);
+
+    // ------------------------------------------------------------------------------------------
+    // Background work of the open session (B2): the clock guard's ten-minute re-check and the
+    // reminder scheduler's minute tick. Both REQUIRE a dispatcher and run every pass through it;
+    // ComponentBase.InvokeAsync is exactly the shape BackgroundPassDispatcher asks for, and it is
+    // what keeps those passes on the renderer's thread while they share its database session.
+    // Sharing that one database object is also why every pass takes ShellServices' gate: the
+    // database refuses a second operation while a first is still running, and the foreground
+    // operation — an unlock, a sign-out — is the one that would lose.
+    // ------------------------------------------------------------------------------------------
+
+    private void HandleShellChanged() => _ = InvokeAsync(() =>
+    {
+        _needsStart = true;
+        StateHasChanged();
+    });
+    private async Task StartBackgroundWorkAsync()
+    {
+        if (!Shell.IsOpen)
+        {
+            // Signed out or locked: the scope that owned those services went with the session, so
+            // there is nothing left to stop, and the shell stops showing counts altogether.
+            DetachBadges();
+            _liveBadges = null;
+            _bell = 0;
+            _notificationsOpen = false;
+            ClearUndo();
+            return;
+        }
+
+        _hadSession = true;
+
+        // Every background pass (the clock guard's ten-minute re-check, the reminder scheduler's
+        // minute tick) runs through the renderer AND takes the session's database to itself while
+        // it runs. The gate is what stops it from landing on the database in the middle of a
+        // foreground operation — the unlock's audit write is the one that used to lose. An
+        // exception escaping a pass would take the whole window down with it, so a pass that fails
+        // is swallowed here: the next tick tries again, and nothing the person is doing is
+        // interrupted.
+        BackgroundPassDispatcher dispatcher = pass => InvokeAsync(() => Shell.RunExclusiveAsync(async () =>
+        {
+            try
+            {
+                await pass();
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                // Deliberately silent in the interface (AGREEMENT item 15); the host log carries the
+                // detail for whoever has to look at it.
+                Console.Error.WriteLine(exception);
+            }
+        }));
+
+        // Not inside the gate: the first pass of the clock guard goes through the dispatcher above,
+        // which takes the gate itself.
+        await Shell.Clock.StartAsync(Clock.UtcNow, dispatcher);
+        Shell.Reminders.Start(Shell.Ticker, dispatcher);
+
+        AttachBadges();
+        await RefreshBadgesAsync();
+    }
+
+    /// <summary>Stops the session's background work; called before a lock and before a sign-out.</summary>
+    /// <remarks>
+    /// Disposing the session's scope stops both timers on its own, so this is belt and braces — but
+    /// it is the belt the spec asks for: the guard and the scheduler are told to stop at the moment
+    /// the person locks or signs out, not whenever the scope happens to be collected. Calling it
+    /// while no session is open is a no-op.
+    /// </remarks>
+    public void StopBackgroundWork()
+    {
+        if (!Shell.IsOpen)
+        {
+            return;
+        }
+
+        Shell.Clock.Stop();
+        Shell.Reminders.Stop();
+    }
+
+    private void AttachBadges()
+    {
+        var badges = Shell.Badges;
+        if (ReferenceEquals(badges, _badges))
+        {
+            return;
+        }
+
+        DetachBadges();
+        _badges = badges;
+        _badges.Changed += HandleBadgesChanged;
+    }
+
+    private void DetachBadges()
+    {
+        if (_badges is not null)
+        {
+            _badges.Changed -= HandleBadgesChanged;
+            _badges = null;
+        }
+    }
+
+    // May arrive from a background pass; InvokeAsync brings it back to the renderer first.
+    private void HandleBadgesChanged(object? sender, BadgeChangedEventArgs args) => _ = InvokeAsync(async () =>
+    {
+        if (args.Snapshot is { } snapshot)
+        {
+            Apply(snapshot);
+            StateHasChanged();
+        }
+        else
+        {
+            await RefreshBadgesAsync();
+        }
+    });
+
+    /// <summary>Re-reads the sidebar, group and bell badges from the badge service.</summary>
+    public async Task RefreshBadgesAsync()
+    {
+        if (!Shell.IsOpen)
+        {
+            return;
+        }
+
+        try
+        {
+            // Through the gate: a badge count is a database read, and the foreground may be using it.
+            Apply(await Shell.RunExclusiveAsync(() => Shell.Badges.RefreshAsync(Clock.UtcNow)));
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            // A badge is a convenience; a failed count must never take the whole shell down.
+            _liveBadges = null;
+        }
+
+        StateHasChanged();
+    }
+
+    private void Apply(BadgeSnapshot snapshot)
+    {
+        var merged = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var pair in snapshot.Groups)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in snapshot.Items)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        _liveBadges = merged;
+        _bell = snapshot.Bell;
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // The bell panel (W10) and the quick-entry dialog (W94).
+    // ------------------------------------------------------------------------------------------
+
+    private void ToggleNotifications() => _notificationsOpen = !_notificationsOpen;
+
+    private void HandleNotificationsOpenChanged(bool open) => _notificationsOpen = open;
+
+    private void HandleQuickCaptureOpenChanged(bool open) => _quickCaptureOpen = open;
+
+    private void HandleQuickCaptureRequested() => _ = InvokeAsync(() =>
+    {
+        _quickCaptureOpen = true;
+        StateHasChanged();
+    });
+
+    private void HandleNotificationsRequested() => _ = InvokeAsync(() =>
+    {
+        _notificationsOpen = true;
+        StateHasChanged();
+    });
+
+    private void HandleKeyDownAsync(KeyboardEventArgs args)
+    {
+        MarkActivity();
+
+        if (args.CtrlKey && !args.AltKey && (args.Key == "n" || args.Key == "N"))
+        {
+            _quickCaptureOpen = true;
+            return;
+        }
+
+        if (args.Key == "Escape" && _notificationsOpen)
+        {
+            _notificationsOpen = false;
+        }
+    }
+
+    private async Task HandleCapturedAsync(QuickCaptureResult result)
+    {
+        _undoText = result.MessageAr;
+        _undoToken = result.UndoToken;
+        StartUndoTimer(result.UndoableUntil);
+        await RefreshBadgesAsync();
+    }
+
+    /// <summary>
+    /// Takes the strip away when the undo window the capture service granted has passed.
+    /// </summary>
+    /// <remarks>
+    /// A toast fades, and «تراجع» must never be offered for a token that is already refused: after
+    /// this moment the button would only ever answer «انتهت مهلة التراجع».
+    /// </remarks>
+    private void StartUndoTimer(DateTime undoableUntil)
+    {
+        _undoTimer?.Dispose();
+
+        var remaining = undoableUntil - Clock.UtcNow;
+        if (remaining < TimeSpan.Zero)
+        {
+            remaining = TimeSpan.Zero;
+        }
+
+        _undoTimer = Time.CreateTimer(
+            _ => _ = InvokeAsync(() =>
+            {
+                ClearUndo();
+                StateHasChanged();
+            }),
+            null,
+            remaining,
+            Timeout.InfiniteTimeSpan);
+    }
+
+    private async Task UndoAsync()
+    {
+        if (_undoToken is not { } token || !Shell.IsOpen)
+        {
+            ClearUndo();
+            return;
+        }
+
+        var undone = await Shell.RunExclusiveAsync(() => Shell.QuickCapture.UndoAsync(token));
+        ClearUndo();
+        Toasts.Show(
+            undone ? Ar.QuickCapture.Undone : Ar.QuickCapture.UndoExpired,
+            undone ? WSemanticVariant.Success : WSemanticVariant.Warning);
+        await RefreshBadgesAsync();
+    }
+
+    private void ClearUndo()
+    {
+        _undoTimer?.Dispose();
+        _undoTimer = null;
+        _undoText = null;
+        _undoToken = null;
+    }
 
     /// <summary>Maps a sidebar nav-item key to its route. Keys with no page built yet are a no-op.</summary>
     private static readonly IReadOnlyDictionary<string, string> RouteByKey = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -110,5 +467,14 @@
         }
     }
 
-    public void Dispose() => HeaderState.Changed -= HandleChanged;
+    public void Dispose()
+    {
+        HeaderState.Changed -= HandleChanged;
+        Shell.Changed -= HandleShellChanged;
+        Commands.QuickCaptureRequested -= HandleQuickCaptureRequested;
+        Commands.NotificationsRequested -= HandleNotificationsRequested;
+        _undoTimer?.Dispose();
+        _undoTimer = null;
+        DetachBadges();
+    }
 }

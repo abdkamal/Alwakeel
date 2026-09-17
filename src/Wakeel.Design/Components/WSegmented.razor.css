@@ -24,3 +24,29 @@
     color: var(--w-text);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
+
+.w-segmented-item { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; }
+
+.w-segmented-item:focus-visible { outline: 2px solid var(--w-focus); outline-offset: -1px; }
+
+/* The stacked form (W94): icon above the label, every tile the same width, so five kinds read as
+   one strip rather than five differently sized buttons. */
+.w-segmented--stacked { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; gap: 6px; }
+
+.w-segmented--stacked .w-segmented-item {
+    flex-direction: column;
+    gap: 6px;
+    height: auto;
+    padding: 12px 8px;
+    border: 1px solid var(--w-border);
+    background: var(--w-surface);
+}
+
+.w-segmented--stacked .w-segmented-item--selected {
+    background: var(--w-primary-soft);
+    border-color: var(--w-primary-border);
+    color: var(--w-primary);
+    box-shadow: none;
+}
+
+.w-segmented--stacked .w-segmented-label { font-size: var(--w-fs-meta); }

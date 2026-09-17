@@ -1,0 +1,65 @@
+@namespace Wakeel.Design.Components
+@using Wakeel.Design.Text
+
+@* W10 — the panel that drops out of the bell: a fixed 380-wide surface under the top bar, with the
+   screen behind it dimmed just enough that a click anywhere outside closes it. It carries the
+   chrome only; what fills its tabs, its list and its footer belongs to the screen. *@
+@if (Open)
+{
+    <div class="w-notification-panel-scrim" @onclick="CloseAsync"></div>
+    <div class="w-notification-panel @Class" role="dialog" aria-label="@Title">
+        <div class="w-notification-panel-head">
+            <span class="w-notification-panel-title">
+                @Title
+                @if (Count > 0)
+                {
+                    <WBadge Count="@Count" />
+                }
+            </span>
+            <div class="w-notification-panel-actions">@HeadActions</div>
+        </div>
+        @if (Tabs is not null)
+        {
+            <div class="w-notification-panel-tabs">@Tabs</div>
+        }
+        <div class="w-notification-panel-list">@ChildContent</div>
+        @if (FooterContent is not null)
+        {
+            <div class="w-notification-panel-foot">@FooterContent</div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>The panel's fixed width in pixels, as SCREENS.md draws it.</summary>
+    public const int WidthPx = 380;
+
+    /// <summary>Whether the panel is dropped down.</summary>
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>The panel's heading.</summary>
+    [Parameter] public string Title { get; set; } = Ar.Notifications.Title;
+
+    /// <summary>The number beside the heading; 0 hides the badge.</summary>
+    [Parameter] public int Count { get; set; }
+
+    /// <summary>The buttons in the heading row (mark-all-read, settings).</summary>
+    [Parameter] public RenderFragment? HeadActions { get; set; }
+
+    /// <summary>The tab strip under the heading.</summary>
+    [Parameter] public RenderFragment? Tabs { get; set; }
+
+    /// <summary>The scrolling list itself.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>The link at the foot of the panel.</summary>
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+
+    /// <summary>Raised when the panel closes itself, so the shell can drop its flag.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>Additional CSS classes.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

@@ -1,0 +1,557 @@
+@page "/w09"
+@using System.Globalization
+@using System.Text
+@using Wakeel.Core.Services
+@using Wakeel.Design.Text
+@using Wakeel.UI.Services
+@using Wakeel.UI.Services.Shell
+
+@implements IDisposable
+@inject PageHeaderState HeaderState
+@inject ShellServices Shell
+@inject NavigationManager Nav
+@inject IToastService Toasts
+@inject IFileSaveService Files
+@inject IClock Clock
+
+@* W09 — مركز الانتباه، المتأخر: one tab per bucket of AGREEMENT item 23, each row carrying what
+   it is, whose it is, how late it is and the one button that opens it. *@
+<div class="w09">
+    @if (!Shell.IsOpen)
+    {
+        <WStateCard Icon="lock" Title="@Ar.Shell.SessionClosedTitle" Desc="@Ar.Shell.SessionClosedDesc" />
+    }
+    else if (_failed)
+    {
+        <WStateCard Icon="alert-circle" Title="@Ar.Shell.ReadFailedTitle" Desc="@Ar.Shell.ReadFailedDesc"
+                    ActionLabel="@Ar.Buttons.Retry" OnAction="ReloadAsync" />
+    }
+    else if (_items is null)
+    {
+        <WStateCard Icon="clock" Title="@Ar.States.LoadingTitle" Desc="@Ar.States.LoadingDesc" />
+    }
+    else
+    {
+        <WTabs>
+            @foreach (var tab in Tabs)
+            {
+                <WTabItem Label="@tab.Label" Count="@CountFor(tab.Key)" Active="@(_tab == tab.Key)"
+                          OnClick="@(() => SelectTab(tab.Key))" />
+            }
+        </WTabs>
+
+        @* The export's second control strip: the local search, a filter over the row types, the
+           sort toggle, and one sentence saying how bad the open list is. *@
+        <div class="w09-controls">
+            <WSearch Value="@_search" ValueChanged="SetSearch" Placeholder="@Ar.Overdue.SearchPlaceholder" />
+            <WMenu Label="@FilterLabel" Icon="filter" Tooltip="@Ar.Overdue.FilterTooltip" Items="@KindMenu" />
+            <WButton Variant="@(_sortMostLate ? WButtonVariant.Primary : WButtonVariant.Secondary)"
+                     Icon="clock" Label="@Ar.Overdue.SortMostLate"
+                     Tooltip="@Ar.Overdue.SortMostLateTooltip" Class="w09-sort"
+                     OnClick="ToggleSort" />
+            <p class="w09-summary">@Bidi.Wrap(SummaryText)</p>
+        </div>
+
+        @if (Visible.Count == 0)
+        {
+            <WStateCard Icon="check-circle"
+                        Title="@(string.IsNullOrWhiteSpace(_search) ? EmptyTitle : Ar.States.NoResultsTitle)"
+                        Desc="@(string.IsNullOrWhiteSpace(_search) ? Ar.Overdue.EmptyDesc : Ar.States.NoResultsDesc)" />
+        }
+        else
+        {
+            <WTable HeaderRow="@TableHeader"
+                    FooterText="@FooterText"
+                    Page="@_page" PageCount="@PageCount" PageChanged="GoToPage">
+                @foreach (var item in PageItems)
+                {
+                    <tr class="w-table-row @(item.Bucket == AttentionBucket.Late ? "w-table-row--attention" : null)">
+                        @* The export draws the kind's own glyph beside the type chip, so the type
+                           is recognisable before the word is read. *@
+                        <td class="w09-type-cell">
+                            <span class="w09-kind-icon" aria-hidden="true">
+                                <WIcon Name="@W08AttentionCenter.IconFor(item.Kind)" Size="16" />
+                            </span>
+                            <WChip Variant="@W08AttentionCenter.ChipFor(item.Kind)" Label="@item.KindLabelAr" />
+                        </td>
+                        <td>
+                            <span>@Bidi.Wrap(item.TitleAr)</span>
+                            @if (!string.IsNullOrEmpty(item.NumberAr))
+                            {
+                                <div class="w09-number"><bdi>@item.NumberAr</bdi></div>
+                            }
+                        </td>
+                        <td>@(item.PartyAr ?? string.Empty)</td>
+                        <td><bdi class="w09-due @DueClass(item)">@DueText(item)</bdi></td>
+                        @* The dot carries the bucket's own colour, from the design system's
+                           semantic classes, so the delay is legible before the number is read. *@
+                        <td><bdi class="w09-late w-dot @LateDotClass(item)">@LateText(item)</bdi></td>
+                        <td>@(item.NextStepAr ?? Ar.Overdue.NoNextStep)</td>
+                        <td class="w09-action-cell">
+                            <WButton Variant="WButtonVariant.Primary" Label="@Ar.Overdue.Handle"
+                                     Icon="chevron-left" IconPosition="WIconPosition.Trailing"
+                                     Tooltip="@Ar.Overdue.HandleTooltip(item.TitleAr)"
+                                     Class="w09-handle" OnClick="@(() => OpenRecord(item))" />
+                        </td>
+                    </tr>
+                }
+            </WTable>
+        }
+    }
+</div>
+
+@code {
+    private sealed record BucketTab(string Key, string Label, AttentionBucket Bucket, string EmptyTitle);
+
+    private static readonly BucketTab[] Tabs =
+    [
+        new(BadgeTabs.Late, Ar.Overdue.TabLate, AttentionBucket.Late, Ar.Overdue.EmptyLateTitle),
+        new(BadgeTabs.Near, Ar.Overdue.TabNear, AttentionBucket.Near, Ar.Overdue.EmptyNearTitle),
+        new(BadgeTabs.Stale, Ar.Overdue.TabStale, AttentionBucket.Stale, Ar.Overdue.EmptyStaleTitle),
+        new(BadgeTabs.PendingConfirmation, Ar.Overdue.TabPending, AttentionBucket.PendingConfirmation, Ar.Overdue.EmptyPendingTitle),
+    ];
+
+    private IReadOnlyList<AttentionItem>? _items;
+    private IReadOnlyDictionary<string, int> _tabCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+    private string _tab = BadgeTabs.Late;
+    private string? _search;
+    private bool _failed;
+
+    /// <summary>The bucket a KPI card of W08 asked for, when it named one.</summary>
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? RequestedTab { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Shell.Changed += HandleShellChanged;
+        ApplyRequestedTab();
+        PublishHeader();
+        await ReloadAsync();
+    }
+
+    /// <summary>
+    /// The session opened again after a lock. The list is counted again rather than left showing
+    /// what the office looked like before the screen was locked.
+    /// </summary>
+    /// <remarks>
+    /// Deferred to the next render, never done inside the event: the session announces the unlock
+    /// while it is still writing to the database this read would use.
+    /// </remarks>
+    private void HandleShellChanged() => _ = InvokeAsync(() =>
+    {
+        _reloadOnRender = true;
+        StateHasChanged();
+    });
+
+    private bool _reloadOnRender;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_reloadOnRender && !firstRender)
+        {
+            _reloadOnRender = false;
+            await ReloadAsync();
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplyRequestedTab();
+        PublishHeader();
+    }
+
+    private void ApplyRequestedTab()
+    {
+        if (RequestedTab is { Length: > 0 } requested && Array.Exists(Tabs, t => t.Key == requested))
+        {
+            _tab = requested;
+        }
+    }
+
+    private void PublishHeader()
+    {
+        var today = DateTime.Now;
+        var total = _items?.Count ?? 0;
+        var sub = Ar.Overdue.Sub(
+            Ar.Counts.Records(total, CoreAr.N(total)),
+            Ar.Dates.DayAndDate(today, ArabicRelativeTime.Date(today)));
+        HeaderState.Set(Ar.Overdue.Title, sub, HeaderActions, navKey: WSidebar.Keys.Attention, owner: this);
+    }
+
+    @* Two header actions, as the export draws them. The third one this screen used to carry
+       («تحديث») is gone: the list re-reads itself when the session is unlocked and after every
+       export, so the button only made W09's header one control wider than the design. *@
+    private RenderFragment HeaderActions => @<text>
+        <WButton Variant="WButtonVariant.Primary" Label="@Ar.Overdue.HandleNext" Icon="chevron-left"
+                 IconPosition="WIconPosition.Trailing" Tooltip="@Ar.Overdue.ColAction"
+                 Class="w09-handle-next" Disabled="@(Visible.Count == 0)" OnClick="HandleNext" />
+        <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Overdue.Export" Icon="download"
+                 Tooltip="@Ar.Overdue.ExportTooltip" Class="w09-export"
+                 Disabled="@(Visible.Count == 0)" OnClick="ExportAsync" />
+    </text>;
+
+    private RenderFragment TableHeader => @<text>
+        <th>@Ar.Overdue.ColType</th>
+        <th>@Ar.Overdue.ColTitle</th>
+        <th>@Ar.Overdue.ColParty</th>
+        <th>@Ar.Overdue.ColDue</th>
+        <th>@Ar.Overdue.ColDaysLate</th>
+        <th>@Ar.Overdue.ColNextStep</th>
+        <th><span class="w-visually-hidden">@Ar.Overdue.ColAction</span></th>
+    </text>;
+
+    private async Task ReloadAsync()
+    {
+        if (!Shell.IsOpen)
+        {
+            return;
+        }
+
+        _failed = false;
+        try
+        {
+            var now = Clock.UtcNow;
+
+            // Through the gate: the shell's background passes read the same database object, and it
+            // refuses a second operation while a first is still running.
+            await Shell.RunExclusiveAsync(async () =>
+            {
+                _items = Shell.Attention.OrderByPriority(await Shell.Attention.GetAllAsync(now));
+                _tabCounts = await Shell.Badges.GetTabCountsAsync(BadgeScreens.Attention, now);
+            });
+
+            PublishHeader();
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            _failed = true;
+        }
+    }
+
+    private void SelectTab(string key)
+    {
+        _tab = key;
+        _search = null;
+        _kindFilter = AllKinds;
+        _page = 1;
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // The second control strip: filter by type, sort by how late, and the one-line summary.
+    // ------------------------------------------------------------------------------------------
+
+    /// <summary>The filter's «all types» value; not a kind name, so it can never collide with one.</summary>
+    private const string AllKinds = "";
+
+    private string? _kindFilter = AllKinds;
+
+    private bool _sortMostLate;
+
+    /// <summary>The pill says what it is filtering by, so the narrowed list never looks like a bug.</summary>
+    private string FilterLabel =>
+        string.IsNullOrEmpty(_kindFilter) ? Ar.Overdue.Filter : _kindFilter!;
+
+    /// <summary>
+    /// «كل الأنواع» plus the types actually present in the open tab. A filter that offers types the
+    /// list does not contain only invites the person to empty their own screen.
+    /// </summary>
+    private IReadOnlyList<WMenuItem> KindMenu
+    {
+        get
+        {
+            var items = new List<WMenuItem>
+            {
+                new(Ar.Overdue.FilterAllTypes, "list", EventCallback.Factory.Create(this, () => SetKindFilter(AllKinds))),
+            };
+
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var item in InBucket)
+            {
+                var label = item.KindLabelAr;
+                if (seen.Add(label))
+                {
+                    items.Add(new WMenuItem(
+                        label,
+                        "filter",
+                        EventCallback.Factory.Create(this, () => SetKindFilter(label))));
+                }
+            }
+
+            return items;
+        }
+    }
+
+    private void SetKindFilter(string? value)
+    {
+        _kindFilter = value ?? AllKinds;
+        _page = 1;
+    }
+
+    private void ToggleSort()
+    {
+        _sortMostLate = !_sortMostLate;
+        _page = 1;
+    }
+
+    /// <summary>How many days late a row has to be before the summary counts it as a long delay.</summary>
+    public const int LongDelayDays = 14;
+
+    /// <summary>«أطول تأخر: 18 يومًا · 4 سجلات تجاوزت أسبوعين», counted from the rows on screen.</summary>
+    private string SummaryText
+    {
+        get
+        {
+            var visible = Visible;
+            var longest = 0;
+            var overTwoWeeks = 0;
+            foreach (var item in visible)
+            {
+                if (item.DaysLate > longest)
+                {
+                    longest = item.DaysLate;
+                }
+
+                if (item.DaysLate >= LongDelayDays)
+                {
+                    overTwoWeeks++;
+                }
+            }
+
+            return longest == 0
+                ? Ar.Overdue.SummaryNoDelay
+                : Ar.Overdue.Summary(
+                    CoreAr.DaysPhrase(longest),
+                    Ar.Counts.Records(overTwoWeeks, CoreAr.N(overTwoWeeks)));
+        }
+    }
+
+    /// <summary>«عرض 1–8 من 12 سجلًا متأخرًا» — the range, ending in the open tab's own noun.</summary>
+    private string FooterText =>
+        Ar.Overdue.ShowingRange(FirstShown, LastShown, RecordNoun(Visible.Count));
+
+    private string RecordNoun(int count)
+    {
+        var number = CoreAr.N(count);
+        return _tab switch
+        {
+            BadgeTabs.Near => Ar.Overdue.RecordsNear(count, number),
+            BadgeTabs.Stale => Ar.Overdue.RecordsStale(count, number),
+            BadgeTabs.PendingConfirmation => Ar.Overdue.RecordsPending(count, number),
+            _ => Ar.Overdue.RecordsLate(count, number),
+        };
+    }
+
+    /// <summary>A new search is a new list, so it starts at its first page.</summary>
+    private void SetSearch(string? value)
+    {
+        _search = value;
+        _page = 1;
+    }
+
+    private int CountFor(string key) => _tabCounts.TryGetValue(key, out var count) ? count : 0;
+
+    private string EmptyTitle =>
+        Array.Find(Tabs, t => t.Key == _tab)?.EmptyTitle ?? Ar.States.NoDataTitle;
+
+    /// <summary>Every row of the open tab, before the search and the type filter narrow it.</summary>
+    private IReadOnlyList<AttentionItem> InBucket
+    {
+        get
+        {
+            if (_items is null)
+            {
+                return [];
+            }
+
+            var bucket = Array.Find(Tabs, t => t.Key == _tab)?.Bucket ?? AttentionBucket.Late;
+            return [.. _items.Where(i => i.Bucket == bucket)];
+        }
+    }
+
+    private IReadOnlyList<AttentionItem> Visible
+    {
+        get
+        {
+            IEnumerable<AttentionItem> query = InBucket;
+            if (!string.IsNullOrEmpty(_kindFilter))
+            {
+                query = query.Where(i => string.Equals(i.KindLabelAr, _kindFilter, StringComparison.Ordinal));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_search))
+            {
+                var needle = _search!.Trim();
+                query = query.Where(i =>
+                    Contains(i.TitleAr, needle)
+                    || Contains(i.NumberAr, needle)
+                    || Contains(i.PartyAr, needle)
+                    || Contains(i.NextStepAr, needle));
+            }
+
+            // Off, the service's own priority order stands (it weighs more than the delay). On, the
+            // list answers the one question the toggle asks: what has been waiting longest.
+            if (_sortMostLate)
+            {
+                query = query.OrderByDescending(i => i.DaysLate);
+            }
+
+            return [.. query];
+        }
+    }
+
+    private static bool Contains(string? value, string needle) =>
+        value is not null && value.Contains(needle, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>How many rows one page of the table holds.</summary>
+    /// <remarks>
+    /// A real office's overdue list has no natural end, and a screen that renders every row of it
+    /// gets slower the longer the office has been working. The pager the export draws is therefore
+    /// also what keeps the screen honest about how much it puts on one page.
+    /// </remarks>
+    public const int PageSize = 20;
+
+    private int _page = 1;
+
+    private int PageCount => Math.Max(1, (Visible.Count + PageSize - 1) / PageSize);
+
+    /// <summary>The rows of the page being shown; the tail waits behind the pager.</summary>
+    private IReadOnlyList<AttentionItem> PageItems
+    {
+        get
+        {
+            var visible = Visible;
+            var page = Math.Clamp(_page, 1, Math.Max(1, (visible.Count + PageSize - 1) / PageSize));
+            return [.. visible.Skip((page - 1) * PageSize).Take(PageSize)];
+        }
+    }
+
+    private int FirstShown => Visible.Count == 0 ? 0 : ((Math.Clamp(_page, 1, PageCount) - 1) * PageSize) + 1;
+
+    private int LastShown => Math.Min(Math.Clamp(_page, 1, PageCount) * PageSize, Visible.Count);
+
+    private void GoToPage(int page) => _page = Math.Clamp(page, 1, PageCount);
+
+    private void HandleNext()
+    {
+        if (Visible.Count > 0)
+        {
+            OpenRecord(Visible[0]);
+        }
+    }
+
+    private void OpenRecord(AttentionItem item)
+    {
+        if (RecordRoutes.For(item.Kind, item.Id) is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    /// <summary>
+    /// Saves the open list as a text file the person picks a place for — the same save the health
+    /// report uses, so nothing is written anywhere the person did not choose.
+    /// </summary>
+    /// <remarks>
+    /// The cells are separated by tabs and every cell that starts with a character a spreadsheet
+    /// would read as the start of a formula is prefixed with an apostrophe, so a subject line that
+    /// happens to begin with an equals sign stays a subject line wherever the file is opened.
+    /// </remarks>
+    private async Task ExportAsync()
+    {
+        var rows = Visible;
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        var tabLabel = Array.Find(Tabs, t => t.Key == _tab)?.Label ?? Ar.Overdue.TabLate;
+        var now = DateTime.Now;
+        var text = new StringBuilder();
+        text.AppendLine(Ar.Overdue.ExportHeading(tabLabel, Ar.Dates.DayAndDate(now, ArabicRelativeTime.Date(now))));
+        text.AppendLine(SummaryText);
+        text.AppendLine();
+        AppendRow(text,
+            Ar.Overdue.ColType, Ar.Overdue.ColTitle, Ar.Overdue.ColParty,
+            Ar.Overdue.ColDue, Ar.Overdue.ColDaysLate, Ar.Overdue.ColNextStep);
+
+        foreach (var item in rows)
+        {
+            AppendRow(text,
+                item.KindLabelAr,
+                string.IsNullOrEmpty(item.NumberAr) ? item.TitleAr : $"{item.TitleAr} ({item.NumberAr})",
+                item.PartyAr ?? string.Empty,
+                DueText(item),
+                LateText(item),
+                item.NextStepAr ?? Ar.Overdue.NoNextStep);
+        }
+
+        var stamp = now.ToString("yyyy-MM-dd-HHmm", CultureInfo.InvariantCulture);
+        try
+        {
+            var saved = await Files.SaveTextAsync(Ar.Overdue.ExportFileName(tabLabel, stamp), text.ToString());
+            Toasts.Show(
+                saved is null ? Ar.Overdue.ExportCancelled : Ar.Overdue.Exported,
+                saved is null ? WSemanticVariant.Warning : WSemanticVariant.Success);
+        }
+        catch (IOException)
+        {
+            // A folder that refuses the write; nothing technical is shown (AGREEMENT item 15).
+            Toasts.Show(Ar.Overdue.ExportFailed, WSemanticVariant.Danger);
+        }
+    }
+
+    private static void AppendRow(StringBuilder text, params string[] cells)
+    {
+        for (var i = 0; i < cells.Length; i++)
+        {
+            if (i > 0)
+            {
+                text.Append('\t');
+            }
+
+            text.Append(Escape(cells[i]));
+        }
+
+        text.AppendLine();
+    }
+
+    /// <summary>
+    /// Keeps a cell a cell: a leading =, +, - or @ is what a spreadsheet reads as a formula, and a
+    /// tab or a newline inside a value is what would split it across cells.
+    /// </summary>
+    private static string Escape(string? value)
+    {
+        var cell = (value ?? string.Empty).Replace('\t', ' ').ReplaceLineEndings(" ");
+        return cell.Length > 0 && cell[0] is '=' or '+' or '-' or '@' ? $"'{cell}" : cell;
+    }
+
+    /// <summary>Semantic colour of the delay dot: the bucket's own colour, from the design tokens.</summary>
+    private static string LateDotClass(AttentionItem item) => item.Bucket switch
+    {
+        AttentionBucket.Late => "w-dot--danger",
+        AttentionBucket.Near => "w-dot--warning",
+        AttentionBucket.Stale => "w-dot--warning",
+        _ => "w-dot--muted",
+    };
+
+    /// <summary>Semantic colour of the due cell: late is red, near-due amber, the rest plain.</summary>
+    private static string? DueClass(AttentionItem item) => item.Bucket switch
+    {
+        AttentionBucket.Late => "w09-due--danger",
+        AttentionBucket.Near => "w09-due--warning",
+        _ => null,
+    };
+
+    private static string DueText(AttentionItem item) =>
+        item.DueAt is { } due ? ArabicRelativeTime.Date(due.ToLocalTime()) : Ar.Overdue.NoDueDate;
+
+    private static string LateText(AttentionItem item) =>
+        item.DaysLate > 0 ? CoreAr.DaysPhrase(item.DaysLate) : "—";
+
+    public void Dispose()
+    {
+        Shell.Changed -= HandleShellChanged;
+        HeaderState.Clear(this);
+    }
+}

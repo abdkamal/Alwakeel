@@ -9,6 +9,6 @@
     pointer-events: none;
 }
 
-.w-toast-host ::deep(.w-toast) {
+.w-toast-host ::deep .w-toast {
     pointer-events: auto;
 }

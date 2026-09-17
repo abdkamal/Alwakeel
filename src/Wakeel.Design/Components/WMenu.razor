@@ -8,6 +8,20 @@
             @TriggerContent
         </button>
     }
+    else if (!string.IsNullOrEmpty(Label))
+    {
+        @* A named menu: the pill the screens' control strips carry («تصفية»), with its own icon
+           and words rather than the anonymous three-dot trigger. *@
+        <WTooltip Text="@(Tooltip ?? Label)">
+            <button type="button" class="w-menu-trigger w-menu-trigger--pill" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")" @onclick="Toggle">
+                @if (!string.IsNullOrEmpty(Icon))
+                {
+                    <WIcon Name="@Icon" Size="16" />
+                }
+                <span>@Label</span>
+            </button>
+        </WTooltip>
+    }
     else
     {
         <WTooltip Text="@Ar.Menu.MoreActions">
@@ -39,6 +53,18 @@
 
     /// <summary>Custom trigger content (e.g. an avatar); defaults to a "more" icon button.</summary>
     [Parameter] public RenderFragment? TriggerContent { get; set; }
+
+    /// <summary>
+    /// Words on the trigger, which turns it into a named pill («تصفية») instead of the anonymous
+    /// three-dot button. Ignored when <see cref="TriggerContent"/> is given.
+    /// </summary>
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>Lucide icon shown before <see cref="Label"/> on the pill.</summary>
+    [Parameter] public string? Icon { get; set; }
+
+    /// <summary>Tooltip of the pill; the label itself when none is given.</summary>
+    [Parameter] public string? Tooltip { get; set; }
 
     private void Toggle() => _open = !_open;
 

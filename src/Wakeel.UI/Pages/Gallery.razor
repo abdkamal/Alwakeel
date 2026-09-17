@@ -155,6 +155,8 @@
         </div>
         <WBannerClock />
         <WMenu Items="_menuItems" />
+        @* The same menu wearing its named pill — what a control strip carries («تصفية»). *@
+        <WMenu Items="_menuItems" Label="@Ar.Overdue.Filter" Icon="filter" Tooltip="@Ar.Overdue.FilterTooltip" />
     </section>
 
     <section class="w-gallery-section">
@@ -208,6 +210,10 @@
                  Desc="@Ar.StandardDialogs.DangerDesc" Notice="@Ar.StandardDialogs.DangerNotice"
                  ConfirmLabel="@Ar.StandardDialogs.DangerConfirm" ConfirmIcon="ban"
                  CancelLabel="@Ar.Buttons.Cancel" CancelIcon="x" />
+        <div class="w-gallery-row">
+            <WButton Variant="WButtonVariant.Secondary" Icon="check-circle" Label="@Ar.Shell.GalleryUndoShow"
+                     Tooltip="@Ar.Shell.GalleryUndoShowTooltip" OnClick="() => _galleryUndoText = Ar.Shell.GalleryUndoText" />
+        </div>
     </section>
 </div>
 
@@ -233,6 +239,9 @@
          OnConfirm="() => _normalDialogOpen = false" OnCancel="() => _normalDialogOpen = false" />
 <WDialog Open="_dangerDialogOpen" Kind="WDialogKind.Danger" Title="@Ar.Dialog.ConfirmDeleteTitle" Desc="@Ar.Dialog.ConfirmDeleteDesc"
          OnConfirm="() => _dangerDialogOpen = false" OnCancel="() => _dangerDialogOpen = false" />
+
+<WUndoToast Text="@_galleryUndoText" CanUndo="true"
+            OnUndo="() => _galleryUndoText = null" OnClose="() => _galleryUndoText = null" />
 
 @code {
     private readonly IReadOnlyList<(string Value, string Label)> _themeOptions = new List<(string, string)>
@@ -275,6 +284,8 @@
     private string _quickKind = "task";
 
     private bool _galleryPanelOpen;
+
+    private string? _galleryUndoText;
 
     private readonly IReadOnlyList<string> _steps = new List<string>
     {

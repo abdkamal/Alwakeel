@@ -1,158 +1,289 @@
 @page "/w08"
+@using Wakeel.Core.Services
 @using Wakeel.Design.Text
 @using Wakeel.UI.Services
+@using Wakeel.UI.Services.Shell
+@using Wakeel.UI.Services.Account
 @implements IDisposable
 @inject PageHeaderState HeaderState
+@inject ShellServices Shell
+@inject ShellCommands Commands
+@inject AccountSession Session
+@inject NavigationManager Nav
+@inject IToastService Toasts
+@inject IClock Clock
 
+@* W08 — مركز الانتباه: everything the office has to deal with today, read in one pass from
+   IAttentionService, with the four indicators of AGREEMENT item 23 above it. *@
 <div class="w08">
-    <div class="w08-kpis">
-        <WKpiCard Label="@Ar.AttentionCenter.AwaitingConfirmationLabel" Icon="check-circle" Value="3" Sub="@Ar.AttentionCenter.AwaitingConfirmationSub" />
-        <WKpiCard Label="@Ar.AttentionCenter.StaleLabel" Icon="clock" Value="5" Sub="@Ar.AttentionCenter.StaleSub" />
-        <WKpiCard Label="@Ar.AttentionCenter.NearDueLabel" Icon="calendar" Value="8" Sub="@Ar.AttentionCenter.NearDueSub" />
-        <WKpiCard Label="@Ar.AttentionCenter.OverdueLabel" Icon="alert-triangle" Value="12" Sub="@Ar.AttentionCenter.OverdueSub" />
-    </div>
+    @if (!Shell.IsOpen)
+    {
+        <WStateCard Icon="lock" Title="@Ar.Shell.SessionClosedTitle" Desc="@Ar.Shell.SessionClosedDesc" />
+    }
+    else if (_failed)
+    {
+        <WStateCard Icon="alert-circle" Title="@Ar.Shell.ReadFailedTitle" Desc="@Ar.Shell.ReadFailedDesc"
+                    ActionLabel="@Ar.Buttons.Retry" OnAction="ReloadAsync" />
+    }
+    else if (_snapshot is null)
+    {
+        <WStateCard Icon="clock" Title="@Ar.States.LoadingTitle" Desc="@Ar.States.LoadingDesc" />
+    }
+    else
+    {
+        <div class="w08-kpis">
+            @foreach (var kpi in Kpis)
+            {
+                <WKpiCard Label="@kpi.Label" Icon="@kpi.Icon" Value="@CoreAr.N(kpi.Value)" Sub="@kpi.Sub"
+                          Variant="@kpi.Variant" Tooltip="@Ar.Attention.KpiTooltip(kpi.Label)" Class="w08-kpi"
+                          OnClick="@(() => OpenBucket(kpi.Tab))" />
+            }
+        </div>
 
-    <WCard Variant="WSemanticVariant.Warning" Icon="calendar">
-        <div class="w08-banner">
-            <div class="w08-banner-text">
-                <p class="w08-banner-desc">@Ar.AttentionCenter.MonthlyReportBanner</p>
-                <WProgressBar Percent="80" Label="@Ar.AttentionCenter.MonthlyReportProgressLabel" />
+        @* One row, the way the export draws it: the cycle sentence, then the readiness bar with its
+           figure, then the link out to the monthly report. *@
+        <WBanner Variant="WSemanticVariant.Warning" Icon="calendar" Title="@_cycleTitle" Class="w08-banner">
+            <TrailingContent>
+                <WProgressBar Percent="@_readinessPercent" Label="@_readinessLabel" />
+            </TrailingContent>
+            <Actions>
+                <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.OpenMonthlyReport"
+                         Icon="chevron-left" IconPosition="WIconPosition.Trailing"
+                         Tooltip="@Ar.AttentionCenter.OpenMonthlyReport" Class="w08-open-report"
+                         OnClick="OpenMonthlyReport" />
+            </Actions>
+        </WBanner>
+
+        <div class="w08-columns">
+            <div class="w08-col-main">
+                <WCard>
+                    <WSectionHeader Title="@Ar.AttentionCenter.TodayActionTitle" Count="@NeedsActionRows.Count">
+                        <ActionContent>
+                            @* Tabs and the local search share the section header's row, as W08 draws them. *@
+                            <div class="w08-filters">
+                                <WTabs>
+                                    @foreach (var tab in NeedsActionTabs)
+                                    {
+                                        <WTabItem Label="@tab.Label" Count="@CountFor(tab.Kinds)" Active="@(_tab == tab.Key)"
+                                                  OnClick="@(() => _tab = tab.Key)" />
+                                    }
+                                </WTabs>
+                                <WSearch @bind-Value="_actionSearch" BindGlobalShortcut="false"
+                                         Placeholder="@Ar.Overdue.SearchPlaceholder" />
+                            </div>
+                        </ActionContent>
+                    </WSectionHeader>
+                    @if (VisibleItems.Count == 0)
+                    {
+                        <WStateCard Icon="check-circle"
+                                    Title="@(string.IsNullOrWhiteSpace(_actionSearch) ? Ar.Attention.NothingToday : Ar.States.NoResultsTitle)"
+                                    Desc="@(string.IsNullOrWhiteSpace(_actionSearch) ? Ar.Attention.NothingTodayDesc : Ar.States.NoResultsDesc)" />
+                    }
+                    else
+                    {
+                        <WTable HeaderRow="@ActionTableHeader"
+                                FooterText="@Ar.Table.ShowingRange(1, VisibleItems.Count, VisibleItems.Count)">
+                            @foreach (var item in VisibleItems)
+                            {
+                                @* The row itself is not clickable: a click target that cannot be
+                                   reached from the keyboard is no target at all, so opening the
+                                   record is a real button in the last cell, exactly as on W09. *@
+                                <tr class="w-table-row @(item.Bucket == AttentionBucket.Late ? "w-table-row--attention" : null)">
+                                    <td><WChip Variant="@ChipFor(item.Kind)" Label="@item.KindLabelAr" /></td>
+                                    <td>
+                                        <span>@Bidi.Wrap(item.TitleAr)</span>
+                                        @if (MetaOf(item) is { Length: > 0 } meta)
+                                        {
+                                            <div class="w08-row-meta"><bdi>@meta</bdi></div>
+                                        }
+                                    </td>
+                                    <td>@(item.AssigneeAr ?? string.Empty)</td>
+                                    <td><bdi class="w08-due @DueClass(item)">@DueText(item)</bdi></td>
+                                    <td class="w08-chevron-cell">
+                                        <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
+                                        <WButton Variant="WButtonVariant.Icon" Icon="chevron-left"
+                                                 Tooltip="@Ar.Overdue.HandleTooltip(item.TitleAr)"
+                                                 Class="w08-open" OnClick="@(() => OpenRecord(item))" />
+                                    </td>
+                                </tr>
+                            }
+                        </WTable>
+                    }
+                </WCard>
+
+                <WCard>
+                    <WSectionHeader Title="@Ar.AttentionCenter.PendingExpensesTitle" Count="@_expenses.Count">
+                        <ActionContent>
+                            <div class="w08-filters">
+                                <WSearch @bind-Value="_expenseSearch" BindGlobalShortcut="false"
+                                         Placeholder="@Ar.AttentionCenter.ExpensesSearchPlaceholder" />
+                                <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ViewAllExpenses"
+                                         Icon="chevron-left" IconPosition="WIconPosition.Trailing"
+                                         Tooltip="@Ar.AttentionCenter.ViewAllExpenses"
+                                         Class="w08-view-all-expenses" OnClick="OpenAllExpenses" />
+                            </div>
+                        </ActionContent>
+                    </WSectionHeader>
+                    @if (VisibleExpenses.Count == 0)
+                    {
+                        <WStateCard Icon="wallet" Title="@Ar.Attention.NoExpenses" Desc="@Ar.Attention.NoExpensesDesc" />
+                    }
+                    else
+                    {
+                        <WTable HeaderRow="@ExpensesTableHeader">
+                            @foreach (var expense in VisibleExpenses)
+                            {
+                                <tr class="w-table-row">
+                                    <td>@(expense.EmployeeAr ?? string.Empty)</td>
+                                    <td>
+                                        <span>@Bidi.Wrap(expense.PurposeAr)</span>
+                                        @if (!string.IsNullOrEmpty(expense.NoteAr))
+                                        {
+                                            <div class="w08-expense-meta"><bdi>@expense.NoteAr</bdi></div>
+                                        }
+                                    </td>
+                                    <td><bdi>@ArabicRelativeTime.Date(expense.At.ToLocalTime())</bdi></td>
+                                    <td><bdi>@expense.AmountAr</bdi></td>
+                                    <td>
+                                        <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseConfirm"
+                                                 Icon="check" Tooltip="@Ar.Attention.ExpenseConfirmTooltip"
+                                                 Class="w08-expense-confirm" OnClick="@(() => ConfirmExpenseAsync(expense))" />
+                                        <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseReject"
+                                                 Icon="x" Tooltip="@Ar.Attention.ExpenseRejectTooltip"
+                                                 Class="w08-expense-reject" OnClick="@(() => RejectExpenseAsync(expense))" />
+                                    </td>
+                                </tr>
+                            }
+                        </WTable>
+                    }
+                </WCard>
             </div>
-            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.OpenMonthlyReport" Icon="chevron-left" IconPosition="WIconPosition.Trailing" OnClick="HandleOpenMonthlyReportAsync" />
+
+            <div class="w08-col-side">
+                <WCard>
+                    <WSectionHeader Title="@Ar.AttentionCenter.TodayMeetingsTitle" Count="@_snapshot.TodayMeetings.Count">
+                        <ActionContent>
+                            <WButton Variant="WButtonVariant.Text" Label="@Ar.Attention.OpenCalendar"
+                                     Icon="chevron-left" IconPosition="WIconPosition.Trailing"
+                                     Tooltip="@Ar.Attention.OpenCalendarTooltip"
+                                     Class="w08-open-calendar" OnClick="OpenCalendar" />
+                        </ActionContent>
+                    </WSectionHeader>
+                    @if (_snapshot.TodayMeetings.Count == 0)
+                    {
+                        <WStateCard Icon="calendar" Title="@Ar.Attention.NoMeetings" Desc="@Ar.Attention.NothingTodayDesc" />
+                    }
+                    else
+                    {
+                        @foreach (var meeting in _snapshot.TodayMeetings)
+                        {
+                            <WKvRow Key="@ArabicRelativeTime.TimeText(meeting.StartsAt)">
+                                <ValueContent>
+                                    <span class="w08-meeting-title">@Bidi.Wrap(meeting.TitleAr)</span>
+                                    <span class="w08-meeting-meta">
+                                        @Bidi.Wrap(Ar.Attention.MeetingMeta(CoreAr.N(meeting.DurationMin), meeting.LocationAr))
+                                    </span>
+                                </ValueContent>
+                            </WKvRow>
+                        }
+                    }
+                </WCard>
+
+                <WCard>
+                    @* The export puts a refresh control in this card's own header, so the sync
+                       state can be re-read without reloading the whole screen. *@
+                    <WSectionHeader Title="@Ar.AttentionCenter.SyncStatusTitle">
+                        <ActionContent>
+                            <WButton Variant="WButtonVariant.Icon" Icon="refresh-cw"
+                                     Tooltip="@Ar.Attention.SyncRefreshTooltip"
+                                     Class="w08-sync-refresh" OnClick="ReloadAsync" />
+                        </ActionContent>
+                    </WSectionHeader>
+                    <WKvRow Key="@Ar.Attention.StateLabel">
+                        <ValueContent>
+                            <WChip Variant="@(_snapshot.Sync.LastAt is null ? WChipVariant.Neutral : WChipVariant.Success)"
+                                   Label="@(_snapshot.Sync.LastAt is null ? Ar.Attention.SyncNever : Ar.Attention.SyncOk)" />
+                        </ValueContent>
+                    </WKvRow>
+                    <WKvRow Key="@Ar.Attention.TimeLabel" Value="@_snapshot.Sync.MessageAr" />
+                </WCard>
+
+                <WCard Title="@Ar.AttentionCenter.BackupStatusTitle">
+                    <WKvRow Key="@Ar.Attention.StateLabel">
+                        <ValueContent>
+                            <WChip Variant="@BackupChip" Label="@BackupStateLabel" />
+                        </ValueContent>
+                    </WKvRow>
+                    <WKvRow Key="@Ar.Attention.BackupLastLabel" Value="@_snapshot.Backup.MessageAr" />
+                </WCard>
+            </div>
         </div>
-    </WCard>
-
-    <div class="w08-columns">
-        <div class="w08-col-side">
-            <WCard Title="@Ar.AttentionCenter.TodayMeetingsTitle">
-                <div class="w08-meeting">
-                    <bdi class="w08-meeting-time">@Ar.AttentionCenter.Meeting1Time</bdi>
-                    <div class="w08-meeting-text">
-                        <p class="w08-meeting-title">@Ar.AttentionCenter.Meeting1Title</p>
-                        <p class="w08-meeting-meta">@Ar.AttentionCenter.Meeting1Meta</p>
-                    </div>
-                </div>
-                <div class="w08-meeting">
-                    <bdi class="w08-meeting-time">@Ar.AttentionCenter.Meeting2Time</bdi>
-                    <div class="w08-meeting-text">
-                        <p class="w08-meeting-title">@Ar.AttentionCenter.Meeting2Title</p>
-                        <p class="w08-meeting-meta">@Ar.AttentionCenter.Meeting2Meta</p>
-                    </div>
-                </div>
-            </WCard>
-
-            <WCard Title="@Ar.AttentionCenter.SyncStatusTitle">
-                <p class="w08-status-detail">@Ar.AttentionCenter.SyncStatusDetail</p>
-            </WCard>
-
-            <WCard Title="@Ar.AttentionCenter.BackupStatusTitle">
-                <p class="w08-status-detail">@Ar.AttentionCenter.BackupStatusDetail</p>
-            </WCard>
-        </div>
-
-        <div class="w08-col-main">
-            <WCard>
-                <WSectionHeader Title="@Ar.AttentionCenter.TodayActionTitle" Count="Ar.AttentionCenter.TodayActionCount" />
-                <WTabs>
-                    <WTabItem Label="@Ar.AttentionCenter.TabAll" Count="Ar.AttentionCenter.TodayActionCount" Active="@(_tab == 0)" OnClick="@(() => _tab = 0)" />
-                    <WTabItem Label="@Ar.AttentionCenter.TabCorrespondence" Count="4" Active="@(_tab == 1)" OnClick="@(() => _tab = 1)" />
-                    <WTabItem Label="@Ar.AttentionCenter.TabTasks" Count="3" Active="@(_tab == 2)" OnClick="@(() => _tab = 2)" />
-                    <WTabItem Label="@Ar.AttentionCenter.TabCommitments" Count="2" Active="@(_tab == 3)" OnClick="@(() => _tab = 3)" />
-                </WTabs>
-                <WSearch @bind-Value="_actionSearch" BindGlobalShortcut="false" />
-                <WTable HeaderRow="@ActionTableHeader" FooterText="@Ar.Table.ShowingRange(1, 3, 3)">
-                    <tr class="w-table-row w-table-row--attention">
-                        <td><WChip Variant="WChipVariant.Info" Label="@Ar.AttentionCenter.TypeMessage" /></td>
-                        <td>
-                            <span>@Ar.AttentionCenter.ActionRow1Subject</span>
-                            <div class="w08-row-meta"><bdi>@Ar.AttentionCenter.ActionRow1Meta</bdi></div>
-                        </td>
-                        <td>@Ar.AttentionCenter.ActionRow1Assignee</td>
-                        <td><bdi class="w08-due w08-due--danger">@Ar.AttentionCenter.ActionRow1Due</bdi></td>
-                        <td class="w08-chevron-cell">
-                            <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
-                            <WIcon Name="chevron-left" Size="16" Class="w08-chevron-icon" />
-                        </td>
-                    </tr>
-                    <tr class="w-table-row">
-                        <td><WChip Variant="WChipVariant.Primary" Label="@Ar.AttentionCenter.TypeTask" /></td>
-                        <td>
-                            <span>@Ar.AttentionCenter.ActionRow2Subject</span>
-                            <div class="w08-row-meta"><bdi>@Ar.AttentionCenter.ActionRow2Meta</bdi></div>
-                        </td>
-                        <td>@Ar.AttentionCenter.ActionRow2Assignee</td>
-                        <td><bdi class="w08-due w08-due--warning">@Ar.AttentionCenter.ActionRow2Due</bdi></td>
-                        <td class="w08-chevron-cell">
-                            <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
-                            <WIcon Name="chevron-left" Size="16" Class="w08-chevron-icon" />
-                        </td>
-                    </tr>
-                    <tr class="w-table-row">
-                        <td><WChip Variant="WChipVariant.Warning" Label="@Ar.AttentionCenter.TypeCommitment" /></td>
-                        <td>
-                            <span>@Ar.AttentionCenter.ActionRow3Subject</span>
-                            <div class="w08-row-meta"><bdi>@Ar.AttentionCenter.ActionRow3Meta</bdi></div>
-                        </td>
-                        <td>@Ar.AttentionCenter.ActionRow3Assignee</td>
-                        <td><bdi class="w08-due">@Ar.AttentionCenter.ActionRow3Due</bdi></td>
-                        <td class="w08-chevron-cell">
-                            <span class="w-visually-hidden">@Ar.AttentionCenter.ActionRowDetailsColLabel</span>
-                            <WIcon Name="chevron-left" Size="16" Class="w08-chevron-icon" />
-                        </td>
-                    </tr>
-                </WTable>
-            </WCard>
-
-            <WCard>
-                <WSectionHeader Title="@Ar.AttentionCenter.PendingExpensesTitle" Count="Ar.AttentionCenter.PendingExpensesCount">
-                    <ActionContent>
-                        <div class="w08-expenses-actions">
-                            <WSearch @bind-Value="_expenseSearch" BindGlobalShortcut="false" Placeholder="@Ar.AttentionCenter.ExpensesSearchPlaceholder" />
-                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ViewAllExpenses" Icon="chevron-left" IconPosition="WIconPosition.Trailing" OnClick="HandleViewAllExpensesAsync" />
-                        </div>
-                    </ActionContent>
-                </WSectionHeader>
-                <WTable HeaderRow="@ExpensesTableHeader">
-                    <tr class="w-table-row">
-                        <td>@Ar.AttentionCenter.Expense1Employee</td>
-                        <td>
-                            <span>@Ar.AttentionCenter.Expense1Subject</span>
-                            <div class="w08-expense-meta"><bdi>@Ar.AttentionCenter.Expense1Meta</bdi></div>
-                        </td>
-                        <td><bdi>@Ar.AttentionCenter.Expense1Date</bdi></td>
-                        <td><bdi>@Ar.AttentionCenter.Expense1Amount</bdi></td>
-                        <td>
-                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseConfirm" Icon="check" Class="w08-expense-confirm" OnClick="HandleConfirmExpenseAsync" />
-                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseReject" Icon="x" Class="w08-expense-reject" OnClick="HandleRejectExpenseAsync" />
-                        </td>
-                    </tr>
-                    <tr class="w-table-row">
-                        <td>@Ar.AttentionCenter.Expense2Employee</td>
-                        <td>
-                            <span>@Ar.AttentionCenter.Expense2Subject</span>
-                            <div class="w08-expense-meta"><bdi>@Ar.AttentionCenter.Expense2Meta</bdi></div>
-                        </td>
-                        <td><bdi>@Ar.AttentionCenter.Expense2Date</bdi></td>
-                        <td><bdi>@Ar.AttentionCenter.Expense2Amount</bdi></td>
-                        <td>
-                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseConfirm" Icon="check" Class="w08-expense-confirm" OnClick="HandleConfirmExpenseAsync" />
-                            <WButton Variant="WButtonVariant.Text" Label="@Ar.AttentionCenter.ExpenseReject" Icon="x" Class="w08-expense-reject" OnClick="HandleRejectExpenseAsync" />
-                        </td>
-                    </tr>
-                </WTable>
-            </WCard>
-        </div>
-    </div>
+    }
 </div>
 
 @code {
-    private int _tab;
-    private string _actionSearch = string.Empty;
-    private string _expenseSearch = string.Empty;
+    private sealed record KpiTile(string Label, string Icon, string Sub, int Value, string Tab, WSemanticVariant Variant);
+
+    private sealed record NeedsActionTab(string Key, string Label, AttentionEntityKind[] Kinds);
+
+    /// <summary>
+    /// The four tabs W08 draws. They stay four because they have to share one row with the section
+    /// title and the local search: a strip of seven pushed the search onto a line of its own and
+    /// broke the title over three. Cases and decisions are not lost by that — they are in «الكل»
+    /// and have a list of their own in W09's tabs. Phone expenses are not in this list at all;
+    /// see <see cref="NeedsActionRows"/>.
+    /// </summary>
+    private static readonly NeedsActionTab[] NeedsActionTabs =
+    [
+        new("all", Ar.AttentionCenter.TabAll, []),
+        new("correspondence", Ar.AttentionCenter.TabCorrespondence,
+            [AttentionEntityKind.CorrespondenceIn, AttentionEntityKind.CorrespondenceOut]),
+        new("tasks", Ar.AttentionCenter.TabTasks, [AttentionEntityKind.Task]),
+        new("commitments", Ar.AttentionCenter.TabCommitments, [AttentionEntityKind.Commitment]),
+    ];
+
+    private AttentionSnapshot? _snapshot;
+    private IReadOnlyList<PendingPhoneExpense> _expenses = [];
+    private string _tab = "all";
+    private string? _actionSearch;
+    private string? _expenseSearch;
+    private bool _failed;
+    private string _cycleTitle = string.Empty;
+    private int _readinessPercent;
+    private string _readinessLabel = Ar.Attention.ReadinessUnknown;
+
+    private IReadOnlyList<KpiTile> Kpis => _snapshot is null ? [] :
+    [
+        new(Ar.AttentionCenter.OverdueLabel, "alert-triangle", Ar.AttentionCenter.OverdueSub,
+            _snapshot.Counts.Late, BadgeTabs.Late, WSemanticVariant.Danger),
+        new(Ar.AttentionCenter.NearDueLabel, "calendar", Ar.AttentionCenter.NearDueSub,
+            _snapshot.Counts.Near, BadgeTabs.Near, WSemanticVariant.Warning),
+        new(Ar.AttentionCenter.StaleLabel, "clock", Ar.AttentionCenter.StaleSub,
+            _snapshot.Counts.Stale, BadgeTabs.Stale, WSemanticVariant.Neutral),
+        new(Ar.AttentionCenter.AwaitingConfirmationLabel, "check-circle", Ar.AttentionCenter.AwaitingConfirmationSub,
+            _snapshot.Counts.PendingConfirmation, BadgeTabs.PendingConfirmation, WSemanticVariant.Neutral),
+    ];
+
+    /// <summary>The backup card's chip: green when a recent backup exists, red once it is overdue.</summary>
+    private WChipVariant BackupChip => _snapshot?.Backup switch
+    {
+        { Overdue: true } => WChipVariant.Danger,
+        { LastAt: not null } => WChipVariant.Success,
+        _ => WChipVariant.Neutral,
+    };
+
+    private string BackupStateLabel => _snapshot?.Backup switch
+    {
+        { Overdue: true } => Ar.Attention.BackupOverdue,
+        { LastAt: not null } => Ar.Attention.BackupOk,
+        _ => Ar.Attention.BackupNever,
+    };
 
     private RenderFragment HeaderActions => @<text>
-        <WButton Variant="WButtonVariant.Primary" Label="@Ar.AttentionCenter.QuickEntry" Icon="plus" OnClick="HandleQuickEntryAsync" />
-        <WButton Variant="WButtonVariant.Secondary" Label="@Ar.AttentionCenter.Refresh" Icon="refresh-cw" OnClick="HandleRefreshAsync" />
+        <WButton Variant="WButtonVariant.Primary" Label="@Ar.AttentionCenter.QuickEntry" Icon="plus"
+                 Tooltip="@Ar.Shell.QuickEntryTooltip" Class="w08-quick-entry" OnClick="OpenQuickEntry" />
+        <WButton Variant="WButtonVariant.Secondary" Label="@Ar.AttentionCenter.Refresh" Icon="refresh-cw"
+                 Tooltip="@Ar.Shell.RefreshTooltip" Class="w08-refresh" OnClick="RefreshAsync" />
     </text>;
 
     private RenderFragment ActionTableHeader => @<text>
@@ -171,22 +302,297 @@
         <th><span class="w-visually-hidden">@Ar.AttentionCenter.ExpensesActionsColLabel</span></th>
     </text>;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        HeaderState.Set(Ar.AttentionCenter.Title, Ar.AttentionCenter.Sub, HeaderActions, navKey: WSidebar.Keys.Attention);
+        Shell.Changed += HandleShellChanged;
+        PublishHeader();
+        await ReloadAsync();
     }
 
-    private Task HandleQuickEntryAsync(MouseEventArgs args) => Task.CompletedTask;
+    /// <summary>
+    /// The session opened again — the person unlocked the screen this page was sitting under. Its
+    /// numbers were counted before the lock, so they are counted again rather than left to age on
+    /// screen until «تحديث» is pressed.
+    /// </summary>
+    /// <remarks>
+    /// The re-read is deferred to the next render, never done inside the event: the session
+    /// announces the unlock while it is still writing to the very database this read would use, and
+    /// the renderer's own thread is where the shell's reads belong.
+    /// </remarks>
+    private void HandleShellChanged() => _ = InvokeAsync(() =>
+    {
+        _reloadOnRender = true;
+        StateHasChanged();
+    });
 
-    private Task HandleRefreshAsync(MouseEventArgs args) => Task.CompletedTask;
+    private bool _reloadOnRender;
 
-    private Task HandleOpenMonthlyReportAsync(MouseEventArgs args) => Task.CompletedTask;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_reloadOnRender && !firstRender)
+        {
+            _reloadOnRender = false;
+            await ReloadAsync();
+            StateHasChanged();
+        }
+    }
 
-    private Task HandleViewAllExpensesAsync(MouseEventArgs args) => Task.CompletedTask;
+    private void PublishHeader()
+    {
+        var today = DateTime.Now;
+        var sub = Ar.Attention.Sub(
+            Ar.Dates.DayAndDate(today, ArabicRelativeTime.Date(today)),
+            Session.Installation?.OfficeName);
+        HeaderState.Set(Ar.AttentionCenter.Title, sub, HeaderActions, navKey: WSidebar.Keys.Attention, owner: this);
+    }
 
-    private Task HandleConfirmExpenseAsync(MouseEventArgs args) => Task.CompletedTask;
+    private async Task ReloadAsync()
+    {
+        if (!Shell.IsOpen)
+        {
+            return;
+        }
 
-    private Task HandleRejectExpenseAsync(MouseEventArgs args) => Task.CompletedTask;
+        _failed = false;
+        try
+        {
+            var now = Clock.UtcNow;
 
-    public void Dispose() => HeaderState.Clear();
+            // Through the gate: the shell's background passes read the same database object, and it
+            // refuses a second operation while a first is still running.
+            await Shell.RunExclusiveAsync(async () =>
+            {
+                _snapshot = await Shell.Attention.GetSnapshotAsync(now);
+                _expenses = Shell.Find<IPhoneExpenseReview>() is { } review
+                    ? await review.GetPendingAsync()
+                    : [];
+                LoadCycle(now);
+            });
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            // Nothing technical is shown; the host log keeps the detail (AGREEMENT item 15).
+            _failed = true;
+        }
+    }
+
+    /// <summary>
+    /// The monthly-report banner. The readiness percentage and its missing items belong to
+    /// ReadinessService, which package B5 builds; until then the banner still says the one thing it
+    /// can say truthfully — where the current financial cycle stands (AGREEMENT item 52) — and the
+    /// progress line says the figure has not been computed rather than showing a made-up 0%.
+    /// </summary>
+    private void LoadCycle(DateTime now)
+    {
+        _readinessPercent = 0;
+        _readinessLabel = Ar.Attention.ReadinessUnknown;
+
+        if (Session.Installation?.CycleStartDay is not { } startDay)
+        {
+            _cycleTitle = Ar.Attention.ReadinessUnknown;
+            return;
+        }
+
+        var bounds = Shell.Cycles.ComputeCycle(startDay, now);
+        var daysLeft = (bounds.EndDate.Date - now.Date).Days;
+        _cycleTitle = daysLeft switch
+        {
+            < 0 => Ar.Attention.CycleClosed(bounds.NameAr),
+            0 => Ar.Attention.CycleEndsToday(bounds.NameAr),
+            _ => Ar.Attention.CycleDaysLeft(CoreAr.DaysPhrase(daysLeft), bounds.NameAr),
+        };
+    }
+
+    private async Task RefreshAsync()
+    {
+        await ReloadAsync();
+        if (!_failed)
+        {
+            Toasts.Show(Ar.Attention.Refreshed, WSemanticVariant.Success);
+        }
+    }
+
+    private void OpenQuickEntry() => Commands.RequestQuickCapture();
+
+    /// <summary>Where «فتح التقرير الشهري» goes once the reports package builds the monthly draft (W70).</summary>
+    public const string MonthlyReportRoute = "/w70";
+
+    /// <summary>Where «التقويم» goes once the calendar package builds the day board (W39).</summary>
+    public const string CalendarRoute = "/w39";
+
+    /// <summary>Where «عرض كل المصروفات» goes once the finance package builds the phone-expense list (W66).</summary>
+    public const string AllExpensesRoute = "/w66";
+
+    private void OpenMonthlyReport() => Nav.NavigateTo(MonthlyReportRoute);
+
+    private void OpenCalendar() => Nav.NavigateTo(CalendarRoute);
+
+    private void OpenAllExpenses() => Nav.NavigateTo(AllExpensesRoute);
+
+    private void OpenBucket(string tab) => Nav.NavigateTo($"/w09?tab={tab}");
+
+    private void OpenRecord(AttentionItem item)
+    {
+        if (RecordRoutes.For(item.Kind, item.Id) is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    /// <summary>
+    /// The rows the «يحتاج إجراء اليوم» list works over. Phone expenses are left out on purpose:
+    /// they have no sub-tab that could reach them, so counting them in «الكل» made the strip read
+    /// «الكل 6» over «مراسلات 0 · مهام 4 · التزامات 0», and the card below already draws every one
+    /// of them in full with its «تأكيد» / «رفض» (AGREEMENT item 50). Nothing is lost by dropping
+    /// them here, and the counts now add up.
+    /// </summary>
+    private IReadOnlyList<AttentionItem> NeedsActionRows
+    {
+        get
+        {
+            var items = _snapshot?.NeedsActionToday ?? [];
+            return [.. items.Where(i => i.Kind != AttentionEntityKind.PhoneExpense)];
+        }
+    }
+
+    private int CountFor(AttentionEntityKind[] kinds)
+    {
+        var items = NeedsActionRows;
+        return kinds.Length == 0 ? items.Count : items.Count(i => kinds.Contains(i.Kind));
+    }
+
+    private IReadOnlyList<AttentionItem> VisibleItems
+    {
+        get
+        {
+            var items = NeedsActionRows;
+            var kinds = Array.Find(NeedsActionTabs, t => t.Key == _tab)?.Kinds ?? [];
+            IEnumerable<AttentionItem> query = kinds.Length == 0 ? items : items.Where(i => kinds.Contains(i.Kind));
+            if (!string.IsNullOrWhiteSpace(_actionSearch))
+            {
+                var needle = _actionSearch!.Trim();
+                query = query.Where(i => Matches(i, needle));
+            }
+
+            return [.. query];
+        }
+    }
+
+    private IReadOnlyList<PendingPhoneExpense> VisibleExpenses
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_expenseSearch))
+            {
+                return _expenses;
+            }
+
+            var needle = _expenseSearch!.Trim();
+            return [.. _expenses.Where(e =>
+                Contains(e.EmployeeAr, needle) || Contains(e.PurposeAr, needle) || Contains(e.AmountAr, needle))];
+        }
+    }
+
+    private static bool Matches(AttentionItem item, string needle) =>
+        Contains(item.TitleAr, needle)
+        || Contains(item.NumberAr, needle)
+        || Contains(item.PartyAr, needle)
+        || Contains(item.AssigneeAr, needle)
+        || Contains(item.KindLabelAr, needle);
+
+    private static bool Contains(string? value, string needle) =>
+        value is not null && value.Contains(needle, StringComparison.OrdinalIgnoreCase);
+
+    private static string MetaOf(AttentionItem item) =>
+        (item.PartyAr, item.NumberAr) switch
+        {
+            ({ Length: > 0 } party, { Length: > 0 } number) => $"{party} • {number}",
+            ({ Length: > 0 } party, _) => party,
+            (_, { Length: > 0 } number) => number,
+            _ => string.Empty,
+        };
+
+    /// <summary>The chip colour of one row's type.</summary>
+    public static WChipVariant ChipFor(AttentionEntityKind kind) => kind switch
+    {
+        AttentionEntityKind.CorrespondenceIn or AttentionEntityKind.CorrespondenceOut => WChipVariant.Info,
+        AttentionEntityKind.Task => WChipVariant.Primary,
+        AttentionEntityKind.Commitment => WChipVariant.Warning,
+        AttentionEntityKind.Case => WChipVariant.Danger,
+        AttentionEntityKind.Decision => WChipVariant.Success,
+        _ => WChipVariant.Neutral,
+    };
+
+    /// <summary>
+    /// The glyph one row's type is drawn with, beside its chip, the way the export draws the
+    /// «النوع» cell. The registry holds no scales, so a case takes the court building; everything
+    /// else is the same glyph the notification panel gives that kind.
+    /// </summary>
+    public static string IconFor(AttentionEntityKind kind) => kind switch
+    {
+        AttentionEntityKind.CorrespondenceIn or AttentionEntityKind.CorrespondenceOut => "mail",
+        AttentionEntityKind.Task => "check-square",
+        AttentionEntityKind.Commitment => "flag",
+        AttentionEntityKind.Case => "landmark",
+        AttentionEntityKind.Decision => "file-text",
+        AttentionEntityKind.PhoneExpense => "wallet",
+        _ => "tag",
+    };
+
+    /// <summary>The semantic colour of the due cell: late is red, near-due amber, the rest plain.</summary>
+    public static string? DueClass(AttentionItem item) => item.Bucket switch
+    {
+        AttentionBucket.Late => "w08-due--danger",
+        AttentionBucket.Near => "w08-due--warning",
+        _ => null,
+    };
+
+    private static string DueText(AttentionItem item)
+    {
+        if (item.DueAt is not { } due)
+        {
+            return Ar.Overdue.NoDueDate;
+        }
+
+        var local = ArabicRelativeTime.Date(due.ToLocalTime());
+        return item.DaysLate > 0
+            ? $"{Ar.Overdue.LateByDays(item.DaysLate, CoreAr.DaysPhrase(item.DaysLate))} ({local})"
+            : local;
+    }
+
+    private async Task ConfirmExpenseAsync(PendingPhoneExpense expense)
+    {
+        if (Shell.Find<IPhoneExpenseReview>() is not { } review)
+        {
+            return;
+        }
+
+        var done = await Shell.RunExclusiveAsync(() => review.ConfirmAsync(expense.Id));
+        Toasts.Show(
+            done ? Ar.Attention.ExpenseConfirmed : Ar.Attention.ExpenseAlreadyDecided,
+            done ? WSemanticVariant.Success : WSemanticVariant.Warning);
+        Shell.Badges.Invalidate();
+        await ReloadAsync();
+    }
+
+    private async Task RejectExpenseAsync(PendingPhoneExpense expense)
+    {
+        if (Shell.Find<IPhoneExpenseReview>() is not { } review)
+        {
+            return;
+        }
+
+        var done = await Shell.RunExclusiveAsync(() => review.RejectAsync(expense.Id));
+        Toasts.Show(
+            done ? Ar.Attention.ExpenseRejected : Ar.Attention.ExpenseAlreadyDecided,
+            done ? WSemanticVariant.Success : WSemanticVariant.Warning);
+        Shell.Badges.Invalidate();
+        await ReloadAsync();
+    }
+
+    public void Dispose()
+    {
+        Shell.Changed -= HandleShellChanged;
+        HeaderState.Clear(this);
+    }
 }

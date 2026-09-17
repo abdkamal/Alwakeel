@@ -1,18 +1,22 @@
 @namespace Wakeel.Design.Components
 
-<div class="w-kpi">
-    <div class="w-kpi-head">
-        <span class="w-kpi-label">@Label</span>
-        <span class="w-kpi-icon" aria-hidden="true">
-            <WIcon Name="@Icon" Size="18" />
-        </span>
+@* One metric of a screen's indicator row. A KPI that leads somewhere (the four cards of W08, each
+   of which opens W09 on its own tab) is rendered as a button rather than being wrapped in one by
+   the calling screen, so every clickable indicator in the product has the same target area, focus
+   ring and hover — and its own tooltip, since the card carries no other explanation of where it
+   goes. *@
+@if (OnClick.HasDelegate)
+{
+    <button type="button" class="w-kpi w-kpi--action @Class" title="@Tooltip" @onclick="OnClick">
+        @Inner
+    </button>
+}
+else
+{
+    <div class="w-kpi @Class">
+        @Inner
     </div>
-    <bdi class="w-kpi-value">@Value</bdi>
-    @if (!string.IsNullOrEmpty(Sub))
-    {
-        <span class="w-kpi-sub">@Sub</span>
-    }
-</div>
+}
 
 @code {
     /// <summary>Metric name (e.g. "متأخر").</summary>
@@ -26,4 +30,48 @@
 
     /// <summary>Secondary line under the value (e.g. "تجاوز موعد الاستحقاق").</summary>
     [Parameter] public string? Sub { get; set; }
+
+    /// <summary>Where the card leads. Supplying it turns the card into a button.</summary>
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    /// <summary>What the card says on hover; required in practice whenever <see cref="OnClick"/> is set.</summary>
+    [Parameter] public string? Tooltip { get; set; }
+
+    /// <summary>Semantic colour of the number itself: late counts read red, near-due amber.</summary>
+    [Parameter] public WSemanticVariant Variant { get; set; } = WSemanticVariant.Neutral;
+
+    /// <summary>Additional CSS classes, so the calling screen can place the card on its grid.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    private string? ValueClass => Variant switch
+    {
+        WSemanticVariant.Info => "w-kpi-value--info",
+        WSemanticVariant.Success => "w-kpi-value--success",
+        WSemanticVariant.Danger => "w-kpi-value--danger",
+        WSemanticVariant.Warning => "w-kpi-value--warning",
+        _ => null,
+    };
+
+    private string? IconClass => Variant switch
+    {
+        WSemanticVariant.Info => "w-kpi-icon--info",
+        WSemanticVariant.Success => "w-kpi-icon--success",
+        WSemanticVariant.Danger => "w-kpi-icon--danger",
+        WSemanticVariant.Warning => "w-kpi-icon--warning",
+        _ => null,
+    };
+
+    private RenderFragment Inner => @<text>
+        <div class="w-kpi-head">
+            <span class="w-kpi-label">@Label</span>
+            <span class="w-kpi-icon @IconClass" aria-hidden="true">
+                <WIcon Name="@Icon" Size="18" />
+            </span>
+        </div>
+        <bdi class="w-kpi-value @ValueClass">@Value</bdi>
+        @if (!string.IsNullOrEmpty(Sub))
+        {
+            <span class="w-kpi-sub">@Sub</span>
+        }
+    </text>;
 }

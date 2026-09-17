@@ -21,6 +21,7 @@
             {
                 <span class="w-topbar-bell-badge"><WBadge Count="NotificationCount" /></span>
             }
+            @BellPanel
         </span>
         <WButton Variant="WButtonVariant.Icon" Icon="calendar" Tooltip="@Ar.TopBar.CalendarTooltip" OnClick="HandleCalendarAsync" />
     </div>
@@ -42,6 +43,12 @@
 
     /// <summary>Raised when the bell button is clicked.</summary>
     [Parameter] public EventCallback OnBellClick { get; set; }
+
+    /// <summary>
+    /// What drops out of the bell (W10). It is rendered inside the bell itself so the panel hangs
+    /// from the button rather than from a hard-coded place on the screen.
+    /// </summary>
+    [Parameter] public RenderFragment? BellPanel { get; set; }
 
     /// <summary>Raised when the calendar button is clicked.</summary>
     [Parameter] public EventCallback OnCalendarClick { get; set; }

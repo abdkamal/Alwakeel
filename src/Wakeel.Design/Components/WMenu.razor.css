@@ -25,6 +25,27 @@
     height: auto;
 }
 
+/* The named trigger wears the same pill a secondary WButton does, so a control strip that mixes
+   buttons and menus reads as one row of controls rather than two kinds of thing. */
+.w-menu-trigger--pill {
+    width: auto;
+    height: 38px;
+    gap: 6px;
+    padding-inline: 14px;
+    border: 1px solid var(--w-border);
+    border-radius: var(--w-radius-pill);
+    background: var(--w-surface);
+    color: var(--w-text);
+    font-size: var(--w-fs-body);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.w-menu-trigger--pill:hover {
+    background: var(--w-surface2);
+    border-color: var(--w-border-strong);
+}
+
 .w-menu-backdrop {
     position: fixed;
     inset: 0;

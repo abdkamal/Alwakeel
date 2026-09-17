@@ -3,6 +3,7 @@ using Wakeel.Core.Data;
 using Wakeel.Core.Services;
 using Wakeel.Crypto;
 using Wakeel.Design.Text;
+using Wakeel.UI.Services.Shell;
 
 namespace Wakeel.UI.Services.Account;
 
@@ -25,6 +26,7 @@ public sealed class LockService : IDisposable
     private readonly IClock _clock;
     private readonly SignInProfileStore _profiles;
     private readonly LoginService _login;
+    private readonly Func<ShellServices>? _shell;
     private ITimer? _timer;
     private bool _disposed;
 
@@ -35,7 +37,8 @@ public sealed class LockService : IDisposable
         TimeProvider time,
         IClock clock,
         SignInProfileStore profiles,
-        LoginService login)
+        LoginService login,
+        Func<ShellServices>? shell = null)
     {
         _session = session;
         _paths = paths;
@@ -44,6 +47,7 @@ public sealed class LockService : IDisposable
         _clock = clock;
         _profiles = profiles;
         _login = login;
+        _shell = shell;
     }
 
     /// <summary>How often the idle timer looks at the clock.</summary>
@@ -89,26 +93,31 @@ public sealed class LockService : IDisposable
         }
 
         // Written while the database is still open, because once it closes there is nowhere to
-        // write it; a failure here must never stop the lock from happening.
-        try
+        // write it; a failure here must never stop the lock from happening. The shell's background
+        // work shares this one database object, so the line is written between its passes: see
+        // ShellServices.TryRunExclusive.
+        WriteExclusive(() =>
         {
-            _session.Db.AuditLog.Add(new Core.Data.Entities.AuditLogEntry
+            try
             {
-                At = _clock.UtcNow,
-                Actor = _session.Installation?.EmployeeName ?? Ar.FirstRun.Audit.ActorSystem,
-                Action = "account.lock",
-                EntityType = "account",
-                EntityId = _session.Installation?.DeviceId,
-                SummaryAr = Ar.FirstRun.Audit.Locked,
-            });
-            _session.Db.SaveChanges();
-        }
-        catch (Exception exception) when (exception is Microsoft.Data.Sqlite.SqliteException
-                                              or InvalidOperationException or IOException)
-        {
-            // The session locks regardless; an unwritten line in the log is never a reason to leave
-            // an unattended machine open.
-        }
+                _session.Db.AuditLog.Add(new Core.Data.Entities.AuditLogEntry
+                {
+                    At = _clock.UtcNow,
+                    Actor = _session.Installation?.EmployeeName ?? Ar.FirstRun.Audit.ActorSystem,
+                    Action = "account.lock",
+                    EntityType = "account",
+                    EntityId = _session.Installation?.DeviceId,
+                    SummaryAr = Ar.FirstRun.Audit.Locked,
+                });
+                _session.Db.SaveChanges();
+            }
+            catch (Exception exception) when (exception is Microsoft.Data.Sqlite.SqliteException
+                                                  or InvalidOperationException or IOException)
+            {
+                // The session locks regardless; an unwritten line in the log is never a reason to
+                // leave an unattended machine open.
+            }
+        });
 
         _session.Lock();
     }
@@ -207,27 +216,36 @@ public sealed class LockService : IDisposable
         var name = _session.Installation?.EmployeeName ?? Ar.FirstRun.Audit.ActorSystem;
         var profile = _profiles.Load();
 
-        // The wrong passwords tried against the overlay could not be logged while the database was
-        // shut; now that it is open again they are written as one entry, exactly as a sign-in does.
-        if (profile.UnloggedFailures > 0)
+        // Unlocking re-opened the session, and re-opening it is what tells the shell to start its
+        // background work again — on this very database object. Those two lines are therefore
+        // written with the database to ourselves; otherwise a clock re-check or a badge count can
+        // land on it while the audit write is still running, and the database refuses a second
+        // operation over a first.
+        await RunExclusiveAsync(async () =>
         {
+            // The wrong passwords tried against the overlay could not be logged while the database
+            // was shut; now that it is open again they are written as one entry, exactly as a
+            // sign-in does.
+            if (profile.UnloggedFailures > 0)
+            {
+                await audit.LogAsync(
+                    name,
+                    "account.sign_in_failed",
+                    Ar.FirstRun.Audit.FailedAttempts(profile.UnloggedFailures),
+                    "account",
+                    _session.Installation?.DeviceId,
+                    new { attempts = profile.UnloggedFailures },
+                    cancellationToken).ConfigureAwait(true);
+            }
+
             await audit.LogAsync(
                 name,
-                "account.sign_in_failed",
-                Ar.FirstRun.Audit.FailedAttempts(profile.UnloggedFailures),
+                "account.unlock",
+                Ar.FirstRun.Audit.SignedInAfterLock,
                 "account",
                 _session.Installation?.DeviceId,
-                new { attempts = profile.UnloggedFailures },
-                cancellationToken).ConfigureAwait(false);
-        }
-
-        await audit.LogAsync(
-            name,
-            "account.unlock",
-            Ar.FirstRun.Audit.SignedInAfterLock,
-            "account",
-            _session.Installation?.DeviceId,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+                cancellationToken: cancellationToken).ConfigureAwait(true);
+        }).ConfigureAwait(false);
 
         profile.FailedAttempts = 0;
         profile.UnloggedFailures = 0;
@@ -249,6 +267,28 @@ public sealed class LockService : IDisposable
         _disposed = true;
         _timer?.Dispose();
         _timer = null;
+    }
+
+    /// <summary>
+    /// Runs a piece of database work with the session's database to itself, so the shell's
+    /// background passes take turns with it. Without a shell (the walkthrough suite, the tests)
+    /// there is no background work to take turns with and the work simply runs.
+    /// </summary>
+    private Task RunExclusiveAsync(Func<Task> work) =>
+        _shell?.Invoke() is { } shell ? shell.RunExclusiveAsync(work) : work();
+
+    /// <summary>The same turn-taking for the lock, which cannot wait and cannot be asynchronous.</summary>
+    private void WriteExclusive(Action work)
+    {
+        if (_shell?.Invoke() is { } shell)
+        {
+            // The database was still busy; the lock then goes ahead without its line rather than
+            // keep an unattended machine open while it waits.
+            shell.TryRunExclusive(work);
+            return;
+        }
+
+        work();
     }
 
     private void Tick()

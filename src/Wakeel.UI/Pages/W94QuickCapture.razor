@@ -1,0 +1,364 @@
+@namespace Wakeel.UI.Pages
+@using Wakeel.Core.Data
+@using Wakeel.Core.Services
+@using Wakeel.UI.Services.Shell
+@using System.Globalization
+@inject ShellServices Shell
+@inject IToastService Toasts
+
+@* W94 — إدخال سريع. Opened from the «إدخال سريع» button of W08 and from Ctrl+N anywhere in the
+   shell. Five short forms behind one segmented header; whatever is saved is written immediately and
+   can be taken back from the undo strip for the next couple of minutes. *@
+<WDialog Open="@Open"
+         Title="@Ar.QuickCapture.Title"
+         Desc="@Ar.QuickCapture.Desc"
+         ConfirmLabel="@Ar.QuickCapture.Save"
+         ConfirmIcon="check"
+         CancelLabel="@Ar.Buttons.Cancel"
+         CancelIcon="x"
+         Class="w94-dialog"
+         MaxWidthPx="560"
+         OnConfirm="SaveAsync"
+         OnCancel="CloseAsync">
+    <div class="w94">
+        <WSegmented Options="@KindOptions" Icons="@KindIcons" Stacked="true" Class="w94-kinds"
+                    SelectedValue="@_kind.ToString()" SelectedValueChanged="SelectKindAsync" />
+
+        @if (_kind == QuickCaptureKind.Task)
+        {
+            <WInput Label="@Ar.QuickCapture.TaskTitleLabel" Required="true" Hint="@Ar.QuickCapture.TaskTitleHint"
+                    Placeholder="@Ar.QuickCapture.TaskTitlePlaceholder" @bind-Value="_title" Error="@_titleError" />
+            <div class="w94-row">
+                @* Required, and filled with the default date the moment the form opens, so the star
+                   never promises a check the field does not make. *@
+                <WInput Label="@Ar.QuickCapture.TaskDueLabel" Required="true" Type="WInputType.Date"
+                        @bind-Value="_date"
+                        Hint="@Ar.QuickCapture.TaskDueHint(CoreAr.DaysPhrase(DefaultTaskDueDays))" Error="@_dateError" />
+                <WSelect Label="@Ar.QuickCapture.TaskPriorityLabel" Options="@PriorityOptions" @bind-Value="_priority" />
+            </div>
+            <WInput Label="@Ar.QuickCapture.AssigneeLabel" Placeholder="@Ar.QuickCapture.AssigneePlaceholder" @bind-Value="_assignee" />
+            <WInput Type="WInputType.Textarea" Label="@Ar.QuickCapture.ExtraNoteLabel"
+                    Placeholder="@Ar.QuickCapture.ExtraNotePlaceholder" @bind-Value="_text" />
+        }
+        else if (_kind is QuickCaptureKind.Note or QuickCaptureKind.ReportNote)
+        {
+            <WInput Type="WInputType.Textarea" Required="true"
+                    Label="@(_kind == QuickCaptureKind.Note ? Ar.QuickCapture.NoteLabel : Ar.QuickCapture.ReportNoteLabel)"
+                    Placeholder="@Ar.QuickCapture.NotePlaceholder" @bind-Value="_text" Error="@_textError" />
+        }
+        else if (_kind == QuickCaptureKind.Expense)
+        {
+            <div class="w94-row">
+                <WInput Label="@Ar.QuickCapture.ExpenseAmountLabel" Required="true" Type="WInputType.Number"
+                        Hint="@Ar.QuickCapture.ExpenseAmountHint" @bind-Value="_amount" Error="@_amountError" />
+                <WInput Label="@Ar.QuickCapture.ExpenseCategoryLabel" @bind-Value="_category" />
+            </div>
+            <WInput Label="@Ar.QuickCapture.ExpensePurposeLabel" Required="true"
+                    Placeholder="@Ar.QuickCapture.ExpensePurposePlaceholder" @bind-Value="_title" Error="@_titleError" />
+            <WInput Type="WInputType.Textarea" Label="@Ar.QuickCapture.ExtraNoteLabel"
+                    Placeholder="@Ar.QuickCapture.ExtraNotePlaceholder" @bind-Value="_text" />
+        }
+        else
+        {
+            <WInput Label="@Ar.QuickCapture.AppointmentTitleLabel" Required="true"
+                    Placeholder="@Ar.QuickCapture.TaskTitlePlaceholder" @bind-Value="_title" Error="@_titleError" />
+            <div class="w94-row">
+                <WInput Label="@Ar.QuickCapture.AppointmentWhenLabel" Required="true" Type="WInputType.Date"
+                        @bind-Value="_date" Error="@_dateError" />
+                <WInput Label="@Ar.QuickCapture.AppointmentTimeLabel" Required="true"
+                        Placeholder="@Ar.QuickCapture.AppointmentTimePlaceholder"
+                        @bind-Value="_time" Error="@_timeError" />
+            </div>
+            <WInput Type="WInputType.Textarea" Label="@Ar.QuickCapture.ExtraNoteLabel"
+                    Placeholder="@Ar.QuickCapture.ExtraNotePlaceholder" @bind-Value="_text" />
+        }
+
+        @if (_failed)
+        {
+            <WCard Variant="WSemanticVariant.Danger" Icon="alert-circle" Desc="@Ar.QuickCapture.SaveFailed" />
+        }
+    </div>
+</WDialog>
+
+@code {
+    private sealed record KindTab(QuickCaptureKind Value, string Label, string Icon);
+
+    /// <summary>How far ahead a task with no date of its own is due, in days.</summary>
+    public const int DefaultTaskDueDays = 7;
+
+    /// <summary>How the date fields are typed and read.</summary>
+    public const string DateFormat = "dd/MM/yyyy";
+
+    private static readonly KindTab[] Kinds =
+    [
+        new(QuickCaptureKind.Task, Ar.QuickCapture.KindTask, "check-square"),
+        new(QuickCaptureKind.Note, Ar.QuickCapture.KindNote, "file-text"),
+        new(QuickCaptureKind.ReportNote, Ar.QuickCapture.KindReportNote, "bar-chart-3"),
+        new(QuickCaptureKind.Expense, Ar.QuickCapture.KindExpense, "wallet"),
+        new(QuickCaptureKind.Appointment, Ar.QuickCapture.KindAppointment, "calendar"),
+    ];
+
+    private static readonly IReadOnlyList<(string Value, string Label)> PriorityOptions =
+    [
+        (nameof(TaskPriority.Low), Ar.QuickCapture.PriorityLow),
+        (nameof(TaskPriority.Normal), Ar.QuickCapture.PriorityNormal),
+        (nameof(TaskPriority.High), Ar.QuickCapture.PriorityHigh),
+    ];
+
+    private QuickCaptureKind _kind = QuickCaptureKind.Task;
+    private string? _title;
+    private string? _text;
+    private string? _date;
+    private string? _time;
+    private string? _amount;
+    private string? _category;
+    private string? _assignee;
+    private string _priority = nameof(TaskPriority.Normal);
+    private string? _titleError;
+    private string? _textError;
+    private string? _dateError;
+    private string? _timeError;
+    private string? _amountError;
+    private bool _failed;
+    private bool _wasOpen;
+
+    /// <summary>Whether the dialog is on screen.</summary>
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>Raised when the dialog closes itself (saved, cancelled, Esc).</summary>
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    /// <summary>Raised after a successful save, so the screen behind can re-read its numbers.</summary>
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    /// <summary>Raised with what was just saved, so the shell can offer «تراجع».</summary>
+    [Parameter] public EventCallback<QuickCaptureResult> OnCaptured { get; set; }
+
+    /// <summary>The local now the dialog dates its defaults from; the shell passes the device clock.</summary>
+    [Parameter] public DateTime Now { get; set; } = DateTime.Now;
+
+    /// <summary>The five kinds as the segmented control reads them, in the order W94 draws them.</summary>
+    private static readonly IReadOnlyList<(string Value, string Label)> KindOptions =
+        [.. Kinds.Select(k => (k.Value.ToString(), k.Label))];
+
+    private static readonly IReadOnlyDictionary<string, string> KindIcons =
+        Kinds.ToDictionary(k => k.Value.ToString(), k => k.Icon, StringComparer.Ordinal);
+
+    protected override void OnParametersSet()
+    {
+        if (Open && !_wasOpen)
+        {
+            _wasOpen = true;
+            FillTaskDue();
+        }
+        else if (!Open)
+        {
+            _wasOpen = false;
+        }
+    }
+
+    private void SelectKindAsync(string value)
+    {
+        if (Enum.TryParse<QuickCaptureKind>(value, out var kind))
+        {
+            SelectKind(kind);
+        }
+    }
+
+    private void SelectKind(QuickCaptureKind kind)
+    {
+        _kind = kind;
+        ClearErrors();
+        FillTaskDue();
+    }
+
+    /// <summary>Puts the default date in «تاريخ الاستحقاق», so the required field is never empty.</summary>
+    private void FillTaskDue()
+    {
+        if (_kind == QuickCaptureKind.Task && string.IsNullOrWhiteSpace(_date))
+        {
+            _date = Now.Date.AddDays(DefaultTaskDueDays).ToString(DateFormat, CultureInfo.InvariantCulture);
+        }
+    }
+
+    private void ClearErrors()
+    {
+        _titleError = null;
+        _textError = null;
+        _dateError = null;
+        _timeError = null;
+        _amountError = null;
+        _failed = false;
+    }
+
+    private async Task CloseAsync()
+    {
+        Reset();
+        Open = false;
+        _wasOpen = false;
+        await OpenChanged.InvokeAsync(false);
+    }
+
+    private void Reset()
+    {
+        _title = null;
+        _text = null;
+        _date = null;
+        _time = null;
+        _amount = null;
+        _category = null;
+        _assignee = null;
+        _priority = nameof(TaskPriority.Normal);
+        ClearErrors();
+    }
+
+    private async Task SaveAsync()
+    {
+        ClearErrors();
+
+        if (!Shell.IsOpen)
+        {
+            _failed = true;
+            return;
+        }
+
+        try
+        {
+            // Through the gate: the shell's background passes share this one database object, and it
+            // refuses a second operation while a first is still running.
+            var result = await Shell.RunExclusiveAsync(async () => _kind switch
+            {
+                QuickCaptureKind.Task => await SaveTaskAsync(),
+                QuickCaptureKind.Note => await SaveNoteAsync(forReport: false),
+                QuickCaptureKind.ReportNote => await SaveNoteAsync(forReport: true),
+                QuickCaptureKind.Expense => await SaveExpenseAsync(),
+                _ => await SaveAppointmentAsync(),
+            });
+
+            if (result is null)
+            {
+                return;
+            }
+
+            await OnCaptured.InvokeAsync(result);
+            await OnSaved.InvokeAsync();
+            await CloseAsync();
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        {
+            // Nothing technical reaches the person (AGREEMENT item 15); the host log carries the rest.
+            _failed = true;
+            Toasts.Show(Ar.QuickCapture.SaveFailed, WSemanticVariant.Danger);
+        }
+    }
+
+    private async Task<QuickCaptureResult?> SaveTaskAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            _titleError = Ar.QuickCapture.RequiredTitle;
+            return null;
+        }
+
+        if (ParseDate(_date) is not { } due)
+        {
+            _dateError = Ar.QuickCapture.RequiredWhen;
+            return null;
+        }
+
+        var priority = Enum.TryParse<TaskPriority>(_priority, out var value) ? value : TaskPriority.Normal;
+
+        // The export's optional «ملاحظة (اختياري)» goes in with the task, in the capture service's
+        // own save, so that one «تراجع» takes the whole capture back.
+        return await Shell.QuickCapture.CaptureTaskAsync(
+            _title!.Trim(),
+            due,
+            priority,
+            string.IsNullOrWhiteSpace(_assignee) ? null : _assignee!.Trim(),
+            string.IsNullOrWhiteSpace(_text) ? null : _text!.Trim());
+    }
+
+    private async Task<QuickCaptureResult?> SaveNoteAsync(bool forReport)
+    {
+        if (string.IsNullOrWhiteSpace(_text))
+        {
+            _textError = Ar.QuickCapture.RequiredNote;
+            return null;
+        }
+
+        var text = _text!.Trim();
+        return forReport
+            ? await Shell.QuickCapture.CaptureReportNoteAsync(text)
+            : await Shell.QuickCapture.CaptureNoteAsync(text);
+    }
+
+    private async Task<QuickCaptureResult?> SaveExpenseAsync()
+    {
+        var agorot = ParseAgorot(_amount);
+        if (agorot is not > 0)
+        {
+            _amountError = Ar.QuickCapture.RequiredAmount;
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            _titleError = Ar.QuickCapture.RequiredPurpose;
+            return null;
+        }
+
+        return await Shell.QuickCapture.CaptureExpenseAsync(
+            agorot.Value,
+            _title!.Trim(),
+            string.IsNullOrWhiteSpace(_category) ? null : _category!.Trim(),
+            string.IsNullOrWhiteSpace(_text) ? null : _text!.Trim());
+    }
+
+    private async Task<QuickCaptureResult?> SaveAppointmentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            _titleError = Ar.QuickCapture.RequiredTitle;
+            return null;
+        }
+
+        if (ParseDate(_date) is not { } day)
+        {
+            _dateError = Ar.QuickCapture.RequiredWhen;
+            return null;
+        }
+
+        if (ParseTime(_time) is not { } clock)
+        {
+            _timeError = Ar.QuickCapture.RequiredWhen;
+            return null;
+        }
+
+        var startsAt = day.Add(clock);
+        return await Shell.QuickCapture.CaptureAppointmentAsync(
+            _title!.Trim(),
+            DateTime.SpecifyKind(startsAt, DateTimeKind.Local).ToUniversalTime(),
+            null,
+            string.IsNullOrWhiteSpace(_text) ? null : _text!.Trim());
+    }
+
+    /// <summary>Reads the masked «يوم/شهر/سنة» field; null when it does not hold a real date.</summary>
+    private static DateTime? ParseDate(string? text) =>
+        DateTime.TryParseExact(text, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var value)
+            ? value.Date
+            : null;
+
+    private static TimeSpan? ParseTime(string? text) =>
+        TimeSpan.TryParseExact(text, @"hh\:mm", CultureInfo.InvariantCulture, out var value) ? value : null;
+
+    /// <summary>Shekels as typed («42.50») to agorot; null when the field is not a positive amount.</summary>
+    private static long? ParseAgorot(string? text)
+    {
+        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var shekels) || shekels <= 0)
+        {
+            return null;
+        }
+
+        return (long)Math.Round(shekels * 100m, MidpointRounding.AwayFromZero);
+    }
+}

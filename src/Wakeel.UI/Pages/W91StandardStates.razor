@@ -1,0 +1,81 @@
+@page "/w91"
+@using Wakeel.Design.Text
+@using Wakeel.UI.Services
+@implements IDisposable
+@inject PageHeaderState HeaderState
+@inject IToastService Toasts
+
+@* W91 — لوحة الحالات القياسية. The reference sheet every screen's empty, loading and failure
+   states are taken from, so the same situation never gets two different sentences across the
+   product. The texts are the finals in Ar.StandardStates (the four the design system's own
+   components already use are aliased from Ar.States, so the two can never drift apart). *@
+<div class="w91">
+    <div class="w91-grid">
+        @foreach (var state in States)
+        {
+            <div class="w91-cell" data-state="@state.Key">
+                <WStateCard Icon="@state.Icon"
+                            Title="@state.Title"
+                            Desc="@state.Desc"
+                            ActionLabel="@state.ActionLabel"
+                            ActionIcon="@state.ActionIcon"
+                            Variant="@state.Variant"
+                            OnAction="@(() => Announce(state.ActionLabel))" />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>One entry of the sheet.</summary>
+    /// <param name="Key">Stable identifier, so a matching test can name the card it is checking.</param>
+    /// <param name="Variant">The tone the card's icon carries, as the export colours it.</param>
+    private sealed record StateEntry(
+        string Key,
+        string Icon,
+        string Title,
+        string Desc,
+        string ActionLabel,
+        string ActionIcon,
+        WSemanticVariant Variant = WSemanticVariant.Neutral);
+
+    /// <summary>The thirteen standard states, in the order SCREENS.md lists them for W91.</summary>
+    public static IReadOnlyList<string> Keys =>
+    [
+        "loading", "empty", "no-results", "file-broken", "vault", "database", "failed",
+        "recipient-only", "success", "session-ended", "bad-package", "record-changed", "word",
+    ];
+
+    private static readonly StateEntry[] States =
+    [
+        new("loading", "clock", Ar.StandardStates.LoadingTitle, Ar.StandardStates.LoadingDesc, Ar.StandardStates.LoadingAction, "x"),
+        new("empty", "inbox", Ar.StandardStates.EmptyTitle, Ar.StandardStates.EmptyDesc, Ar.StandardStates.EmptyAction, "plus"),
+        new("no-results", "search", Ar.StandardStates.NoResultsTitle, Ar.StandardStates.NoResultsDesc, Ar.StandardStates.NoResultsAction, "x"),
+        new("file-broken", "alert-triangle", Ar.StandardStates.FileBrokenTitle, Ar.StandardStates.FileBrokenDesc, Ar.StandardStates.FileBrokenAction, "refresh-cw", WSemanticVariant.Warning),
+        new("vault", "ban", Ar.StandardStates.VaultTitle, Ar.StandardStates.VaultDesc, Ar.StandardStates.VaultAction, "refresh-cw", WSemanticVariant.Warning),
+        new("database", "database", Ar.StandardStates.DatabaseTitle, Ar.StandardStates.DatabaseDesc, Ar.StandardStates.DatabaseAction, "refresh-cw", WSemanticVariant.Danger),
+        new("failed", "alert-circle", Ar.StandardStates.FailedTitle, Ar.StandardStates.FailedDesc, Ar.StandardStates.FailedAction, "refresh-cw", WSemanticVariant.Warning),
+        new("recipient-only", "user", Ar.StandardStates.RecipientOnlyTitle, Ar.StandardStates.RecipientOnlyDesc, Ar.StandardStates.RecipientOnlyAction, "mail"),
+        new("success", "check-circle", Ar.StandardStates.SuccessTitle, Ar.StandardStates.SuccessDesc, Ar.StandardStates.SuccessAction, "chevron-left", WSemanticVariant.Success),
+        new("session-ended", "log-out", Ar.StandardStates.SessionEndedTitle, Ar.StandardStates.SessionEndedDesc, Ar.StandardStates.SessionEndedAction, "log-out"),
+        new("bad-package", "package", Ar.StandardStates.BadPackageTitle, Ar.StandardStates.BadPackageDesc, Ar.StandardStates.BadPackageAction, "folder-open", WSemanticVariant.Warning),
+        new("record-changed", "refresh-cw", Ar.StandardStates.RecordChangedTitle, Ar.StandardStates.RecordChangedDesc, Ar.StandardStates.RecordChangedAction, "refresh-cw", WSemanticVariant.Warning),
+        new("word", "file-text", Ar.StandardStates.WordTitle, Ar.StandardStates.WordDesc, Ar.StandardStates.WordAction, "download", WSemanticVariant.Warning),
+    ];
+
+    protected override void OnInitialized() =>
+        HeaderState.Set(Ar.StandardStates.Title, Ar.StandardStates.Sub, HeaderActions, navKey: null, owner: this);
+
+    private RenderFragment HeaderActions => @<text>
+        <WButton Variant="WButtonVariant.Secondary" Label="@Ar.Buttons.Refresh" Icon="refresh-cw"
+                 Tooltip="@Ar.StandardStates.RefreshTooltip" Class="w91-refresh" OnClick="Refresh" />
+    </text>;
+
+    /// <summary>A reference sheet has nothing to re-read; «تحديث» simply draws it again.</summary>
+    private void Refresh() => StateHasChanged();
+
+    /// <summary>A card on a reference sheet has nothing behind it; pressing one says what it would do.</summary>
+    private void Announce(string action) => Toasts.Show(Ar.StandardDialogs.Chosen(action), WSemanticVariant.Info);
+
+    public void Dispose() => HeaderState.Clear(this);
+}

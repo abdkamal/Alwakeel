@@ -2,10 +2,10 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 40px;
-    padding-inline: 4px;
+    height: 32px;
+    padding-inline: 12px;
     border: 0;
-    border-bottom: 2px solid transparent;
+    border-radius: var(--w-radius-pill);
     background: transparent;
     color: var(--w-muted);
     font-size: var(--w-fs-body);
@@ -14,7 +14,23 @@
     white-space: nowrap;
 }
 
+.w-tab:hover:not(.w-tab--active) {
+    background: var(--w-surface2);
+    color: var(--w-text);
+}
+
+/* The selected tab is a filled pill carrying its own count, the way every export of the daily
+   shell draws it — not a label with an underline. */
 .w-tab--active {
-    color: var(--w-primary);
-    border-bottom-color: var(--w-primary);
+    background: var(--w-primary);
+    color: var(--w-on-fill);
+}
+
+/* The count inside the filled pill sits on a translucent ground instead of the soft primary tint
+   it wears on a resting tab, which would be invisible on the pill. The extra .w-tab in the
+   selector is what puts this rule above WBadge's own scoped `.w-badge--tab`: the two are
+   otherwise the same weight and the winner would depend on bundle order. */
+.w-tab.w-tab--active ::deep .w-badge--tab {
+    background: #FFFFFF38;
+    color: var(--w-on-fill);
 }

@@ -1,0 +1,78 @@
+.w-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--w-radius-lg);
+    border: 1px solid var(--w-border);
+    background: var(--w-surface);
+    color: var(--w-text);
+}
+
+.w-banner--warning {
+    background: var(--w-warning-soft);
+    border-color: var(--w-warning-border);
+    color: var(--w-warning);
+}
+
+.w-banner--danger {
+    background: var(--w-danger-soft);
+    border-color: var(--w-danger-border);
+    color: var(--w-danger);
+}
+
+.w-banner--info {
+    background: var(--w-info-soft);
+    border-color: var(--w-info-border);
+    color: var(--w-info);
+}
+
+.w-banner--success {
+    background: var(--w-success-soft);
+    border-color: var(--w-success-border);
+    color: var(--w-success);
+}
+
+.w-banner-icon {
+    display: inline-flex;
+    flex: none;
+}
+
+.w-banner-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.w-banner-title {
+    font-weight: 700;
+    color: var(--w-text);
+}
+
+.w-banner-body {
+    font-size: var(--w-fs-meta);
+    color: var(--w-muted);
+}
+
+.w-banner-notice {
+    font-size: var(--w-fs-meta);
+    font-weight: 600;
+}
+
+/* The figure that shares the banner's own row (W08's readiness bar). It never grows with the
+   sentence beside it, so the strip's height does not depend on how long the sentence is. */
+.w-banner-trailing {
+    flex: none;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.w-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+}

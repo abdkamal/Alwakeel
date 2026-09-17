@@ -14,8 +14,10 @@
          OnConfirm="ConfirmAsync" OnCancel="CloseAsync">
 
 @* Once the new sheet is on screen the recovery itself is finished; nothing of the form is left to
-   fill in, and what remains is the one thing that still has to leave this window — the sheet. *@
-@if (_newSheet is null)
+   fill in, and what remains is the one thing that still has to leave this window — the sheet. The
+   same is true once the password has been replaced without a session behind it: the form has
+   nothing left to ask, so only the sentence and the closing button stay. *@
+@if (_newSheet is null && !_recoveredWithoutSession)
 {
     <ol class="w07-steps">
         <li class="w07-step @(CodeVerified ? "w07-step--done" : "w07-step--active")">
@@ -113,6 +115,12 @@
         <WCard Variant="WSemanticVariant.Danger" Icon="alert-circle" Desc="@_error" />
     }
 }
+else if (_newSheet is null)
+{
+    @* Recovered, no session behind it, and no new sheet asked for: one sentence, one way out, and
+       the same Warning/info tone the sheet branch gives the identical outcome. *@
+    <WCard Variant="WSemanticVariant.Warning" Icon="info" Desc="@_error" />
+}
 else if (_newSheet is { } sheet)
 {
     <WCard Variant="WSemanticVariant.Success" Icon="check-circle"
@@ -206,9 +214,17 @@ else if (_newSheet is { } sheet)
         ? Ar.FirstRun.Recovery.DialogDesc
         : Ar.FirstRun.Recovery.NewSheetDesc;
 
-    private string ConfirmLabel => _newSheet is null && !_recoveredWithoutSession
-        ? Ar.FirstRun.Recovery.Submit
-        : Ar.FirstRun.Recovery.NewSheetDone;
+    /// <summary>
+    /// What the confirming button says. It follows the SHEET rather than the flag: «حفظتُ الورقة
+    /// الجديدة» is only true when a new sheet is actually on screen, so the recovered-but-not-signed-in
+    /// path without a sheet closes with the plain «إغلاق» instead of telling the person they saved
+    /// something that was never issued (verify-b2-carryover finding 1).
+    /// </summary>
+    private string ConfirmLabel => _newSheet is not null
+        ? Ar.FirstRun.Recovery.NewSheetDone
+        : _recoveredWithoutSession
+            ? Ar.Buttons.Close
+            : Ar.FirstRun.Recovery.Submit;
 
     private string ConfirmIcon => _newSheet is null && !_recoveredWithoutSession ? "key-round" : "check";
 
