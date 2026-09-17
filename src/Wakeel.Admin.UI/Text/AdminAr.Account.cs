@@ -80,8 +80,11 @@ public static partial class AdminAr
             public const string PrintedCheckbox = "طبعتُ الورقة وحفظتها في مكان آمن.";
             public const string PrintedRequired = "أكّد أنك طبعت الورقة وحفظتها قبل المتابعة.";
             public const string Start = "ابدأ";
-            /// <summary>Under the button of step one, before any account exists.</summary>
+            /// <summary>Under the button of step one, while something is still missing.</summary>
             public const string CreateHint = "أكمل الحقول ثم أنشئ الحساب.";
+
+            /// <summary>And once the fields hold up: what pressing the button will bring up.</summary>
+            public const string ReadyHint = "بعد الإنشاء تُعرض ورقة الاسترداد مرة واحدة، فجهّز الطابعة.";
 
             /// <summary>Under «ابدأ» on the sheet, and as the description of the empty sheet card.</summary>
             public const string StartHint = "بعد الإنشاء تُفتح لوحة الهيئة مباشرة.";
@@ -103,8 +106,8 @@ public static partial class AdminAr
             public const string ExitUnsavedConfirm = "إغلاق دون حفظ الورقة";
             public const string ExitUnsavedCancel = "العودة إلى الورقة";
 
-            public const string Step1 = "١";
-            public const string Step2 = "٢";
+            public const string Step1 = "1";
+            public const string Step2 = "2";
 
             public const string CreateFailed =
                 "تعذّر إنشاء حساب المدير على هذا الحاسوب. تأكّد من وجود مساحة على القرص ثم أعد المحاولة.";
@@ -169,7 +172,7 @@ public static partial class AdminAr
         /// <summary>The four rules printed under the password field, and the strength meter.</summary>
         public static class Strength
         {
-            public const string RuleLength = "١٢ حرفًا فأكثر";
+            public const string RuleLength = "12 حرفًا فأكثر";
             public const string RuleCase = "حرف كبير وحرف صغير";
             public const string RuleDigit = "رقم واحد على الأقل";
             public const string RuleSymbol = "رمز واحد على الأقل مثل ! أو #";

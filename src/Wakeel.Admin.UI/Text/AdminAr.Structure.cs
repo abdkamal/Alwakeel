@@ -23,6 +23,18 @@ public static partial class AdminAr
         public const string Expand = "فتح";
 
         public const string TreeLabel = "شجرة الهيكلية";
+        public const string SearchPlaceholder = "ابحث باسم العنصر أو رئيسه…";
+        public const string SearchNothing = "لا عنصر بهذا الاسم.";
+        public const string ExpandAll = "توسيع الكل";
+        public const string CollapseAll = "طيّ الكل";
+        public const string ChooseHeading = "اختر عنصرًا من الشجرة";
+        public const string ChooseDesc = "اضغط على أي عنصر في الشجرة لعرض بياناته وتعديلها هنا.";
+        public const string LevelLabel = "المستوى";
+        public const string ParentLabel = "التبعية";
+        public const string DetailsHeading = "بيانات العنصر";
+        public const string DevicesHere = "أجهزة مسجّلة في هذا المكتب";
+        public const string DeleteBlockedByDevices = "لا يُحذف مكتب سُجّلت فيه أجهزة.";
+        public const string DeleteBlockedByChildren = "لا يُحذف عنصر يتبعه شيء.";
         public const string Empty = "لا توجد دوائر بعد";
         public const string EmptyDesc = "ابدأ بإضافة دائرة، ثم أقسامها، ثم وحداتها، ثم حدّد أي منها مكتب.";
         public const string DisabledChip = "موقوف";
@@ -39,7 +51,7 @@ public static partial class AdminAr
         public const string OfficeHeading = "المكتب والجرد";
         public const string OfficeDesc = "إن كان في هذا العنصر حاسوب، فهو مكتب وله رمز جرد خاص به.";
         public const string OfficeCodeLabel = "رمز المكتب للجرد";
-        public const string OfficeCodePlaceholder = "مثال: ٣٢-٠١";
+        public const string OfficeCodePlaceholder = "مثال: 32-01";
         public const string OfficeCodeHint = "رمز لا يتكرّر في الهيئة، يُلصق على أجهزة المكتب وعُهده.";
         public const string MarkAsOffice = "جعله مكتبًا";
         public const string MarkAsOfficeTooltip = "تسجيل هذا العنصر كمكتب فيه حاسوب";
@@ -63,6 +75,9 @@ public static partial class AdminAr
         public const string DeleteWarning =
             "الحذف لا يمكن التراجع عنه. لا يُحذف إلا عنصر لا يتبعه شيء ولم يُسجَّل فيه جهاز قط؛ وإلا فالإيقاف هو الصواب.";
 
+        public const string SaveLabel = "حفظ";
+        public const string SaveTooltip = "حفظ تعديلات هذا العنصر";
+        public const string RootNameHint = "اسم الهيئة يُغيَّر من صفحة «الهيئة والهوية».";
         public const string Saved = "حُفظ.";
         public const string Disabled = "أُوقف العنصر.";
         public const string Enabled = "أُعيد تشغيل العنصر.";
@@ -138,17 +153,32 @@ public static partial class AdminAr
         /// <summary>What the operations log records about A05.</summary>
         public static class Log
         {
-            public static string Added(string level, string name) => $"أُضيفت {level} «{name}».";
+            /// <summary>
+            /// Whether the layer's name is a feminine noun, which decides the form of the verb in
+            /// front of it: هيئة، دائرة and وحدة are feminine while قسم is masculine, so the log
+            /// reads «أُضيفت دائرة …» but «أُضيف قسم …». These same lines are what A11 shows, so the
+            /// agreement is settled once, here.
+            /// </summary>
+            private static bool IsFeminine(OrgLevel level) => level != OrgLevel.Section;
 
-            public static string Updated(string level, string name) => $"عُدّلت {level} «{name}».";
+            public static string Added(OrgLevel level, string name) =>
+                $"{(IsFeminine(level) ? "أُضيفت" : "أُضيف")} {LevelName(level)} «{name}».";
+
+            public static string Updated(OrgLevel level, string name) =>
+                $"{(IsFeminine(level) ? "عُدّلت" : "عُدّل")} {LevelName(level)} «{name}».";
 
             public static string Moved(string name, string parent) => $"نُقل «{name}» إلى «{parent}».";
 
-            public static string Disabled(string level, string name) => $"أُوقفت {level} «{name}».";
+            public static string Disabled(OrgLevel level, string name) =>
+                $"{(IsFeminine(level) ? "أُوقفت" : "أُوقف")} {LevelName(level)} «{name}».";
 
-            public static string Enabled(string level, string name) => $"أُعيد تشغيل {level} «{name}».";
+            // «أُعيد» agrees with «تشغيل» rather than with the layer, so this line reads the same
+            // whichever layer it is about.
+            public static string Enabled(OrgLevel level, string name) =>
+                $"أُعيد تشغيل {LevelName(level)} «{name}».";
 
-            public static string Deleted(string level, string name) => $"حُذفت {level} «{name}».";
+            public static string Deleted(OrgLevel level, string name) =>
+                $"{(IsFeminine(level) ? "حُذفت" : "حُذف")} {LevelName(level)} «{name}».";
 
             public static string OfficeSet(string name, string code) => Bidi($"صار «{name}» مكتبًا برمز {code}.");
 

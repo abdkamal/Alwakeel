@@ -9,25 +9,12 @@ namespace Wakeel.Admin.UI.Text;
 public static partial class AdminAr
 {
     /// <summary>
-    /// A number as it is written inside an Arabic sentence. The tool's prose already counts in
-    /// Arabic-Indic figures — «١٢ حرفًا فأكثر» on A01, «من ٦» on A03 — and a sentence that mixed the
-    /// two would read as two voices. Figures standing on their own in a table or on a card keep the
-    /// plain shape, which is how a code or a serial number is read back to somebody.
+    /// A number as it is written anywhere in the tool: Western digits (0–9), as the design guide
+    /// rules («الأرقام غربية») and AGREEMENT item 20 requires for dates, and as الوكيل itself writes
+    /// them — the two programs are read side by side and must count in one voice. Arabic-Indic
+    /// figures are never produced; <see cref="Bidi"/> keeps a digit run in place inside a sentence.
     /// </summary>
-    internal static string Digits(int value)
-    {
-        var plain = value.ToString(CultureInfo.InvariantCulture);
-        return string.Create(plain.Length, plain, static (span, source) =>
-        {
-            for (var at = 0; at < source.Length; at++)
-            {
-                var character = source[at];
-                span[at] = character is >= '0' and <= '9'
-                    ? (char)('٠' + (character - '0'))
-                    : character;
-            }
-        });
-    }
+    internal static string Digits(int value) => value.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Keeps a line that mixes Arabic with figures, Latin letters or punctuation from rearranging

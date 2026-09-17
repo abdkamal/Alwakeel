@@ -31,6 +31,18 @@ window.wakeelAdmin = {
     }
   },
 
+  /// Opens a file chooser on behalf of a button. The engine's own file control writes its English
+  /// on the page and cannot be dressed like the rest of the tool, so A04 keeps it out of sight and
+  /// lets the Arabic button the person actually reads be what opens it.
+  openFilePicker(id) {
+    const input = document.getElementById(id);
+    if (input && typeof input.click === 'function') {
+      input.click();
+      return true;
+    }
+    return false;
+  },
+
   /// A04's letter preview: makes the next print or PDF carry the letter alone, at the paper size
   /// the person chose. Everything else on the screen is made invisible rather than removed, so the
   /// page does not reflow and what comes out is exactly the sheet that was on screen. The rule is
@@ -58,5 +70,19 @@ window.wakeelAdmin = {
   endLetterPrint() {
     document.getElementById('wakeel-letter-print')?.remove();
     return true;
+  },
+
+  /// Whether the page is being drawn dark at this moment — the chosen appearance when one has been
+  /// chosen, and otherwise the one this computer itself prefers. The bar's switch asks this so it
+  /// offers the other appearance instead of the one already on the screen.
+  isDrawnDark() {
+    const chosen = document.documentElement.getAttribute('data-theme');
+    if (chosen === 'dark') {
+      return true;
+    }
+    if (chosen === 'light') {
+      return false;
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   },
 };

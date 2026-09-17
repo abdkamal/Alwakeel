@@ -1,0 +1,19 @@
+/* مدير نظام الوكيل — the few rules that cannot sit in a page's own stylesheet, because the element
+   they are about is drawn by a shared component several levels below the page. */
+
+/* A12's dangerous confirmation is locked until the person has written «تأكيد» by hand. The shared
+   dialog draws its own main button, so while the dialog is locked its surface is marked and the
+   button is switched off here, in exactly the way the shared button switches itself off elsewhere:
+   a control that cannot be pressed has to look like one, and the reason is said in words under the
+   field. The guard in the component stays where it is; this only makes it visible.
+
+   ONLY the main button is switched off. The way back must stay alive — a person who opened a
+   dangerous question by mistake has to be able to walk out of it. The main button is the FIRST
+   CHILD of the actions row; every button there sits inside its own tooltip wrapper, so the button
+   itself has to be reached through that first child rather than matched as «the first .w-btn». */
+.w-dialog--confirm-locked .w-dialog-actions > :first-child .w-btn,
+.w-dialog--confirm-locked .w-dialog-actions > .w-btn:first-child {
+  cursor: not-allowed;
+  opacity: 0.55;
+  pointer-events: none;
+}

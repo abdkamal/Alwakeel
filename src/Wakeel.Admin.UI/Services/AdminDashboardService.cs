@@ -49,6 +49,11 @@ public sealed record AdminBranchSummary(string Name, int Sections, int Units, in
 /// <param name="ActivatedOffices">Offices in service that already have a setup file.</param>
 /// <param name="Devices">Devices in the offices that are in service, by the same rule.</param>
 /// <param name="RevokedDevices">How many of those are revoked.</param>
+/// <param name="ActivatedDevices">
+/// How many of those are actually in the custodian's hands: the account row says active, and the
+/// device is not revoked. Counted here rather than derived, because «registered» and «working» are
+/// two different figures and the board must not call the first one the second.
+/// </param>
 /// <param name="PendingChanges">Structure edits nobody has been told about yet.</param>
 /// <param name="LastExportAt">When a setup file was last exported.</param>
 /// <param name="LastExportOffice">Which office it was for.</param>
@@ -69,14 +74,18 @@ public sealed record AdminDashboard(
     int ActivatedOffices,
     int Devices,
     int RevokedDevices,
+    int ActivatedDevices,
     int PendingChanges,
     DateTimeOffset? LastExportAt,
     string? LastExportOffice,
     IReadOnlyList<AdminBranchSummary> Branches,
     IReadOnlyList<AdminAlert> Alerts)
 {
-    /// <summary>Devices that are not revoked.</summary>
-    public int ActiveDevices => Math.Max(0, Devices - RevokedDevices);
+    /// <summary>Devices that are not revoked — registered, whether or not they have been activated.</summary>
+    public int RegisteredDevices => Math.Max(0, Devices - RevokedDevices);
+
+    /// <summary>Registered devices whose custodian has not activated them yet.</summary>
+    public int DevicesWaitingActivation => Math.Max(0, RegisteredDevices - ActivatedDevices);
 
     /// <summary>Offices still waiting for their first setup file.</summary>
     public int OfficesWaiting => Math.Max(0, Offices - ActivatedOffices);
@@ -89,7 +98,7 @@ public sealed record AdminDashboard(
 
     /// <summary>An empty board, for a tool that is locked or has no organisation yet.</summary>
     public static AdminDashboard Empty { get; } =
-        new(string.Empty, 0, 0, 0, 0, 0, 0, 0, 0, null, null, [], []);
+        new(string.Empty, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null, [], []);
 }
 
 /// <summary>
@@ -178,6 +187,15 @@ public sealed class AdminDashboardService
         var activated = (int)_db.Scalar($"SELECT COUNT(*) {FromLiveOffices} AND o.activated_at IS NOT NULL;");
         var devices = (int)_db.Scalar($"SELECT COUNT(*) {FromLiveDevices};");
         var revoked = (int)_db.Scalar($"SELECT COUNT(*) {FromLiveDevices} AND v.revoked_at IS NOT NULL;");
+
+        // «Working» is a different figure from «registered»: a device counts as activated only once
+        // its custodian has turned it on, which is exactly the state A06 and A07 draw as «مفعّل».
+        var activatedDevices = (int)_db.Scalar(
+            $"""
+             SELECT COUNT(*) {FromLiveDevices}
+               AND v.revoked_at IS NULL
+               AND EXISTS (SELECT 1 FROM accounts a WHERE a.device_id = v.id AND a.status = 'active');
+             """);
         var pending = (int)_db.Scalar("SELECT COUNT(*) FROM pending_changes WHERE distributed_at IS NULL;");
 
         var (lastExportAt, lastExportOffice) = ReadLastExport();
@@ -191,6 +209,7 @@ public sealed class AdminDashboardService
             activated,
             devices,
             revoked,
+            activatedDevices,
             pending,
             lastExportAt,
             lastExportOffice,
@@ -369,7 +388,7 @@ public sealed class AdminDashboardService
                 alerts.Add(new AdminAlert(
                     AdminAlertKind.RevokedDevice,
                     reader.GetString(0),
-                    Bidi.Wrap($"{AdminAr.Dashboard.AlertRevokedDevice} (الجهاز {reader.GetInt32(1).ToString(CultureInfo.InvariantCulture)})")));
+                    Bidi.Wrap($"{AdminAr.Dashboard.AlertRevokedDevice} ({AdminAr.Devices.DeviceName(reader.GetInt32(1))})")));
             }
         }
 

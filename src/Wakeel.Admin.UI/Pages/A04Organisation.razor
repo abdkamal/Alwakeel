@@ -31,7 +31,12 @@ else
                         Error="@_nameError" />
             </WCard>
 
-            <WCard Title="@AdminAr.Organisation.Logo.Heading" Desc="@AdminAr.Organisation.Logo.Desc">
+            @* A card whose title needs a line under it carries a section header instead of the
+               card's own title: the plain card draws a title only, and the line the design puts
+               under it would go unsaid. *@
+            <WCard>
+                <WSectionHeader Title="@AdminAr.Organisation.Logo.Heading"
+                                Sub="@AdminAr.Organisation.Logo.Desc" />
                 <div class="a04-logo">
                     <div class="a04-logo-frame" aria-label="@AdminAr.Organisation.Logo.PreviewLabel">
                         @if (_logoPreview is { Length: > 0 })
@@ -40,7 +45,7 @@ else
                         }
                         else
                         {
-                            <WIcon Name="image" Size="28" />
+                            <WIcon Name="landmark" Size="28" />
                         }
                     </div>
 
@@ -54,13 +59,16 @@ else
                             <p class="a04-muted"><Bdi Text="@AdminAr.Organisation.Logo.Measure(_logo.Width, _logo.Height)" /></p>
                         }
 
-                        <label class="a04-file">
-                            <span class="a04-file-button">
-                                <WIcon Name="upload" Size="16" />
-                                @(_logoPreview is null ? AdminAr.Organisation.Logo.Choose : AdminAr.Organisation.Logo.Replace)
-                            </span>
-                            <InputFile OnChange="ChooseLogo" accept="image/png,image/jpeg" />
-                        </label>
+                        @* The button is the tool's own button; the engine's file control stays out of
+                           sight behind it and is opened by it. *@
+                        <WButton Variant="WButtonVariant.Secondary"
+                                 Icon="upload"
+                                 Label="@(_logoPreview is null ? AdminAr.Organisation.Logo.Choose : AdminAr.Organisation.Logo.Replace)"
+                                 Tooltip="@AdminAr.Organisation.Logo.ChooseTooltip"
+                                 OnClick="@(() => OpenPicker(LogoPickerId))" />
+                        <div class="a04-file-hidden">
+                            <InputFile id="@LogoPickerId" OnChange="ChooseLogo" accept="image/png,image/jpeg" />
+                        </div>
 
                         @if (_logoPreview is not null)
                         {
@@ -77,9 +85,12 @@ else
                 {
                     <div class="a04-focus">
                         <label for="a04-focus">@AdminAr.Organisation.Logo.FocusLabel</label>
+                        @* Dragging only re-cuts what is on screen; the cut is stored when the
+                           person lets go, so one drag stores one logo and says so once. *@
                         <input id="a04-focus" type="range" min="0" max="100" step="1"
                                value="@((int)Math.Round(_focus * 100))"
-                               @oninput="OnFocusChanged" />
+                               @oninput="OnFocusMoved"
+                               @onchange="OnFocusSettled" />
                         <span class="a04-muted">@AdminAr.Organisation.Logo.FocusHint</span>
                     </div>
                 }
@@ -116,6 +127,13 @@ else
 
                 <p class="a04-example"><Bdi Text="@AdminAr.Organisation.Numbering.Sample(_numbering)" /></p>
 
+                @* The rule stands in the card whether or not the box has been touched: a person about
+                   to change the format should read it before typing, not after. *@
+                <p class="a04-caution">
+                    <WIcon Name="alert-triangle" Size="14" />
+                    @AdminAr.Organisation.Numbering.Caption
+                </p>
+
                 @if (NumberingChanged)
                 {
                     <p class="a04-warn">
@@ -127,7 +145,7 @@ else
                 @if (!string.Equals(_numbering, AdminKeyService.DefaultNumberingFormat, StringComparison.Ordinal))
                 {
                     <WButton Variant="WButtonVariant.Text"
-                             Icon="rotate-ccw"
+                             Icon="refresh-cw"
                              Label="@AdminAr.Organisation.Numbering.Reset"
                              Tooltip="@AdminAr.Organisation.Numbering.ResetTooltip"
                              OnClick="ResetNumbering" />
@@ -135,20 +153,23 @@ else
             </WCard>
         </div>
 
-        <WCard Title="@AdminAr.Organisation.ReportTemplate.Heading" Desc="@AdminAr.Organisation.ReportTemplate.Desc">
+        <WCard>
+            <WSectionHeader Title="@AdminAr.Organisation.ReportTemplate.Heading"
+                            Sub="@AdminAr.Organisation.ReportTemplate.Desc" />
             <div class="a04-template">
                 <div class="a04-template-name">
                     <WIcon Name="file-text" Size="18" />
                     <Bdi Text="@(_identity.ReportTemplateName ?? AdminAr.Organisation.ReportTemplate.None)" />
                 </div>
                 <div class="a04-template-actions">
-                    <label class="a04-file">
-                        <span class="a04-file-button">
-                            <WIcon Name="upload" Size="16" />
-                            @AdminAr.Organisation.ReportTemplate.Choose
-                        </span>
-                        <InputFile OnChange="ChooseReportTemplate" accept=".docx" />
-                    </label>
+                    <WButton Variant="WButtonVariant.Secondary"
+                             Icon="upload"
+                             Label="@AdminAr.Organisation.ReportTemplate.Choose"
+                             Tooltip="@AdminAr.Organisation.ReportTemplate.ChooseTooltip"
+                             OnClick="@(() => OpenPicker(ReportPickerId))" />
+                    <div class="a04-file-hidden">
+                        <InputFile id="@ReportPickerId" OnChange="ChooseReportTemplate" accept=".docx" />
+                    </div>
                     @if (_identity.ReportTemplateName is not null)
                     {
                         <WButton Variant="WButtonVariant.Text"
@@ -166,7 +187,9 @@ else
             }
         </WCard>
 
-        <WCard Title="@AdminAr.Organisation.LetterTemplate.Heading" Desc="@AdminAr.Organisation.LetterTemplate.Desc">
+        <WCard>
+            <WSectionHeader Title="@AdminAr.Organisation.LetterTemplate.Heading"
+                            Sub="@AdminAr.Organisation.LetterTemplate.Desc" />
             <div class="a04-template">
                 <div class="a04-template-name">
                     <WIcon Name="file-text" Size="18" />
@@ -177,17 +200,18 @@ else
                     }
                 </div>
                 <div class="a04-template-actions">
-                    <label class="a04-file">
-                        <span class="a04-file-button">
-                            <WIcon Name="upload" Size="16" />
-                            @AdminAr.Organisation.LetterTemplate.Choose
-                        </span>
-                        <InputFile OnChange="ChooseLetterTemplate" accept=".docx" />
-                    </label>
+                    <WButton Variant="WButtonVariant.Secondary"
+                             Icon="upload"
+                             Label="@AdminAr.Organisation.LetterTemplate.Choose"
+                             Tooltip="@AdminAr.Organisation.LetterTemplate.ChooseTooltip"
+                             OnClick="@(() => OpenPicker(LetterPickerId))" />
+                    <div class="a04-file-hidden">
+                        <InputFile id="@LetterPickerId" OnChange="ChooseLetterTemplate" accept=".docx" />
+                    </div>
                     @if (!_identity.UsesBuiltInLetterTemplate)
                     {
                         <WButton Variant="WButtonVariant.Text"
-                                 Icon="rotate-ccw"
+                                 Icon="refresh-cw"
                                  Label="@AdminAr.Organisation.LetterTemplate.Remove"
                                  Tooltip="@AdminAr.Organisation.LetterTemplate.RemoveTooltip"
                                  OnClick="RemoveLetterTemplate" />
@@ -205,16 +229,14 @@ else
                 <div class="a04-marks">
                     <div class="a04-marks-block">
                         <h3 class="a04-marks-title">@AdminAr.Organisation.LetterTemplate.KnownHeading</h3>
+                        @* Every mark wears the same chip the rest of the tool uses to say a state, in
+                           the colour of what it means: found, not recognised, or not there at all. *@
                         <ul class="a04-mark-list">
                             @foreach (var mark in _letter.Known)
                             {
-                                <li class="a04-mark a04-mark--known">
-                                    <WIcon Name="check-circle" Size="14" />
-                                    <Bdi Text="@mark.Name" />
-                                    @if (mark.Count > 1)
-                                    {
-                                        <span class="a04-mark-times"><Bdi Text="@AdminAr.Organisation.LetterTemplate.Times(mark.Count)" /></span>
-                                    }
+                                <li>
+                                    <WChip Variant="WChipVariant.Success"
+                                           Label="@AdminAr.Organisation.LetterTemplate.MarkLabel(mark.Name, mark.Count)" />
                                 </li>
                             }
                         </ul>
@@ -235,9 +257,9 @@ else
                             <ul class="a04-mark-list">
                                 @foreach (var mark in _letter.Unknown)
                                 {
-                                    <li class="a04-mark a04-mark--unknown">
-                                        <WIcon Name="alert-triangle" Size="14" />
-                                        <Bdi Text="@mark.Name" />
+                                    <li>
+                                        <WChip Variant="WChipVariant.Warning"
+                                               Label="@AdminAr.Organisation.LetterTemplate.MarkLabel(mark.Name, mark.Count)" />
                                     </li>
                                 }
                             </ul>
@@ -250,7 +272,10 @@ else
                             <ul class="a04-mark-list">
                                 @foreach (var missing in _letter.Missing)
                                 {
-                                    <li class="a04-mark a04-mark--missing"><Bdi Text="@missing" /></li>
+                                    <li>
+                                        <WChip Variant="WChipVariant.Neutral"
+                                               Label="@AdminAr.Organisation.LetterTemplate.MarkLabel(missing, 1)" />
+                                    </li>
                                 }
                             </ul>
                         }
@@ -300,6 +325,11 @@ else
 
 @code {
     private static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
+
+    /// <summary>The three out-of-sight file controls, named so their buttons can reach them.</summary>
+    private const string LogoPickerId = "a04-pick-logo";
+    private const string ReportPickerId = "a04-pick-report";
+    private const string LetterPickerId = "a04-pick-letter";
 
     private AdminOrgIdentity? _identity;
     private LetterTemplateReport? _letter;
@@ -540,23 +570,46 @@ else
         }
 
         _logoChosen = bytes;
-        ApplyLogo();
-    }
-
-    private void OnFocusChanged(ChangeEventArgs args)
-    {
-        if (double.TryParse(args.Value?.ToString(), Culture, out var percent))
-        {
-            _focus = Math.Clamp(percent / 100d, 0d, 1d);
-            ApplyLogo();
-        }
+        ApplyLogo(store: true);
     }
 
     /// <summary>
-    /// Cuts the chosen picture to the square the person is looking at, and stores it. Moving the
-    /// slider re-cuts and re-saves, so what is in the tool is always what is on the screen.
+    /// While the slider is being dragged: re-cut the square and redraw it, and nothing else. A drag
+    /// sends one of these per step, so storing here would write the picture — and say so — dozens of
+    /// times for a single movement of the hand.
     /// </summary>
-    private void ApplyLogo()
+    private void OnFocusMoved(ChangeEventArgs args)
+    {
+        if (ReadFocus(args))
+        {
+            ApplyLogo(store: false);
+        }
+    }
+
+    /// <summary>When the slider is let go: cut once more and store that cut, with one word to say so.</summary>
+    private void OnFocusSettled(ChangeEventArgs args)
+    {
+        ReadFocus(args);
+        ApplyLogo(store: true);
+    }
+
+    private bool ReadFocus(ChangeEventArgs args)
+    {
+        if (!double.TryParse(args.Value?.ToString(), Culture, out var percent))
+        {
+            return false;
+        }
+
+        _focus = Math.Clamp(percent / 100d, 0d, 1d);
+        return true;
+    }
+
+    /// <summary>
+    /// Cuts the chosen picture to the square the person is looking at. With <paramref name="store"/>
+    /// the cut is also written to the tool and the person is told; without it only the picture on
+    /// screen changes, which is what a slider still under the finger needs.
+    /// </summary>
+    private void ApplyLogo(bool store)
     {
         if (_logoChosen is null)
         {
@@ -580,6 +633,12 @@ else
 
         _logo = image;
         _logoPreview = image.ToDataUrl();
+
+        if (!store)
+        {
+            return;
+        }
+
         Org.SaveLogo(image);
         _identity = Org.Read();
         Toasts.Show(AdminAr.Organisation.Logo.Saved, WSemanticVariant.Success);
@@ -600,6 +659,15 @@ else
         _reportError = null;
         if (await ReadDocx(args, value => _reportError = value) is not { } file)
         {
+            return;
+        }
+
+        // Judged by what is inside it, not by what it is called: this file is stored and shipped
+        // inside every setup file without ever being opened again, so a renamed program must not be
+        // able to become the organisation's report template.
+        if (!LetterTemplateInspector.IsWordDocument(file.Bytes))
+        {
+            _reportError = AdminAr.Organisation.ReportTemplate.WrongKind;
             return;
         }
 
@@ -681,6 +749,23 @@ else
     }
 
     /// <summary>
+    /// Opens one of the three out-of-sight file controls. The engine's own control writes English on
+    /// the page and cannot be dressed like the rest of the tool, so the Arabic button the person
+    /// reads is what opens it.
+    /// </summary>
+    private async Task OpenPicker(string pickerId)
+    {
+        try
+        {
+            await Js.InvokeAsync<bool>("wakeelAdmin.openFilePicker", pickerId);
+        }
+        catch (JSException)
+        {
+            // No page engine available (a test host); nothing to open.
+        }
+    }
+
+    /// <summary>
     /// Writes the sheet that is on screen to a PDF at the chosen paper size, through this computer's
     /// own printing. Nothing is rendered twice: what comes out is the letter the person is looking
     /// at (ARCHITECTURE.md §9 — internal sheets come from HTML, not from Word).
@@ -737,7 +822,6 @@ else
         _ => "a04-letter-line--start",
     };
 
-    /// <summary>The day as it is written in the chooser, in the figures the tool's prose uses.</summary>
-    private static string ArabicFigures(int value) =>
-        string.Concat(value.ToString(Culture).Select(c => c is >= '0' and <= '9' ? (char)('٠' + (c - '0')) : c));
+    /// <summary>The day as it is written in the chooser: Western digits, like every figure in the tool.</summary>
+    private static string ArabicFigures(int value) => AdminAr.Digits(value);
 }

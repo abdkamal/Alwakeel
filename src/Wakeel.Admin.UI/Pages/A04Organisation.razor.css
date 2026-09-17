@@ -1,0 +1,284 @@
+/* A04 — the organisation's identity: four cards in a two-by-two grid, then the two templates. */
+
+.a04 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.a04-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+/* A file name can be Latin, so a line that a design component draws as plain text still takes its
+   direction from its own first word (item 55). */
+.a04 ::deep .w-section-header-title,
+.a04 ::deep .w-section-header-sub,
+.a04 ::deep .w-card-title {
+  unicode-bidi: plaintext;
+}
+
+.a04-muted {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+.a04-explain {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  line-height: 1.7;
+}
+
+/* The worked example under a field. It sits inside a card that already draws the surface, so this
+   page paints no second one — only the weight that separates the example from the prose above it. */
+.a04-example {
+  margin: 0;
+  color: var(--w-text);
+  font-size: var(--w-fs-meta);
+  font-weight: 600;
+}
+
+.a04-note,
+.a04-warn,
+.a04-caution,
+.a04-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--w-fs-meta);
+  line-height: 1.6;
+}
+
+.a04-note {
+  color: var(--w-info);
+}
+
+.a04-warn,
+.a04-caution {
+  color: var(--w-warning);
+}
+
+.a04-error {
+  color: var(--w-danger);
+}
+
+/* The logo: a square frame beside what can be done to it. */
+
+.a04-logo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.a04-logo-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  background: var(--w-surface2);
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-lg);
+  color: var(--w-placeholder);
+  overflow: hidden;
+}
+
+.a04-logo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.a04-logo-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The file chooser is one of the tool's own buttons. The engine's file control writes its own
+   English on the page and cannot be dressed like the rest of the tool, so it is kept out of sight
+   and out of the reading order, and the button opens it. Nothing here paints a surface. */
+
+.a04-file-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The square-crop slider. It keeps the field anatomy of every other field on this page — label on
+   its own line, control filling the width under it, hint under the control in the muted meta
+   style — instead of the label | control | hint row it used to draw, which read as a different
+   kind of field from the cycle-day select and the numbering box beside it. */
+
+.a04-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+/* Same shape as the shared field label (WInput/WSelect draw .w-field-label). */
+.a04-focus > label {
+  font-size: var(--w-fs-meta);
+  font-weight: 600;
+  color: var(--w-text);
+}
+
+.a04-focus input[type='range'] {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--w-primary);
+}
+
+/* The two Word templates. */
+
+/* The chosen file on one side of the card, the buttons that change it on the other. The card draws
+   the surface; this only puts the two sides on one line and lets them wrap when the card narrows. */
+.a04-template {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.a04-template-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--w-text);
+  font-size: var(--w-fs-body);
+}
+
+.a04-template-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The placeholders found in the letter template, known beside unknown. */
+
+.a04-marks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+  align-items: start;
+}
+
+.a04-marks-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.a04-marks-title {
+  margin: 0;
+  font-size: var(--w-fs-section);
+  font-weight: 600;
+  color: var(--w-text);
+}
+
+/* The marks themselves are chips; the list only puts them one under the other. */
+.a04-mark-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The sheet the letter is previewed on. */
+
+.a04-preview-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.a04-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.a04-sheet-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  margin-top: 10px;
+  background: var(--w-bg);
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-lg);
+  overflow: auto;
+}
+
+.a04-letter-sheet {
+  background: var(--w-white);
+  color: #1D272D;
+  border: 1px solid var(--w-border);
+  box-shadow: 0 1px 4px #1D272D1A;
+  padding: 28px 32px;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.a04-letter-sheet--a4 {
+  width: 420px;
+  min-height: 594px;
+}
+
+.a04-letter-sheet--a5 {
+  width: 320px;
+  min-height: 452px;
+}
+
+.a04-letter-line {
+  margin: 0 0 6px;
+}
+
+.a04-letter-line--bold {
+  font-weight: 700;
+}
+
+.a04-letter-line--start {
+  text-align: start;
+}
+
+.a04-letter-line--end {
+  text-align: end;
+}
+
+.a04-letter-line--centre {
+  text-align: center;
+}
+
+.a04-letter-line--justify {
+  text-align: justify;
+}
+
+@media (max-width: 1100px) {
+  .a04-grid,
+  .a04-marks {
+    grid-template-columns: 1fr;
+  }
+}

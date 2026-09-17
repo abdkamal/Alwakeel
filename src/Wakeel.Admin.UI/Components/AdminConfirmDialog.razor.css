@@ -9,3 +9,10 @@
 .a-confirm-typed {
   margin-block-start: 12px;
 }
+
+/* Why the main button is switched off, right under the field that switches it on. */
+.a-confirm-reason {
+  margin: 6px 0 0;
+  font-size: var(--w-fs-meta);
+  color: var(--w-muted);
+}

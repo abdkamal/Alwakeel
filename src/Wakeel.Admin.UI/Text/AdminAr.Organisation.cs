@@ -11,7 +11,7 @@ public static partial class AdminAr
         public const string Title = "الهيئة والهوية";
         public const string Sub = "اسم الهيئة وشعارها والدورة المالية وصيغة الترقيم وقوالب المراسلات.";
 
-        public const string Save = "حفظ";
+        public const string Save = "حفظ التغييرات";
         public const string SaveTooltip = "حفظ بيانات الهيئة";
         public const string Saved = "حُفظت بيانات الهيئة.";
         public const string Discard = "التراجع عن التعديلات";
@@ -30,7 +30,7 @@ public static partial class AdminAr
         /// <summary>The logo block.</summary>
         public static class Logo
         {
-            public const string Heading = "الشعار";
+            public const string Heading = "شعار الهيئة";
             public const string Desc = "صورة مربّعة تظهر في ترويسة المراسلات وفي أعلى الأداة.";
             public const string Choose = "اختيار صورة";
             public const string ChooseTooltip = "اختيار صورة الشعار من هذا الحاسوب";
@@ -39,7 +39,7 @@ public static partial class AdminAr
             public const string RemoveTooltip = "إزالة الشعار الحالي";
             public const string Removed = "أُزيل الشعار.";
             public const string Empty = "لا يوجد شعار بعد";
-            public const string EmptyDesc = "اختر صورة بصيغة PNG أو JPG، ولا يتجاوز حجمها ٢ ميغابايت.";
+            public const string EmptyDesc = "اختر صورة بصيغة PNG أو JPG، ولا يتجاوز حجمها 2 ميغابايت.";
             public const string PreviewLabel = "معاينة الشعار بعد القصّ";
             public const string FocusLabel = "موضع القصّ المربّع";
             public const string FocusHint = "حرّك المؤشّر لتختار أي جزء من الصورة يبقى داخل المربّع.";
@@ -47,10 +47,10 @@ public static partial class AdminAr
             public const string CropUnavailable =
                 "هذا الحاسوب لا يستطيع قصّ الصور، فحُفظت الصورة كما هي. اختر صورة مربّعة لتظهر كما تتوقّع.";
 
-            public const string TooLarge = "الصورة كبيرة جدًا. اختر صورة لا يتجاوز حجمها ٢ ميغابايت.";
+            public const string TooLarge = "الصورة كبيرة جدًا. اختر صورة لا يتجاوز حجمها 2 ميغابايت.";
             public const string WrongKind = "هذا الملف ليس صورة بصيغة PNG أو JPG.";
             public const string Unreadable = "تعذّرت قراءة هذه الصورة. قد تكون ناقصة أو تالفة.";
-            public const string TooSmall = "الصورة صغيرة جدًا. اختر صورة لا يقلّ ضلعها عن ٤٨ نقطة.";
+            public const string TooSmall = "الصورة صغيرة جدًا. اختر صورة لا يقلّ ضلعها عن 48 نقطة.";
 
             /// <summary>The line under the preview: how big the stored picture is.</summary>
             public static string Measure(int width, int height) =>
@@ -61,31 +61,38 @@ public static partial class AdminAr
         public static class Cycle
         {
             public const string Heading = "الدورة المالية";
-            public const string DayLabel = "يوم بداية الدورة";
-            public const string DayHint = "من ١ إلى ٢٨ فقط، لأن بعض الأشهر لا تحوي ما بعدها.";
-            public const string OutOfRange = "اختر يومًا بين ١ و٢٨.";
+            public const string DayLabel = "يوم بداية الدورة المالية (1–28)";
+            public const string DayHint = "من 1 إلى 28 فقط، لأن بعض الأشهر لا تحوي ما بعدها.";
+            public const string OutOfRange = "اختر يومًا بين 1 و28.";
 
             public const string Explain =
                 "كل ما يُحتسب شهريًا — المصروفات والعُهد والتقارير — يبدأ من هذا اليوم وينتهي في اليوم السابق له من الشهر التالي.";
 
-            /// <summary>The worked example under the explanation, so the choice is not abstract.</summary>
-            public static string Example(int day)
-            {
-                var previous = day == 1 ? 28 : day - 1;
-                return Bidi(
-                    $"مع اليوم {Digits(day)}: تبدأ دورة شهر ٣ في {Digits(day)}/٣ وتنتهي في {Digits(previous)}/٤.");
-            }
+            /// <summary>
+            /// The worked example under the explanation, so the choice is not abstract. Day 1 is its
+            /// own case: a cycle that opens on the first of a month closes on the LAST day of that
+            /// same month, not on a day of the month after it — folding it onto 28 of the next month
+            /// contradicted the rule stated in the line above and stretched the example over almost
+            /// two months. March is used because its last day (31) is fixed, so the example never
+            /// has to talk about February.
+            /// </summary>
+            public static string Example(int day) => day <= 1
+                ? Bidi($"مع اليوم {Digits(1)}: تبدأ دورة شهر 3 في {Digits(1)}/3 وتنتهي في {Digits(31)}/3.")
+                : Bidi($"مع اليوم {Digits(day)}: تبدأ دورة شهر 3 في {Digits(day)}/3 وتنتهي في {Digits(day - 1)}/4.");
         }
 
         /// <summary>The numbering block (AGREEMENT item 5).</summary>
         public static class Numbering
         {
-            public const string Heading = "صيغة الترقيم";
+            public const string Heading = "صيغة ترقيم الملفات";
             public const string FormatLabel = "صيغة رقم الصادر";
             public const string FormatHint = "الافتراضي: تاريخ اليوم ثم رمز الدائرة والقسم ثم رقم متسلسل.";
             public const string Invalid = "الصيغة غير صالحة. لا بدّ أن تحوي موضع الرقم المتسلسل.";
             public const string Reset = "العودة إلى الصيغة الافتراضية";
             public const string ResetTooltip = "استخدام الصيغة الافتراضية للترقيم";
+
+            /// <summary>The line the card always carries, so the rule is read before the box is touched.</summary>
+            public const string Caption = "يسري التغيير على المراسلات الجديدة وحدها، دون ما صدر سابقًا.";
 
             public const string ChangeTitle = "تغيير صيغة الترقيم؟";
 
@@ -131,7 +138,7 @@ public static partial class AdminAr
         /// <summary>The monthly report template block (AGREEMENT item 53).</summary>
         public static class ReportTemplate
         {
-            public const string Heading = "قالب التقرير الشهري";
+            public const string Heading = "قالب التقرير الشهري (اختياري)";
             public const string Desc = "ملف Word يُبنى عليه التقرير الشهري. اختياري: بدونه يُكتب التقرير بالشكل المدمج.";
             public const string Choose = "اختيار قالب";
             public const string ChooseTooltip = "اختيار ملف قالب التقرير الشهري";
@@ -141,7 +148,7 @@ public static partial class AdminAr
             public const string Saved = "حُفظ قالب التقرير الشهري.";
             public const string Removed = "أُزيل قالب التقرير الشهري.";
             public const string WrongKind = "هذا الملف ليس ملف Word بصيغة docx.";
-            public const string TooLarge = "الملف كبير جدًا. اختر ملفًا لا يتجاوز ٤ ميغابايت.";
+            public const string TooLarge = "الملف كبير جدًا. اختر ملفًا لا يتجاوز 4 ميغابايت.";
         }
 
         /// <summary>The official letter template block (AGREEMENT item 57).</summary>
@@ -162,7 +169,7 @@ public static partial class AdminAr
             public const string Removed = "عاد القالب المدمج.";
             public const string Unreadable = "تعذّرت قراءة هذا الملف كملف Word. تأكّد من أنه ملف docx كامل.";
             public const string WrongKind = "هذا الملف ليس ملف Word بصيغة docx.";
-            public const string TooLarge = "الملف كبير جدًا. اختر ملفًا لا يتجاوز ٤ ميغابايت.";
+            public const string TooLarge = "الملف كبير جدًا. اختر ملفًا لا يتجاوز 4 ميغابايت.";
 
             public const string KnownHeading = "العلامات المعروفة في القالب";
             public const string UnknownHeading = "علامات لا يعرفها الوكيل";
@@ -193,6 +200,14 @@ public static partial class AdminAr
                 ? string.Empty
                 : Bidi($"×{Digits(count)}");
 
+            /// <summary>
+            /// One mark as it is written on its chip: the mark itself, and how many times it was
+            /// found when that is more than once.
+            /// </summary>
+            public static string MarkLabel(string name, int count) => count <= 1
+                ? Bidi(name)
+                : Bidi($"{name} ×{Digits(count)}");
+
             /// <summary>The line naming the template in force.</summary>
             public static string InUse(string fileName) => Bidi($"القالب المستعمل: {fileName}");
         }
@@ -221,9 +236,9 @@ public static partial class AdminAr
         public static IReadOnlyDictionary<string, string> SampleLetterValues { get; } =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["@التاريخ الهجري"] = "٤ ربيع الأول ١٤٤٨",
-                ["@التاريخ الميلادي"] = "١٦/٩/٢٠٢٦",
-                ["@رقم الصادر"] = "٢٠٢٦٠٩١٦/٣٢٠٠٧",
+                ["@التاريخ الهجري"] = "4 ربيع الأول 1448",
+                ["@التاريخ الميلادي"] = "16/9/2026",
+                ["@رقم الصادر"] = "20260916/32007",
                 ["@اسم رئيس المكتب"] = "فلان الفلاني",
                 ["@اسم مكتب المستقبل"] = "دائرة الشؤون الإدارية",
                 ["@اسم الموضوع"] = "طلب تزويد بأثاث مكتبي",

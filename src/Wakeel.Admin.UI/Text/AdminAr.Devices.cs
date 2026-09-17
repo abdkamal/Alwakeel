@@ -13,6 +13,21 @@ public static partial class AdminAr
         public const string Sub = "لكل مكتب أجهزته وموظفوه، ولكل جهاز رقمه ودوره ونطاق مزامنته.";
 
         public const string OfficesHeading = "المكاتب";
+        public const string SearchPlaceholder = "ابحث عن مكتب…";
+
+        /// <summary>What the offices rail says when the search hides every office it holds.</summary>
+        public const string SearchNothing = "لا مكتب بهذا الاسم.";
+        public const string ChooseOffice = "اختر مكتبًا";
+        public const string ChooseOfficeDesc = "اضغط على مكتب من القائمة لعرض أجهزته وموظفيه.";
+        public const string OfficeCodeLabel = "رمز المكتب للجرد";
+
+        /// <summary>The inventory code as one chip label: the words and the code the person reads together.</summary>
+        public static string OfficeCodeChip(string code) => Bidi($"{OfficeCodeLabel} {code}");
+        public const string SaveLabel = "حفظ";
+        public const string RemoveBlocked = "صدر ملف إعداد لهذا الجهاز، فلا يُزال.";
+        public const string NumbersFull = "أرقام الأجهزة التسعة مأخوذة كلها في هذا المكتب.";
+        public const string Refresh = "تحديث";
+        public const string RefreshTooltip = "إعادة قراءة المكاتب والأجهزة";
         public const string OfficesEmpty = "لا توجد مكاتب بعد";
         public const string OfficesEmptyDesc = "افتح «الهيكلية» وحدّد العناصر التي فيها حواسيب لتصير مكاتب.";
         public const string OpenStructure = "فتح الهيكلية";
@@ -30,6 +45,19 @@ public static partial class AdminAr
         public const string OpenKeys = "الحسابات والمفاتيح";
         public const string OpenKeysTooltip = "فتح حسابات هذا المكتب ومفاتيحه";
 
+        /// <summary>
+        /// A device whose employee record was never written — a registration that stopped between
+        /// its two steps. It is shown as what it is instead of being filled in with a role and an
+        /// employee nobody chose.
+        /// </summary>
+        public const string IncompleteChip = "سجل ناقص";
+
+        public const string IncompleteTooltip =
+            "سُجّل هذا الجهاز دون بيانات موظفه ودوره. أزِله وأعد إضافته.";
+
+        /// <summary>Stands in a cell whose value the tool does not have.</summary>
+        public const string Unknown = "—";
+
         public const string ColumnDevice = "الجهاز";
         public const string ColumnEmployee = "الموظف";
         public const string ColumnRole = "الدور";
@@ -38,11 +66,11 @@ public static partial class AdminAr
         public const string ColumnActions = "إجراءات";
 
         public const string DeviceNoLabel = "رقم الجهاز";
-        public const string DeviceNoHint = "من ١ إلى ٩، ولا يتكرّر داخل المكتب نفسه.";
+        public const string DeviceNoHint = "من 1 إلى 9، ولا يتكرّر داخل المكتب نفسه.";
         public const string EmployeeNameLabel = "اسم الموظف";
         public const string EmployeeNamePlaceholder = "الاسم الكامل";
         public const string EmployeeNoLabel = "رقم الموظف";
-        public const string EmployeeNoHint = "من ١ إلى ٩.";
+        public const string EmployeeNoHint = "من 1 إلى 9.";
         public const string RoleLabel = "الدور";
         public const string ScopeLabel = "نطاق المزامنة";
         public const string ScopeHint = "«العُهد فقط» لموظف العُهد الذي لا يحتاج إلى بقية عمل المكتب.";
@@ -103,9 +131,9 @@ public static partial class AdminAr
         {
             DeviceRefusal.OfficeNotFound => "لم يعد هذا المكتب موجودًا. أعد فتح قائمة المكاتب.",
             DeviceRefusal.DeviceNotFound => "لم يعد هذا الجهاز موجودًا. أعد فتح قائمة الأجهزة.",
-            DeviceRefusal.DeviceNoOutOfRange => "رقم الجهاز من ١ إلى ٩.",
+            DeviceRefusal.DeviceNoOutOfRange => "رقم الجهاز من 1 إلى 9.",
             DeviceRefusal.DeviceNoTaken => "هذا الرقم مأخوذ في هذا المكتب. اختر رقمًا آخر.",
-            DeviceRefusal.EmployeeNoOutOfRange => "رقم الموظف من ١ إلى ٩.",
+            DeviceRefusal.EmployeeNoOutOfRange => "رقم الموظف من 1 إلى 9.",
             DeviceRefusal.EmployeeNameRequired => "اسم الموظف مطلوب.",
             DeviceRefusal.RoleInvalid => "اختر دور الموظف.",
             DeviceRefusal.ScopeInvalid => "اختر نطاق المزامنة.",
@@ -113,8 +141,26 @@ public static partial class AdminAr
             DeviceRefusal.AlreadyRevoked => "هذا الجهاز مُلغى، ولا يُعدَّل بعد إلغائه.",
             DeviceRefusal.AlreadyExported => "صدر ملف إعداد لهذا الجهاز، فلا يُزال. ألغِه من «الحسابات والمفاتيح» إن لزم.",
             DeviceRefusal.NoOrganisation => "لم تُسجَّل بيانات الهيئة بعد.",
+            DeviceRefusal.CouldNotSave => "تعذّر حفظ الجهاز على هذا الحاسوب. أعد المحاولة، وإن تكرّر الأمر فافتح «الصيانة».",
             _ => string.Empty,
         };
+
+        /// <summary>How many devices this office has, under the heading.</summary>
+        public static string DevicesCount(int count) => Bidi($"{Counting.Devices(count)} في هذا المكتب");
+
+        /// <summary>The strip under the devices table: how a device actually reaches its desk.</summary>
+        public const string HowToAdd = "إضافة جهاز إلى هذا المكتب";
+
+        public const string HowToAddDesc =
+            "يُسجَّل الجهاز هنا أولًا، ثم يُصدَّر له ملف إعداد من «تصدير ملفات الإعداد» ويُنقل إلى حاسوب الموظف "
+            + "على ذاكرة محمولة ليفتح عليه. لا يعمل الجهاز قبل فتح ملف الإعداد عليه.";
+
+        /// <summary>When the rows on screen were last read off the tool's own records.</summary>
+        public static string LastChecked(DateTimeOffset at) => Bidi(
+            $"آخر تحديث لحالة الأجهزة {at.ToLocalTime().ToString("dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)}");
+
+        /// <summary>The line under «المكاتب»: how many there are, as a sentence rather than a lone word.</summary>
+        public static string OfficesCount(int count) => Bidi($"{Counting.Offices(count)} في الهيكلية");
 
         /// <summary>How an office is named in a list: its name and its inventory code.</summary>
         public static string OfficeLine(string name, string code) => Bidi($"{name} · {code}");
@@ -136,7 +182,7 @@ public static partial class AdminAr
             return Bidi(string.Join(" · ", parts));
         }
 
-        /// <summary>How a device is named: «الجهاز ٣».</summary>
+        /// <summary>How a device is named: «الجهاز 3».</summary>
         public static string DeviceName(int deviceNo) => Bidi($"الجهاز {Digits(deviceNo)}");
 
         /// <summary>How an employee is named: the name and the number.</summary>

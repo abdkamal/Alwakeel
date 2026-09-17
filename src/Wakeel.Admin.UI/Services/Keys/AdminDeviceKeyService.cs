@@ -649,7 +649,7 @@ public sealed class AdminDeviceKeyService
         using var command = _db.Command(
             """
             SELECT d.id, d.office_id, o.name, o.office_code, d.device_no,
-                   COALESCE(a.employee_no, 1), COALESCE(a.role, 'manager'), d.x25519_pub, d.revoked_at
+                   a.employee_no, a.role, d.x25519_pub, d.revoked_at
             FROM devices d
             JOIN offices o ON o.id = d.office_id
             LEFT JOIN accounts a ON a.device_id = d.id
@@ -658,6 +658,15 @@ public sealed class AdminDeviceKeyService
         command.Parameters.AddWithValue("$id", deviceId);
         using var reader = command.ExecuteReader();
         if (!reader.Read())
+        {
+            return null;
+        }
+
+        // A device with no account row is half made — a registration that stopped between its two
+        // writes. It counts as not being there at all rather than being given a stand-in employee
+        // number and a stand-in role: the stand-in role would be the most powerful one in the tool,
+        // and a certificate would then be signed saying so.
+        if (reader.IsDBNull(5) || reader.IsDBNull(6))
         {
             return null;
         }

@@ -70,6 +70,7 @@ public static class AdminRoutes
     private static readonly HashSet<string> Built = new(StringComparer.Ordinal)
     {
         Dashboard, FirstRun, SignIn,
+        Organisation, Structure, OfficesAndDevices, AccountsAndKeys,
     };
 
     private static string? Exists(string route) => Built.Contains(route) ? route : null;

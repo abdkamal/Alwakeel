@@ -155,16 +155,35 @@ public sealed class AdminKeyFile
 
         if (!keepBackup)
         {
-            TryDeleteBackup(backup);
+            OverwriteThenDeleteBackup(backup, bytes);
         }
     }
 
     /// <summary>
-    /// Removes a backup left by an earlier save. It is done after the new file is in place: losing
-    /// the backup is nothing, while losing the key file would be the organisation.
+    /// Makes a backup left by an earlier save harmless and then removes it. It is done after the new
+    /// file is in place: losing the backup is nothing, while losing the key file would be the
+    /// organisation.
     /// </summary>
-    private static void TryDeleteBackup(string backup)
+    /// <remarks>
+    /// The delete is best effort — a backup held open for a moment by a scanner or a backup agent
+    /// cannot be removed — so the retired contents are overwritten with the current ones first. A
+    /// backup that survives then carries the wraps in force rather than a password that was just
+    /// replaced, and the whole security promise no longer rests on a delete that may fail silently.
+    /// </remarks>
+    private static void OverwriteThenDeleteBackup(string backup, byte[] current)
     {
+        try
+        {
+            if (File.Exists(backup))
+            {
+                File.WriteAllBytes(backup, current);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Nothing more can be done here; the delete below is tried all the same.
+        }
+
         try
         {
             if (File.Exists(backup))

@@ -20,15 +20,16 @@ else
                   Value="@AdminAr.Dashboard.StructureCounts(_board.Departments, _board.Sections, _board.Units)"
                   Sub="@AdminAr.Dashboard.StructureCardSub" />
 
+        @* The office figure and the line beneath it use the same Western digits as the rest of the tool. *@
         <WKpiCard Icon="building"
                   Label="@AdminAr.Dashboard.OfficesCard"
-                  Value="@_board.ActivatedOffices.ToString(Culture)"
+                  Value="@AdminAr.Digits(_board.ActivatedOffices)"
                   Sub="@OfficesSub" />
 
         <WKpiCard Icon="cpu"
                   Label="@AdminAr.Dashboard.DevicesCard"
                   Value="@AdminAr.Counting.Devices(_board.Devices)"
-                  Sub="@AdminAr.Dashboard.DevicesRevoked(_board.ActiveDevices, _board.RevokedDevices)" />
+                  Sub="@AdminAr.Dashboard.DevicesStatus(_board.ActivatedDevices, _board.DevicesWaitingActivation, _board.RevokedDevices)" />
 
         <WKpiCard Icon="package"
                   Label="@AdminAr.Dashboard.LastExportCard"
@@ -77,19 +78,22 @@ else
                 @if (_board.AlertCount > 0)
                 {
                     <div class="a03-panel-actions">
-                        <WBadge Count="@_board.AlertCount" Kind="WBadgeKind.Group" />
+                        @* The count beside the panel title is the shared warning pill. *@
+                        <WChip Variant="WChipVariant.Warning"
+                               ShowDot="false"
+                               Label="@AdminAr.Digits(_board.AlertCount)" />
                         @if (_auditRoute is null)
                         {
-                            @* Switched off until admin-3 builds the operations log, and saying so in
-                               words on hover: a live-looking control that does nothing when pressed
-                               is indistinguishable from a broken tool. *@
-                            <WTooltip Text="@AdminAr.Dashboard.NotReadyYetTooltip">
-                                <WButton Variant="WButtonVariant.Text"
-                                         Label="@AdminAr.Dashboard.AlertsAll"
-                                         Tooltip="@AdminAr.Dashboard.NotReadyYetTooltip"
-                                         Disabled="true"
-                                         OnClick="OpenAuditLog" />
-                            </WTooltip>
+                            @* Switched off until admin-3 builds the operations log, with the reason in
+                               plain sight beside it rather than only on hover: a disabled button
+                               takes no focus, so a hover bubble never reaches somebody on the
+                               keyboard, and a live-looking control that does nothing when pressed is
+                               indistinguishable from a broken tool. *@
+                            <WButton Variant="WButtonVariant.Text"
+                                     Label="@AdminAr.Dashboard.AlertsAll"
+                                     Disabled="true"
+                                     OnClick="OpenAuditLog" />
+                            <span class="a03-off-note">@AdminAr.Dashboard.NotReadyYetTooltip</span>
                         }
                         else
                         {
@@ -191,19 +195,21 @@ else
             EventCallback.Factory.Create<MouseEventArgs>(this, Reload));
         builder.CloseComponent();
 
+        BuildExportButton(builder);
+
         if (_exportRoute is null)
         {
-            // Switched off, and wrapped so that hovering it says why in words. A button that looks
-            // live and does nothing when pressed is indistinguishable from a broken tool.
-            builder.OpenComponent<WTooltip>(6);
-            builder.AddComponentParameter(7, nameof(WTooltip.Text), AdminAr.Dashboard.NotReadyYetTooltip);
-            builder.AddComponentParameter(8, nameof(WTooltip.ChildContent),
-                (RenderFragment)(inner => BuildExportButton(inner)));
-            builder.CloseComponent();
-        }
-        else
-        {
-            BuildExportButton(builder);
+            // Switched off, with the reason standing beside it in plain sight. A disabled button
+            // takes no focus, so a hover bubble never reaches somebody working from the keyboard,
+            // and a live-looking control that does nothing when pressed is indistinguishable from a
+            // broken tool. These actions are rendered into the shell's header rather than into this
+            // screen, where no scoped stylesheet of this screen reaches them, so the note carries
+            // its own few declarations.
+            builder.OpenElement(6, "span");
+            builder.AddAttribute(7, "style",
+                "color: var(--w-muted); font-size: var(--w-fs-meta); max-width: 22ch; line-height: 1.5;");
+            builder.AddContent(8, AdminAr.Dashboard.NotReadyYetTooltip);
+            builder.CloseElement();
         }
     };
 

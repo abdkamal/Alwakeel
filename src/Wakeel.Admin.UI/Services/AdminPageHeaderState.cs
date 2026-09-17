@@ -40,4 +40,11 @@ public sealed class AdminPageHeaderState
 
     /// <summary>Clears the header, for a screen that draws its own (A01 and A02).</summary>
     public void Clear() => Set(string.Empty);
+
+    /// <summary>
+    /// Asks the shell to look at the organisation again without changing what the header says. A
+    /// screen that has just changed the structure calls this, so the line in the bar stops saying
+    /// «لا دوائر» while the tree beside it already shows two.
+    /// </summary>
+    public void Refresh() => Changed?.Invoke();
 }

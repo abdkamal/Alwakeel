@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Globalization;
 using Wakeel.Admin.UI.Data;
 using Wakeel.Crypto;
@@ -91,6 +92,12 @@ public sealed class AdminKeyService
         finally
         {
             Array.Clear(plainSeeds);
+
+            // Export() handed back the organisation's own two private seeds — the most valuable
+            // secret this tool ever holds. Disposing the identity wipes its copy, not this one, so
+            // the exported arrays are wiped here in the same breath as the serialized bytes.
+            CryptographicOperations.ZeroMemory(seeds.SigningSeed);
+            CryptographicOperations.ZeroMemory(seeds.AgreementSeed);
         }
 
         _db.Execute(

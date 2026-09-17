@@ -308,14 +308,16 @@ public class AdminScreenTests : AdminTestContext
         var cut = _bunit.Render<A03Dashboard>();
 
         // «عرض الكل» leads to the operations log, which admin-3 builds. Until then the button is on
-        // screen switched off, saying in words why it will not open — never live and silent.
+        // screen switched off, saying in words why it will not open — never live and silent. The
+        // reason stands beside it rather than in a hover bubble: a disabled button takes no focus,
+        // so a bubble would never reach somebody working from the keyboard.
         var showAll = cut.FindAll("button")
             .Single(button => button.TextContent.Contains(AdminAr.Dashboard.AlertsAll, StringComparison.Ordinal));
 
         Assert.True(showAll.HasAttribute("disabled"));
         Assert.Contains(
             AdminAr.Dashboard.NotReadyYetTooltip,
-            cut.Find("[aria-labelledby=a03-alerts-title] .w-tooltip-bubble").TextContent,
+            cut.Find("[aria-labelledby=a03-alerts-title] .a03-off-note").TextContent,
             StringComparison.Ordinal);
 
         // The same for «تصدير ملف الإعداد», which the shell draws from the page's own header actions.
@@ -327,7 +329,7 @@ public class AdminScreenTests : AdminTestContext
         Assert.True(export.HasAttribute("disabled"));
         Assert.Contains(
             AdminAr.Dashboard.NotReadyYetTooltip,
-            actions.Find(".w-tooltip-bubble").TextContent,
+            actions.Markup,
             StringComparison.Ordinal);
     }
 
@@ -469,6 +471,13 @@ public sealed class TestAdminWindow : IAdminWindow
     /// <inheritdoc />
     public bool CanClose => true;
 
+    /// <summary>The guard the screen on show registered, so a test can ask exactly what the title
+    /// bar's close button asks.</summary>
+    public Func<bool>? CloseGuard { get; private set; }
+
     /// <inheritdoc />
     public void Close() => Closes++;
+
+    /// <inheritdoc />
+    public void SetCloseGuard(Func<bool>? guard) => CloseGuard = guard;
 }

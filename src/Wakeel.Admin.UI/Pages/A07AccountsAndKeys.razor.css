@@ -1,0 +1,139 @@
+/* A07 — the accounts of one office beside the key they all share and the list of what is shut out. */
+
+/* The key and the revocation list are short cards of fixed content, so they keep a narrow column
+   and the accounts table takes the rest — in fractions the table was squeezed until every cell
+   wrapped and the row still had to scroll sideways. */
+.a07 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 12px;
+  align-items: start;
+}
+
+/* Names come from the organisation and may mix Arabic with Latin or digits, so a line that a design
+   component draws as plain text still takes its direction from its own first word (item 55). */
+.a07 ::deep .w-section-header-title,
+.a07 ::deep .w-section-header-sub,
+.a07 ::deep .w-card-title {
+  unicode-bidi: plaintext;
+}
+
+/* The shared table keeps its headings on one line so columns stay aligned; on this screen the
+   certificate and status headings are long enough to push the table past its card and paint a
+   sideways scroll bar under three rows, so here the cells are allowed to wrap instead. The table's
+   own class is named in the selector so this rule outweighs the component's, which carries the same
+   weight and is read after it. */
+.a07 ::deep .w-table th,
+.a07 ::deep .w-table td {
+  white-space: normal;
+}
+
+/* This table can never be long — an office holds nine devices at the very most — so it is left to
+   stand at its own height instead of living in a scrolling box. The shared table keeps that box for
+   the long lists it is also used for, and inside it a hidden tooltip bubble reaching past the edge,
+   or a pixel of rounding, was enough to paint a scroll bar down the side of a table that fits. */
+.a07 ::deep .w-table-scroll {
+  overflow: visible;
+  max-height: none;
+}
+
+.a07-main,
+.a07-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.a07-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.a07-bar > :first-child {
+  flex: 1;
+  min-width: 220px;
+}
+
+.a07-muted {
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+p.a07-muted {
+  margin: 0;
+}
+
+.a07-device,
+.a07-cert {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.a07-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.a07-row--revoked {
+  opacity: 0.62;
+}
+
+.a07-note,
+.a07-warn,
+.a07-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--w-fs-meta);
+  line-height: 1.6;
+}
+
+.a07-note {
+  color: var(--w-muted);
+}
+
+.a07-warn {
+  color: var(--w-warning);
+}
+
+.a07-error {
+  color: var(--w-danger);
+}
+
+/* The office key. Its line is a WKvRow; only the two things inside its value need placing. */
+
+.a07-key-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The dialogs. */
+
+.a07-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Which device a dangerous question is about, drawn as shared key/value rows inside the dialog's own
+   surface. Nothing is painted here; the rows are only stacked. */
+.a07-subject {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@media (max-width: 1100px) {
+  .a07,
+  .a07-form {
+    grid-template-columns: 1fr;
+  }
+}

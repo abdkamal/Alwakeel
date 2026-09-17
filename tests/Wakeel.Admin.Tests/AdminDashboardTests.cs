@@ -73,7 +73,7 @@ public class AdminDashboardTests : AdminTestContext
         Assert.Equal(1, board.OfficesWaiting);
         Assert.Equal(2, board.Devices);
         Assert.Equal(1, board.RevokedDevices);
-        Assert.Equal(1, board.ActiveDevices);
+        Assert.Equal(1, board.RegisteredDevices);
     }
 
     [Fact]
@@ -142,11 +142,30 @@ public class AdminDashboardTests : AdminTestContext
         // eleven and up goes back to the singular noun, so the adjective has to go back with it.
         Assert.Equal("جهاز مُلغى", AdminAr.Dashboard.RevokedDevices(1));
         Assert.Equal("جهازان مُلغيان", AdminAr.Dashboard.RevokedDevices(2));
+        // The figure inside the sentence is written the way the rest of the tool's prose writes one.
         Assert.Equal("4 أجهزة مُلغاة", AdminAr.Dashboard.RevokedDevices(4));
         Assert.Equal("11 جهازًا مُلغى", AdminAr.Dashboard.RevokedDevices(11));
 
         Assert.Contains("11 جهازًا مُلغى", AdminAr.Dashboard.AlertsSummary(0, 0, 11), StringComparison.Ordinal);
-        Assert.Contains("11 جهازًا مُلغى", AdminAr.Dashboard.DevicesRevoked(2, 11), StringComparison.Ordinal);
+        Assert.Contains("11 جهازًا مُلغى", AdminAr.Dashboard.DevicesStatus(2, 0, 11), StringComparison.Ordinal);
+
+        // And the adjective on the working side agrees the same way, so «جهازان مفعّلة» cannot happen.
+        Assert.Equal("جهاز مفعّل", AdminAr.Counting.ActivatedDevices(1));
+        Assert.Equal("جهازان مفعّلان", AdminAr.Counting.ActivatedDevices(2));
+        Assert.Equal("3 أجهزة مفعّلة", AdminAr.Counting.ActivatedDevices(3));
+        Assert.Equal("11 جهازًا مفعّلًا", AdminAr.Counting.ActivatedDevices(11));
+        Assert.StartsWith("جهازان مفعّلان", AdminAr.Dashboard.DevicesStatus(2, 0, 11), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Counting_WritesTheFigureInsideASentenceTheWayTheRestOfTheProseDoes()
+    {
+        // A06 draws «3 أجهزة في هذا المكتب» above rows that read «الجهاز 1/2/3»; a sentence that
+        // mixed the two shapes of figure would read as two voices.
+        Assert.Equal("3 أجهزة", AdminAr.Counting.Devices(3));
+        Assert.Equal("8 تغييرات", AdminAr.Counting.Changes(8));
+        Assert.Equal("12 مكتبًا", AdminAr.Counting.Offices(12));
+        Assert.Equal("لا دوائر", AdminAr.Counting.Departments(0));
     }
 
     [Fact]

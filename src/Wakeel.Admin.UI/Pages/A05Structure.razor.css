@@ -1,0 +1,115 @@
+/* A05 — the tree on one side, whatever is picked in it on the other. */
+
+.a05 {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 12px;
+  align-items: start;
+}
+
+/* Names come from the organisation and may mix Arabic with Latin or digits, so a line that a design
+   component draws as plain text still takes its direction from its own first word (item 55). */
+.a05 ::deep .w-section-header-title,
+.a05 ::deep .w-section-header-sub,
+.a05 ::deep .w-card-title {
+  unicode-bidi: plaintext;
+}
+
+/* «المكتب والجرد» is a second section inside the detail card rather than a card of its own, so it
+   takes the breathing room the card boundary used to give it. */
+.a05-detail ::deep .w-section-header {
+  margin-block-start: 14px;
+}
+
+.a05-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--w-surface);
+  border: 1px solid var(--w-border);
+  border-radius: var(--w-radius-lg);
+}
+
+.a05-tree-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.a05-pane-title {
+  margin: 0;
+  font-size: var(--w-fs-section);
+  font-weight: 600;
+  color: var(--w-text);
+}
+
+.a05-tree-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.a05-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.a05-muted {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+/* The tree itself. */
+
+.a05-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Everything below one row — the row itself, its twisty, its name button, its head — is styled
+   beside AdminStructureNode, the component that draws it, so the rules reach every depth. */
+
+/* The pane on the side. */
+
+.a05-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Every field the design draws is the same fixed width, so two sit side by side and a row is
+   never left half empty. */
+.a05-fields {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 12px;
+  align-items: start;
+}
+
+.a05-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .a05 {
+    grid-template-columns: 1fr;
+  }
+
+  .a05-fields {
+    grid-template-columns: max-content;
+  }
+}

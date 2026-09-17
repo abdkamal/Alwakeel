@@ -1,0 +1,108 @@
+@namespace Wakeel.Admin.UI.Components
+
+@* One node of A05's structure tree, and — unless it is folded away — everything beneath it.
+
+   This is a component rather than a method on the page for one reason: Blazor stamps a page's
+   scoped-CSS mark onto the elements written in its own markup, and nothing else. A tree built by
+   hand in C# comes out unmarked, so every rule in the page's stylesheet misses it and the rows draw
+   as bare browser buttons. Written as markup here, every element carries this component's own mark
+   and the stylesheet beside this file styles it. *@
+
+<li class="a05-node"
+    role="treeitem"
+    aria-selected="@(IsSelected ? "true" : "false")"
+    aria-expanded="@(Children.Count == 0 ? null : Folded ? "false" : "true")">
+    <div class="@RowClass" style="padding-inline-start: @(8 + (Depth * 18))px">
+        @if (Children.Count > 0)
+        {
+            <button type="button"
+                    class="a05-twisty"
+                    title="@TwistyLabel"
+                    aria-label="@TwistyLabel"
+                    @onclick="() => OnToggle.InvokeAsync(Node.Id)">
+                <WIcon Name="@(Folded ? "chevron-left" : "chevron-down")" Size="14" />
+            </button>
+        }
+        else
+        {
+            <span class="a05-twisty a05-twisty--none"></span>
+        }
+
+        <button type="button" class="a05-name" @onclick="() => OnSelect.InvokeAsync(Node.Id)">
+            <WChip Label="@AdminAr.Structure.LevelName(Node.Level)"
+                   Variant="WChipVariant.Neutral"
+                   ShowDot="false" />
+            <Bdi Text="@Node.Name" />
+            @if (Node.IsOffice)
+            {
+                <WIcon Name="building" Size="14" />
+            }
+            @if (Node.IsDisabled)
+            {
+                <WChip Label="@AdminAr.Structure.DisabledChip" Variant="WChipVariant.Warning" />
+            }
+        </button>
+
+        @if (Node.HeadName is { Length: > 0 } head)
+        {
+            <span class="a05-head"><Bdi Text="@head" /></span>
+        }
+    </div>
+
+    @if (Children.Count > 0 && !Folded)
+    {
+        <ul class="a05-list" role="group">
+            @foreach (var child in Children)
+            {
+                <AdminStructureNode Node="child"
+                                    Depth="@(Depth + 1)"
+                                    SelectedId="@SelectedId"
+                                    ChildrenOf="ChildrenOf"
+                                    IsCollapsed="IsCollapsed"
+                                    OnSelect="OnSelect"
+                                    OnToggle="OnToggle" />
+            }
+        </ul>
+    }
+</li>
+
+@code {
+    /// <summary>The node this row is about.</summary>
+    [Parameter, EditorRequired]
+    public OrgNode Node { get; set; } = default!;
+
+    /// <summary>How deep it sits, which is all the indent is made of.</summary>
+    [Parameter]
+    public int Depth { get; set; }
+
+    /// <summary>Which node the detail pane is showing, so this one knows whether it is the one.</summary>
+    [Parameter]
+    public string? SelectedId { get; set; }
+
+    /// <summary>The children of a node that the search has left visible, in the order they are drawn.</summary>
+    [Parameter, EditorRequired]
+    public Func<OrgNode, IReadOnlyList<OrgNode>> ChildrenOf { get; set; } = default!;
+
+    /// <summary>Whether a node has been folded away.</summary>
+    [Parameter, EditorRequired]
+    public Func<string, bool> IsCollapsed { get; set; } = default!;
+
+    /// <summary>Raised with the node's identifier when a row is chosen.</summary>
+    [Parameter]
+    public EventCallback<string> OnSelect { get; set; }
+
+    /// <summary>Raised with the node's identifier when its twisty is pressed.</summary>
+    [Parameter]
+    public EventCallback<string> OnToggle { get; set; }
+
+    private IReadOnlyList<OrgNode> Children => ChildrenOf(Node);
+
+    private bool Folded => IsCollapsed(Node.Id);
+
+    private bool IsSelected => string.Equals(Node.Id, SelectedId, StringComparison.Ordinal);
+
+    private string TwistyLabel => Folded ? AdminAr.Structure.Expand : AdminAr.Structure.Collapse;
+
+    private string RowClass =>
+        $"a05-row{(IsSelected ? " a05-row--selected" : string.Empty)}{(Node.IsDisabled ? " a05-row--off" : string.Empty)}";
+}

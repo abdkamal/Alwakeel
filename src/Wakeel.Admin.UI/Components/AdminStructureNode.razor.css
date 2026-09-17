@@ -1,0 +1,94 @@
+/* One row of A05's structure tree and the branch under it. The rules live beside the component
+   that draws them so they reach every row, however deep the recursion goes. */
+
+.a05-node > .a05-list {
+  margin-top: 2px;
+}
+
+.a05-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.a05-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--w-radius);
+  min-height: 30px;
+}
+
+.a05-row:hover {
+  background: var(--w-surface2);
+}
+
+.a05-row--selected {
+  background: var(--w-primary-soft);
+  border-color: var(--w-primary-border);
+}
+
+.a05-row--off {
+  opacity: 0.62;
+}
+
+.a05-twisty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--w-radius);
+  color: var(--w-muted);
+  cursor: pointer;
+}
+
+.a05-twisty:hover {
+  background: var(--w-neutral-soft);
+  color: var(--w-text);
+}
+
+.a05-twisty--none {
+  cursor: default;
+}
+
+.a05-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--w-text);
+  font-family: var(--w-font);
+  font-size: var(--w-fs-body);
+  text-align: start;
+  cursor: pointer;
+}
+
+.a05-name:focus-visible,
+.a05-twisty:focus-visible {
+  outline: 2px solid var(--w-primary);
+  outline-offset: 2px;
+}
+
+.a05-head {
+  flex: none;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}

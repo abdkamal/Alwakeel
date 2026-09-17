@@ -76,17 +76,23 @@ public sealed record AdminOffice(
 /// <param name="OfficeId">The office it is in.</param>
 /// <param name="DeviceNo">Its number inside that office, 1 to 9.</param>
 /// <param name="IsPhone">Whether it is a paired phone rather than a computer.</param>
-/// <param name="Role">manager, secretary or custodian.</param>
-/// <param name="EmployeeName">Who sits at it.</param>
-/// <param name="EmployeeNo">That person's number, 1 to 9.</param>
-/// <param name="SyncScope">full or custody.</param>
-/// <param name="Status">pending, active or revoked.</param>
+/// <param name="Role">manager, secretary or custodian; empty when <paramref name="HasAccount"/> is false.</param>
+/// <param name="EmployeeName">Who sits at it; empty when there is no account row.</param>
+/// <param name="EmployeeNo">That person's number, 1 to 9; zero when there is no account row.</param>
+/// <param name="SyncScope">full or custody; empty when there is no account row.</param>
+/// <param name="Status">pending, active or revoked; empty when there is no account row.</param>
 /// <param name="IssuedAt">When its certificate was issued.</param>
 /// <param name="RevokedAt">When it was shut out, if it was.</param>
 /// <param name="PairedAt">When the phone was paired, for a phone.</param>
 /// <param name="LastSyncAt">When it last kept in step.</param>
 /// <param name="SeedsHeld">Whether its key seed is still waiting in the tool for a first setup file.</param>
 /// <param name="ExportedAt">When its setup file was last made.</param>
+/// <param name="HasAccount">
+/// Whether the device actually has an account row. A registration writes the device and its account
+/// one after the other, so a run that stopped in between leaves a device with no employee, no role
+/// and no scope. That half-made state is carried here rather than smoothed over with defaults: the
+/// screens draw it as half made instead of telling the administrator it is a manager.
+/// </param>
 public sealed record AdminDevice(
     string Id,
     string OfficeId,
@@ -102,7 +108,8 @@ public sealed record AdminDevice(
     DateTimeOffset? PairedAt,
     DateTimeOffset? LastSyncAt,
     bool SeedsHeld,
-    DateTimeOffset? ExportedAt)
+    DateTimeOffset? ExportedAt,
+    bool HasAccount = true)
 {
     /// <summary>Whether it is still allowed in.</summary>
     public bool IsRevoked => RevokedAt is not null;
@@ -155,6 +162,12 @@ public enum DeviceRefusal
 
     /// <summary>There is no organisation, so nothing can be certified.</summary>
     NoOrganisation,
+
+    /// <summary>
+    /// The tool could not write the device down. Nothing about what was typed was wrong: something
+    /// on this computer stopped the writing, and the half-made device was taken back out again.
+    /// </summary>
+    CouldNotSave,
 }
 
 /// <summary>
@@ -275,11 +288,11 @@ public sealed class AdminDeviceService
         using var command = _db.Command(
             """
             SELECT d.id, d.office_id, d.device_no, d.kind,
-                   COALESCE(a.role, 'manager'), COALESCE(a.employee_name, ''), COALESCE(a.employee_no, 1),
-                   COALESCE(a.sync_scope, 'full'), COALESCE(a.status, 'pending'),
+                   a.role, a.employee_name, a.employee_no, a.sync_scope, a.status,
                    d.issued_at, d.revoked_at, d.paired_at, d.last_sync_at,
                    d.sealed_seeds IS NOT NULL,
-                   (SELECT MAX(e.exported_at) FROM setup_exports e WHERE e.device_id = d.id)
+                   (SELECT MAX(e.exported_at) FROM setup_exports e WHERE e.device_id = d.id),
+                   a.device_id IS NOT NULL
             FROM devices d
             LEFT JOIN accounts a ON a.device_id = d.id
             WHERE d.office_id = $office
@@ -290,22 +303,27 @@ public sealed class AdminDeviceService
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
+            // No default for a device whose account row is missing: the screens are told there is
+            // none, and say so, rather than being handed «مدير المكتب · الموظف 1».
+            var hasAccount = reader.GetBoolean(15);
+
             devices.Add(new AdminDevice(
                 reader.GetString(0),
                 reader.GetString(1),
                 reader.GetInt32(2),
                 string.Equals(reader.GetString(3), "phone", StringComparison.Ordinal),
-                reader.GetString(4),
-                reader.GetString(5),
-                reader.GetInt32(6),
-                reader.GetString(7),
-                reader.GetString(8),
+                hasAccount ? reader.GetString(4) : string.Empty,
+                hasAccount ? reader.GetString(5) : string.Empty,
+                hasAccount ? reader.GetInt32(6) : 0,
+                hasAccount ? reader.GetString(7) : string.Empty,
+                hasAccount ? reader.GetString(8) : string.Empty,
                 DateTimeOffset.Parse(reader.GetString(9), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
                 Instant(reader, 10),
                 Instant(reader, 11),
                 Instant(reader, 12),
                 reader.GetBoolean(13),
-                Instant(reader, 14)));
+                Instant(reader, 14),
+                hasAccount));
         }
 
         return devices;
@@ -393,9 +411,11 @@ public sealed class AdminDeviceService
         catch (SqliteException)
         {
             // The device row is only half a device without its account; take it back out rather
-            // than leaving a machine nobody sits at.
+            // than leaving a machine nobody sits at. The device number was already checked and
+            // accepted above, so whatever went wrong here is not about it and must not be reported
+            // as though it were.
             _db.Execute("DELETE FROM devices WHERE id = $id;", ("$id", newId));
-            return DeviceRefusal.DeviceNoTaken;
+            return DeviceRefusal.CouldNotSave;
         }
 
         deviceId = newId;

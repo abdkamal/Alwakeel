@@ -7,6 +7,7 @@
 @inject AdminDashboardService Dashboard
 @inject ThemeService Theme
 @inject NavigationManager Nav
+@inject IJSRuntime Js
 
 @* The administration tool's shell: a dark bar with the tool's name and the organisation summary,
    a strip of tabs under it, and full-width content. No sidebar — the tool is seven areas, not a
@@ -89,7 +90,20 @@
     /// <summary>The organisation line in the bar: the name, then how much structure there is.</summary>
     private string OrgSummary => _orgSummary;
 
-    private bool IsDark => Theme.Theme == UiTheme.Dark;
+    /// <summary>
+    /// Whether the page is dark as the person sees it. Until an appearance has been chosen the tool
+    /// follows the computer's own preference, so asking the stored choice alone would have the
+    /// switch offer «المظهر الداكن» on a screen that is already dark — and the first press would
+    /// then change nothing.
+    /// </summary>
+    private bool _drawnDark;
+
+    private bool IsDark => Theme.Theme switch
+    {
+        UiTheme.Dark => true,
+        UiTheme.Light => false,
+        _ => _drawnDark,
+    };
 
     private string ThemeTooltip => IsDark ? AdminAr.Shell.LightModeTooltip : AdminAr.Shell.DarkModeTooltip;
 
@@ -99,6 +113,28 @@
         Session.Changed += HandleChanged;
         await Theme.InitializeAsync();
         ReadOrgSummary();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || Theme.Theme != UiTheme.System)
+        {
+            return;
+        }
+
+        try
+        {
+            var drawnDark = await Js.InvokeAsync<bool>("wakeelAdmin.isDrawnDark");
+            if (drawnDark != _drawnDark)
+            {
+                _drawnDark = drawnDark;
+                StateHasChanged();
+            }
+        }
+        catch (JSException)
+        {
+            // The page could not say; the switch keeps offering dark, which is what it did before.
+        }
     }
 
     protected override void OnParametersSet() => ReadOrgSummary();
@@ -121,7 +157,16 @@
             : AdminAr.Shell.OrgSummary(line.OrgName, line.Departments, line.Sections, line.Units);
     }
 
-    private void HandleChanged() => InvokeAsync(StateHasChanged);
+    /// <summary>
+    /// The screen said something changed, so the bar reads the organisation again before it redraws:
+    /// a department added in A05 has to show in the line above it straight away, not only once the
+    /// person has left the screen.
+    /// </summary>
+    private void HandleChanged() => InvokeAsync(() =>
+    {
+        ReadOrgSummary();
+        StateHasChanged();
+    });
 
     private async Task ToggleTheme() =>
         await Theme.SetThemeAsync(IsDark ? UiTheme.Light : UiTheme.Dark);

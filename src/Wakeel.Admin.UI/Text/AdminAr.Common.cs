@@ -83,17 +83,35 @@ public static partial class AdminAr
         public static string Attempts(int count) => Count(count, "محاولة", "محاولتان", "محاولات", "محاولة");
 
         /// <summary>
+        /// How many devices are actually activated — the same word A06 and A07 put on a device row
+        /// («مفعّل») — with the adjective in the shape the noun asks for: a pair takes a dual
+        /// adjective, a few take the plural, eleven and up take the singular again. Written out here
+        /// so «جهازان مفعّلة» cannot reach a card. The older wording «نشط» was dropped because it
+        /// read as «working» while it counted every device that was merely registered.
+        /// </summary>
+        public static string ActivatedDevices(int count) => count switch
+        {
+            0 => "لا أجهزة مفعّلة",
+            1 => "جهاز مفعّل",
+            2 => "جهازان مفعّلان",
+            >= 3 and <= 10 => $"{Digits(count)} أجهزة مفعّلة",
+            _ => $"{Digits(count)} جهازًا مفعّلًا",
+        };
+
+        /// <summary>
         /// Arabic has four shapes, not two: nothing, one, a pair, a few (three to ten), and many
         /// (eleven and up, which takes the singular again). Written out here once so every screen
-        /// counts the same way.
+        /// counts the same way. The figure itself is drawn in Arabic-Indic digits: these counts are
+        /// read inside a sentence, and a sentence that mixed the two shapes of figure would read as
+        /// two voices.
         /// </summary>
         private static string Count(int count, string one, string two, string few, string many) => count switch
         {
             0 => $"لا {few}",
             1 => one,
             2 => two,
-            >= 3 and <= 10 => $"{count} {few}",
-            _ => $"{count} {many}",
+            >= 3 and <= 10 => $"{Digits(count)} {few}",
+            _ => $"{Digits(count)} {many}",
         };
     }
 
@@ -103,6 +121,9 @@ public static partial class AdminAr
         public const string Title = "تعذّر إتمام الإجراء";
         public const string Retry = "إعادة المحاولة";
         public const string RequiredField = "هذا الحقل مطلوب.";
+
+        public const string CannotPrepareDataFolder =
+            "تعذّر على الأداة تجهيز مكان بياناتها على هذا الحاسوب. تحقّق من صلاحيات المجلد ثم افتح الأداة من جديد.";
 
         public const string CannotWriteFolder =
             "تعذّرت الكتابة في مجلد الأداة. تأكّد من وجود مساحة على القرص ومن صلاحية الكتابة في المجلد، ثم أعد المحاولة.";
@@ -125,5 +146,11 @@ public static partial class AdminAr
         public const string Back = "العودة";
         public const string TypeToConfirm = "اكتب «تأكيد» للمتابعة";
         public const string ConfirmWord = "تأكيد";
+
+        /// <summary>Why the main button is switched off, said under the field rather than left to guesswork.</summary>
+        public const string LockedReason = "يُفتَّح الزر بعد كتابة كلمة «تأكيد» مطابقة.";
+
+        /// <summary>And what it means once it matches.</summary>
+        public const string Unlocked = "الزر مفتوح الآن.";
     }
 }

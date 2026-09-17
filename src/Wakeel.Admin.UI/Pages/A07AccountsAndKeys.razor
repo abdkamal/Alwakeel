@@ -1,0 +1,628 @@
+@using Wakeel.Crypto
+@page "/accounts"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminDeviceService Devices
+@inject AdminDeviceKeyService DeviceKeys
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IToastService Toasts
+@inject NavigationManager Nav
+
+@* A07 — the accounts of an office and the keys behind them: a new account is a device with a
+   certificate of its own and a key seed that stays here until its first setup file is made; an
+   account is activated once the person has it in hand; a lost computer is recovered with fresh
+   keys; the office key is issued once and rotated only deliberately; and a device that must never
+   work again is shut out and named in a signed list every later setup file carries. *@
+@if (_offices is null)
+{
+    <AdminErrorState Message="@AdminAr.Errors.DataUnreadable" OnRetry="Reload" />
+}
+else if (_offices.Count == 0)
+{
+    <WStateCard Icon="key"
+                Title="@AdminAr.Keys.AccountsEmpty"
+                Desc="@AdminAr.Keys.AccountsEmptyDesc"
+                ActionLabel="@AdminAr.Keys.OpenDevices"
+                ActionIcon="cpu"
+                OnAction="GoToDevices" />
+}
+else
+{
+    <div class="a07">
+        <div class="a07-main">
+            <WCard>
+                <WSectionHeader Title="@AdminAr.Keys.AccountsHeading" Sub="@AdminAr.Keys.AccountsDesc" />
+                <div class="a07-bar">
+                    <WSelect Label="@AdminAr.Keys.OfficeLabel"
+                             Options="OfficeOptions"
+                             Value="@_officeId"
+                             ValueChanged="OnOfficeChanged" />
+
+                    <WSegmented Options="FilterOptions"
+                                SelectedValue="@_filter"
+                                SelectedValueChanged="@(value => _filter = value ?? "all")" />
+                </div>
+
+                <WTable IsEmpty="@(Shown.Count == 0)">
+                    <EmptyState>
+                        <WStateCard Icon="user"
+                                    Title="@AdminAr.Keys.NoneInFilter"
+                                    Desc="@AdminAr.Keys.NoneInFilterDesc" />
+                    </EmptyState>
+                    <HeaderRow>
+                        <th scope="col">@AdminAr.Keys.ColumnDevice</th>
+                        <th scope="col">@AdminAr.Keys.ColumnEmployee</th>
+                        <th scope="col">@AdminAr.Keys.ColumnCertificate</th>
+                        <th scope="col">@AdminAr.Keys.ColumnStatus</th>
+                        <th scope="col">@AdminAr.Keys.ColumnActions</th>
+                    </HeaderRow>
+                    <ChildContent>
+                        @foreach (var device in Shown)
+                        {
+                            <tr class="@(device.IsRevoked ? "a07-row--revoked" : null)">
+                                <td>
+                                    <span class="a07-device">
+                                        <Bdi Text="@AdminAr.Devices.DeviceName(device.DeviceNo)" />
+                                        @* A device whose employee record was never written has no role
+                                           and no employee to show, and is not given one. *@
+                                        <span class="a07-muted">
+                                            @(device.HasAccount ? AdminAr.Devices.RoleName(device.Role) : AdminAr.Devices.Unknown)
+                                        </span>
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (device.HasAccount)
+                                    {
+                                        <Bdi Text="@AdminAr.Devices.EmployeeLine(device.EmployeeName, device.EmployeeNo)" />
+                                    }
+                                    else
+                                    {
+                                        <span>@AdminAr.Devices.Unknown</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="a07-cert">
+                                        <Bdi Text="@AdminAr.Keys.IssuedOn(device.IssuedAt)" />
+                                        <span class="a07-muted">
+                                            @* Three fates, not two: still here, gone out inside a setup
+                                               file, or wiped when the device was revoked before any
+                                               setup file was ever made. *@
+                                            @(device.SeedsHeld
+                                                ? AdminAr.Keys.SeedsHeld
+                                                : device.ExportedAt is null
+                                                    ? AdminAr.Keys.SeedsDestroyed
+                                                    : AdminAr.Keys.SeedsGone)
+                                        </span>
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (!device.HasAccount)
+                                    {
+                                        <WTooltip Text="@AdminAr.Devices.IncompleteTooltip">
+                                            <WChip Label="@AdminAr.Devices.IncompleteChip" Variant="WChipVariant.Warning" />
+                                        </WTooltip>
+                                    }
+                                    else if (device.IsRevoked)
+                                    {
+                                        <WChip Label="@AdminAr.Devices.RevokedChip" Variant="WChipVariant.Danger" />
+                                    }
+                                    else if (device.IsActive)
+                                    {
+                                        <WChip Label="@AdminAr.Devices.ActiveChip" Variant="WChipVariant.Success" />
+                                    }
+                                    else
+                                    {
+                                        <WChip Label="@AdminAr.Devices.PendingChip" Variant="WChipVariant.Warning" />
+                                    }
+                                </td>
+                                <td>
+                                    <div class="a07-row-actions">
+                                        @if (!device.IsRevoked && device.IsPending)
+                                        {
+                                            <WButton Variant="WButtonVariant.Icon"
+                                                     Icon="check-circle"
+                                                     Tooltip="@AdminAr.Keys.ActivateTooltip"
+                                                     OnClick="@(() => Activate(device))" />
+                                        }
+
+                                        @* A switched-off control says why it is off, not what it would
+                                           otherwise have done. *@
+                                        <WButton Variant="WButtonVariant.Icon"
+                                                 Icon="refresh-cw"
+                                                 Tooltip="@(device.IsRevoked ? AdminAr.Keys.RevokedNoAction : AdminAr.Keys.RecoverTooltip)"
+                                                 Disabled="@device.IsRevoked"
+                                                 OnClick="@(() => OpenRecover(device))" />
+
+                                        <WButton Variant="WButtonVariant.Icon"
+                                                 Icon="ban"
+                                                 Tooltip="@(device.IsRevoked ? AdminAr.Keys.RevokedNoAction : AdminAr.Keys.RevokeTooltip)"
+                                                 Disabled="@device.IsRevoked"
+                                                 OnClick="@(() => OpenRevoke(device))" />
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </ChildContent>
+                </WTable>
+
+                @if (_devices.Any(d => d.Role == DeviceRoles.Custodian && d.IsPending && !d.IsRevoked))
+                {
+                    <p class="a07-note"><WIcon Name="info" Size="14" /> @AdminAr.Keys.ActivateCustodianHint</p>
+                }
+            </WCard>
+        </div>
+
+        <div class="a07-side">
+            <WCard>
+                <WSectionHeader Title="@AdminAr.Keys.KeysOf(OfficeName)" Sub="@AdminAr.Keys.OfficeKeyDesc" />
+                @* The key's own line is a key/value row like every other fact in the tool, with the
+                   state said by the same chip the accounts table uses. *@
+                <WKvRow Key="@AdminAr.Keys.KeyVersionLabel">
+                    <ValueContent>
+                        <span class="a07-key-value">
+                            <Bdi Text="@AdminAr.Keys.KeyVersion(_key?.Version ?? 0)" />
+                            @if (_key is { Exists: true })
+                            {
+                                <WChip Label="@AdminAr.Keys.KeyActiveChip" Variant="WChipVariant.Success" />
+                            }
+                        </span>
+                    </ValueContent>
+                </WKvRow>
+
+                <p class="a07-muted">
+                    <Bdi Text="@(_key is { RotatedAt: { } at } ? AdminAr.Keys.RotatedOn(at, _key.Version) : AdminAr.Keys.NeverRotated)" />
+                </p>
+
+                @if (_key is { Exists: true })
+                {
+                    <p class="a07-warn">
+                        <WIcon Name="alert-triangle" Size="14" />
+                        @AdminAr.Keys.RotateAffects(_devices.Count(d => !d.IsRevoked))
+                    </p>
+
+                    <WButton Variant="WButtonVariant.Secondary"
+                             Icon="refresh-cw"
+                             Label="@AdminAr.Keys.OfficeKeyRotate"
+                             Tooltip="@AdminAr.Keys.OfficeKeyRotateTooltip"
+                             OnClick="@(() => _confirmRotate = true)" />
+                }
+                else
+                {
+                    <WButton Variant="WButtonVariant.Primary"
+                             Icon="key"
+                             Label="@AdminAr.Keys.OfficeKeyIssue"
+                             Tooltip="@AdminAr.Keys.OfficeKeyIssueTooltip"
+                             OnClick="IssueOfficeKey" />
+                }
+            </WCard>
+
+            <WCard>
+                <WSectionHeader Title="@AdminAr.Keys.RevocationHeading" Sub="@AdminAr.Keys.RevocationDesc" />
+                @if (_revocations is null || _revocations.Body.Entries.Count == 0)
+                {
+                    <WStateCard Icon="shield"
+                                Title="@AdminAr.Keys.RevocationEmpty"
+                                Desc="@AdminAr.Keys.RevocationEmptyDesc" />
+                }
+                else
+                {
+                    <p class="a07-muted">
+                        <Bdi Text="@AdminAr.Keys.RevocationSummary(_revocations.Body.Entries.Count, _revocations.Body.IssuedAt)" />
+                    </p>
+
+                    @* One key/value row per shut-out device: the name on the reading side, the day it
+                       was shut out in the red chip that says what happened to it. *@
+                    @foreach (var entry in _revocations.Body.Entries)
+                    {
+                        <WKvRow Key="@NameOfRevoked(entry.DeviceId)">
+                            <ValueContent>
+                                <WChip Label="@AdminAr.Keys.RevokedOn(entry.RevokedAt)" Variant="WChipVariant.Danger" />
+                            </ValueContent>
+                        </WKvRow>
+                    }
+                }
+            </WCard>
+        </div>
+    </div>
+}
+
+<AdminConfirmDialog Open="@_createOpen"
+                    Title="@AdminAr.Keys.CreateAccount"
+                    Desc="@AdminAr.Keys.CreateAccountDesc"
+                    ConfirmLabel="@AdminAr.Keys.CreateAccount"
+                    ConfirmIcon="check"
+                    OnConfirm="CommitCreate"
+                    OnCancel="@(() => _createOpen = false)">
+    <div class="a07-form">
+        <WSelect Label="@AdminAr.Devices.DeviceNoLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.NumberOptions"
+                 Value="@_formDeviceNo"
+                 ValueChanged="@(value => _formDeviceNo = value ?? "1")"
+                 Hint="@AdminAr.Devices.DeviceNoHint" />
+
+        <WInput Label="@AdminAr.Devices.EmployeeNameLabel"
+                Required="true"
+                Value="@_formEmployeeName"
+                ValueChanged="@(value => _formEmployeeName = value ?? string.Empty)"
+                Placeholder="@AdminAr.Devices.EmployeeNamePlaceholder" />
+
+        <WSelect Label="@AdminAr.Devices.EmployeeNoLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.NumberOptions"
+                 Value="@_formEmployeeNo"
+                 ValueChanged="@(value => _formEmployeeNo = value ?? "1")"
+                 Hint="@AdminAr.Devices.EmployeeNoHint" />
+
+        <WSelect Label="@AdminAr.Devices.RoleLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.RoleOptions"
+                 Value="@_formRole"
+                 ValueChanged="@(value => _formRole = value ?? DeviceRoles.Secretary)" />
+
+        <WSelect Label="@AdminAr.Devices.ScopeLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.ScopeOptions"
+                 Value="@_formScope"
+                 ValueChanged="@(value => _formScope = value ?? SyncScopes.Full)"
+                 Hint="@AdminAr.Devices.ScopeHint" />
+    </div>
+
+    @if (_createError is { Length: > 0 })
+    {
+        <p class="a07-error"><WIcon Name="alert-circle" Size="14" /> @_createError</p>
+    }
+</AdminConfirmDialog>
+
+<AdminConfirmDialog Open="@_confirmRecover"
+                    Danger="true"
+                    RequireTypedConfirmation="false"
+                    Title="@AdminAr.Keys.RecoverTitle"
+                    Desc="@AdminAr.Keys.RecoverWarning"
+                    ConfirmLabel="@AdminAr.Keys.Recover"
+                    ConfirmIcon="refresh-cw"
+                    OnConfirm="CommitRecover"
+                    OnCancel="@(() => _confirmRecover = false)">
+    @if (_acting is { } recovering)
+    {
+        <div class="a07-subject">
+            <WKvRow Key="@AdminAr.Keys.ColumnDevice" Value="@AdminAr.Devices.DeviceName(recovering.DeviceNo)" />
+            <WKvRow Key="@AdminAr.Keys.ColumnEmployee"
+                    Value="@AdminAr.Devices.EmployeeLine(recovering.EmployeeName, recovering.EmployeeNo)" />
+        </div>
+    }
+</AdminConfirmDialog>
+
+<AdminConfirmDialog Open="@_confirmRevoke"
+                    Danger="true"
+                    Title="@AdminAr.Keys.RevokeTitle"
+                    Desc="@AdminAr.Keys.RevokeWarning"
+                    ConfirmLabel="@AdminAr.Keys.Revoke"
+                    ConfirmIcon="ban"
+                    OnConfirm="CommitRevoke"
+                    OnCancel="@(() => _confirmRevoke = false)">
+    @if (_acting is { } revoking)
+    {
+        <div class="a07-subject">
+            <WKvRow Key="@AdminAr.Keys.ColumnDevice" Value="@AdminAr.Devices.DeviceName(revoking.DeviceNo)" />
+            <WKvRow Key="@AdminAr.Keys.ColumnEmployee"
+                    Value="@AdminAr.Devices.EmployeeLine(revoking.EmployeeName, revoking.EmployeeNo)" />
+            <WKvRow Key="@AdminAr.Keys.ColumnRole" Value="@AdminAr.Devices.RoleName(revoking.Role)" />
+        </div>
+        <p class="a07-warn"><WIcon Name="alert-triangle" Size="14" /> @AdminAr.Keys.RevokeWhatStays</p>
+    }
+</AdminConfirmDialog>
+
+<AdminConfirmDialog Open="@_confirmRotate"
+                    Danger="true"
+                    Title="@AdminAr.Keys.OfficeKeyRotateTitle"
+                    Desc="@AdminAr.Keys.OfficeKeyRotateWarning"
+                    ConfirmLabel="@AdminAr.Keys.OfficeKeyRotate"
+                    ConfirmIcon="refresh-cw"
+                    OnConfirm="RotateOfficeKey"
+                    OnCancel="@(() => _confirmRotate = false)" />
+
+@code {
+    private static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
+
+    private IReadOnlyList<AdminOffice>? _offices;
+    private IReadOnlyList<AdminDevice> _devices = [];
+    private OfficeKeyInfo? _key;
+    private RevocationList? _revocations;
+    private IReadOnlyList<AdminDevice> _allDevices = [];
+
+    private string? _officeId;
+    private string _filter = "all";
+
+    private bool _createOpen;
+    private string _formDeviceNo = "1";
+    private string _formEmployeeName = string.Empty;
+    private string _formEmployeeNo = "1";
+    private string _formRole = DeviceRoles.Secretary;
+    private string _formScope = SyncScopes.Full;
+    private string? _createError;
+
+    private AdminDevice? _acting;
+    private bool _confirmRecover;
+    private bool _confirmRevoke;
+    private bool _confirmRotate;
+
+    private string OfficeName =>
+        _offices?.FirstOrDefault(o => string.Equals(o.Id, _officeId, StringComparison.Ordinal))?.Name ?? string.Empty;
+
+    private IReadOnlyList<(string Value, string Label)> OfficeOptions =>
+        _offices is null
+            ? []
+            : _offices.Select(o => (o.Id, AdminAr.Devices.OfficeLine(o.Name, o.OfficeCode))).ToList();
+
+    private static IReadOnlyList<(string Value, string Label)> FilterOptions { get; } =
+    [
+        ("all", AdminAr.Keys.FilterAll),
+        ("pending", AdminAr.Keys.FilterPending),
+        ("active", AdminAr.Keys.FilterActive),
+        ("revoked", AdminAr.Keys.FilterRevoked),
+    ];
+
+    /// <summary>The devices of the chosen office that the chosen filter leaves on screen.</summary>
+    private IReadOnlyList<AdminDevice> Shown => _filter switch
+    {
+        "pending" => _devices.Where(d => d.IsPending && !d.IsRevoked).ToList(),
+        "active" => _devices.Where(d => d.IsActive && !d.IsRevoked).ToList(),
+        "revoked" => _devices.Where(d => d.IsRevoked).ToList(),
+        _ => _devices,
+    };
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(
+            AdminAr.Keys.Title,
+            AdminAr.Keys.Sub,
+            AdminAr.Tabs.AccountsAndKeys,
+            BuildActions());
+
+        _officeId = AdminQuery.Value(Nav.Uri, "office");
+        Reload();
+    }
+
+    private RenderFragment BuildActions() => builder =>
+    {
+        builder.OpenComponent<WButton>(0);
+        builder.AddComponentParameter(1, nameof(WButton.Variant), WButtonVariant.Primary);
+        builder.AddComponentParameter(2, nameof(WButton.Icon), "plus");
+        builder.AddComponentParameter(3, nameof(WButton.Label), AdminAr.Keys.CreateAccount);
+        builder.AddComponentParameter(4, nameof(WButton.Tooltip), AdminAr.Keys.CreateAccountTooltip);
+        builder.AddComponentParameter(5, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, OpenCreate));
+        builder.CloseComponent();
+    };
+
+    private void Reload()
+    {
+        try
+        {
+            _offices = Devices.ListOffices();
+            _allDevices = Devices.ListAllDevices();
+
+            // The list that was actually issued and written out, not a new one signed for the sake
+            // of the screen: building one here would unseal the organisation's own key on every
+            // visit, and the card would say the list was signed at this moment instead of when it
+            // really was. Only revoking a device issues a new list.
+            _revocations = DeviceKeys.ReadSavedRevocationList();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _offices = null;
+            return;
+        }
+
+        if (_offices.Count == 0)
+        {
+            _devices = [];
+            _key = null;
+            return;
+        }
+
+        if (_officeId is null || _offices.All(o => !string.Equals(o.Id, _officeId, StringComparison.Ordinal)))
+        {
+            _officeId = _offices[0].Id;
+        }
+
+        _devices = Devices.ListDevices(_officeId);
+        _key = DeviceKeys.ReadOfficeKey(_officeId);
+        StateHasChanged();
+    }
+
+    private void OnOfficeChanged(string? value)
+    {
+        _officeId = value;
+        Reload();
+    }
+
+    private void GoToDevices()
+    {
+        if (AdminRoutes.ForTab(AdminAr.Tabs.OfficesAndDevices) is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    /// <summary>How a revoked device is named in the list, even when it is in another office.</summary>
+    private string NameOfRevoked(string deviceId)
+    {
+        var device = _allDevices.FirstOrDefault(d => string.Equals(d.Id, deviceId, StringComparison.Ordinal));
+        if (device is null)
+        {
+            return AdminAr.Keys.RevokedUnknownDevice;
+        }
+
+        var office = _offices?.FirstOrDefault(o => string.Equals(o.Id, device.OfficeId, StringComparison.Ordinal));
+        return office is null
+            ? AdminAr.Devices.DeviceName(device.DeviceNo)
+            : $"{office.Name} · {AdminAr.Devices.DeviceName(device.DeviceNo)}";
+    }
+
+    private void OpenCreate()
+    {
+        if (_officeId is null)
+        {
+            return;
+        }
+
+        var next = Devices.NextDeviceNo(_officeId);
+        if (next is null)
+        {
+            Toasts.Show(AdminAr.Devices.NumbersFull, WSemanticVariant.Warning);
+            return;
+        }
+
+        _formDeviceNo = next.Value.ToString(Culture);
+        _formEmployeeName = string.Empty;
+        _formEmployeeNo = next.Value.ToString(Culture);
+        _formRole = _devices.Count == 0 ? DeviceRoles.Manager : DeviceRoles.Secretary;
+        _formScope = SyncScopes.Full;
+        _createError = null;
+        _createOpen = true;
+    }
+
+    /// <summary>
+    /// A new account is a new device: its key pair is made here, its certificate is signed by the
+    /// organisation, and its key seed stays sealed in the tool until the first setup file carries
+    /// it out to the computer it belongs to.
+    /// </summary>
+    private void CommitCreate()
+    {
+        if (_officeId is null)
+        {
+            _createOpen = false;
+            return;
+        }
+
+        var refusal = Devices.AddDevice(
+            _officeId,
+            int.Parse(_formDeviceNo, Culture),
+            _formRole,
+            _formEmployeeName,
+            int.Parse(_formEmployeeNo, Culture),
+            _formScope,
+            out _);
+
+        if (refusal != DeviceRefusal.None)
+        {
+            _createError = AdminAr.Devices.Refusal(refusal);
+            return;
+        }
+
+        _createOpen = false;
+        _createError = null;
+        Reload();
+        Toasts.Show(AdminAr.Keys.AccountCreated, WSemanticVariant.Success);
+    }
+
+    private void Activate(AdminDevice device)
+    {
+        var refusal = Devices.ActivateAccount(device.Id);
+        if (refusal != DeviceRefusal.None)
+        {
+            Toasts.Show(AdminAr.Devices.Refusal(refusal), WSemanticVariant.Warning);
+            return;
+        }
+
+        Reload();
+        Toasts.Show(AdminAr.Keys.Activated, WSemanticVariant.Success);
+    }
+
+    private void OpenRecover(AdminDevice device)
+    {
+        _acting = device;
+        _confirmRecover = true;
+    }
+
+    private void CommitRecover()
+    {
+        _confirmRecover = false;
+        if (_acting is not { } device)
+        {
+            return;
+        }
+
+        _acting = null;
+        var refusal = DeviceKeys.ReIssueDevice(device.Id);
+        if (refusal != KeyRefusal.None)
+        {
+            Toasts.Show(AdminAr.Keys.Refusal(refusal), WSemanticVariant.Warning);
+            return;
+        }
+
+        Reload();
+        Toasts.Show(AdminAr.Keys.Recovered, WSemanticVariant.Success);
+    }
+
+    private void OpenRevoke(AdminDevice device)
+    {
+        _acting = device;
+        _confirmRevoke = true;
+    }
+
+    private void CommitRevoke()
+    {
+        _confirmRevoke = false;
+        if (_acting is not { } device)
+        {
+            return;
+        }
+
+        _acting = null;
+        var refusal = DeviceKeys.Revoke(device.Id, out _);
+        if (refusal != KeyRefusal.None)
+        {
+            Toasts.Show(AdminAr.Keys.Refusal(refusal), WSemanticVariant.Warning);
+            return;
+        }
+
+        Reload();
+        Toasts.Show(AdminAr.Keys.Revoked, WSemanticVariant.Success);
+    }
+
+    private void IssueOfficeKey()
+    {
+        if (_officeId is null)
+        {
+            return;
+        }
+
+        var refusal = DeviceKeys.IssueOrRotateOfficeKey(_officeId, out _);
+        if (refusal != KeyRefusal.None)
+        {
+            Toasts.Show(AdminAr.Keys.Refusal(refusal), WSemanticVariant.Warning);
+            return;
+        }
+
+        Reload();
+        Toasts.Show(AdminAr.Keys.OfficeKeyIssued, WSemanticVariant.Success);
+    }
+
+    private void RotateOfficeKey()
+    {
+        _confirmRotate = false;
+        if (_officeId is null)
+        {
+            return;
+        }
+
+        var refusal = DeviceKeys.IssueOrRotateOfficeKey(_officeId, out _);
+        if (refusal != KeyRefusal.None)
+        {
+            Toasts.Show(AdminAr.Keys.Refusal(refusal), WSemanticVariant.Warning);
+            return;
+        }
+
+        Reload();
+        Toasts.Show(AdminAr.Keys.OfficeKeyRotated, WSemanticVariant.Warning);
+    }
+}

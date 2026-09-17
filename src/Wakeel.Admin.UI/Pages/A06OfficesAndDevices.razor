@@ -1,0 +1,531 @@
+@page "/offices"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminDeviceService Devices
+@inject TimeProvider Time
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IToastService Toasts
+@inject NavigationManager Nav
+
+@* A06 — the offices of the organisation and the computers in them. An office comes from A05; what
+   is added here is a device: its number inside the office, who sits at it, the role that decides
+   what the person may do, and how much of the work that device keeps in step with. A phone is not
+   registered here — it belongs to the computer that paired it, and is only shown. *@
+@if (_offices is null)
+{
+    <AdminErrorState Message="@AdminAr.Errors.DataUnreadable" OnRetry="Reload" />
+}
+else
+{
+    <div class="a06">
+        <section class="a06-offices" aria-label="@AdminAr.Devices.OfficesHeading">
+            <WCard Title="@AdminAr.Devices.OfficesHeading">
+            @if (_offices.Count == 0)
+            {
+                <WStateCard Icon="building"
+                            Title="@AdminAr.Devices.OfficesEmpty"
+                            Desc="@AdminAr.Devices.OfficesEmptyDesc"
+                            ActionLabel="@AdminAr.Devices.OpenStructure"
+                            ActionIcon="layout-grid"
+                            OnAction="GoToStructure" />
+            }
+            else
+            {
+                <p class="a06-muted"><Bdi Text="@AdminAr.Devices.OfficesCount(_offices.Count)" /></p>
+
+                <WInput Value="@_search"
+                        ValueChanged="@(value => _search = value ?? string.Empty)"
+                        Placeholder="@AdminAr.Devices.SearchPlaceholder" />
+
+                @* The offices are one flat level of the same hierarchy A05 draws, so they are drawn
+                   by the shared tree rather than by a list this page paints itself: same row
+                   height, same selected state, same search highlight, same keyboard. *@
+                <WTree TItem="AdminOffice"
+                       Items="@FilteredOffices"
+                       KeyOf="@(listed => listed.Id)"
+                       RowOf="@(listed => new WTreeRow(listed.Name)
+                                {
+                                    Icon = "building",
+                                    Meta = Figures(listed.Devices),
+                                })"
+                       Selected="@_officeId"
+                       OnItemSelected="@(listed => SelectOffice(listed.Id))"
+                       Label="@AdminAr.Devices.OfficesHeading"
+                       EmptyText="@AdminAr.Devices.SearchNothing" />
+            }
+            </WCard>
+        </section>
+
+        <section class="a06-detail" aria-label="@AdminAr.Devices.DevicesHeading">
+            @if (Office is not { } office)
+            {
+                <WStateCard Icon="building"
+                            Title="@AdminAr.Devices.ChooseOffice"
+                            Desc="@AdminAr.Devices.ChooseOfficeDesc" />
+            }
+            else
+            {
+                @* The office's own line: its name over where it sits in the structure, with the
+                   inventory code and whatever is amiss on the far side. *@
+                <WCard>
+                    <WSectionHeader Title="@office.Name" Sub="@office.Path">
+                        <ActionContent>
+                            <span class="a06-head-side">
+                                @* The inventory code rides the same chip anatomy as the two state
+                                   chips beside it, so the header reads as one row of chips. *@
+                                <WChip Label="@AdminAr.Devices.OfficeCodeChip(office.OfficeCode)"
+                                       Variant="WChipVariant.Neutral"
+                                       ShowDot="false" />
+                                @if (office.IsOutOfService)
+                                {
+                                    <WChip Label="@AdminAr.Structure.DisabledChip" Variant="WChipVariant.Warning" />
+                                }
+                                @if (!office.HasKey)
+                                {
+                                    <WChip Label="@AdminAr.Devices.KeyMissing" Variant="WChipVariant.Warning" />
+                                }
+                            </span>
+                        </ActionContent>
+                    </WSectionHeader>
+                </WCard>
+
+                <WCard>
+                    <WSectionHeader Title="@AdminAr.Devices.DevicesOf(office.Name)"
+                                    Sub="@AdminAr.Devices.DevicesCount(_devices.Count)" />
+                    <div class="a06-actions">
+                        <WButton Variant="WButtonVariant.Primary"
+                                 Icon="plus"
+                                 Label="@AdminAr.Devices.Add"
+                                 Tooltip="@AdminAr.Devices.AddTooltip"
+                                 Disabled="@(NextNumber is null)"
+                                 OnClick="OpenAdd" />
+
+                        <WButton Variant="WButtonVariant.Secondary"
+                                 Icon="key"
+                                 Label="@AdminAr.Devices.OpenKeys"
+                                 Tooltip="@AdminAr.Devices.OpenKeysTooltip"
+                                 OnClick="@(() => GoToKeys(office.Id))" />
+
+                        @if (NextNumber is null)
+                        {
+                            <span class="a06-muted">@AdminAr.Devices.NumbersFull</span>
+                        }
+                    </div>
+
+                    <WTable IsEmpty="@(_devices.Count == 0)">
+                        <EmptyState>
+                            <WStateCard Icon="cpu"
+                                        Title="@AdminAr.Devices.DevicesEmpty"
+                                        Desc="@AdminAr.Devices.DevicesEmptyDesc" />
+                        </EmptyState>
+                        <HeaderRow>
+                            <th scope="col">@AdminAr.Devices.ColumnDevice</th>
+                            <th scope="col">@AdminAr.Devices.ColumnEmployee</th>
+                            <th scope="col">@AdminAr.Devices.ColumnRole</th>
+                            <th scope="col">@AdminAr.Devices.ColumnScope</th>
+                            <th scope="col">@AdminAr.Devices.ColumnStatus</th>
+                            <th scope="col">@AdminAr.Devices.ColumnActions</th>
+                        </HeaderRow>
+                        <ChildContent>
+                            @foreach (var device in _devices)
+                            {
+                                <tr class="@(device.IsRevoked ? "a06-row--revoked" : null)">
+                                    <td>
+                                        <span class="a06-device">
+                                            <Bdi Text="@AdminAr.Devices.DeviceName(device.DeviceNo)" />
+                                            @if (device.IsPhone)
+                                            {
+                                                <WChip Label="@AdminAr.Devices.PhoneChip" Variant="WChipVariant.Info" ShowDot="false" />
+                                            }
+                                        </span>
+                                    </td>
+                                    @* A device whose employee record was never written says so, in all
+                                       three cells. Filling them in with a role and an employee number
+                                       would tell the administrator something that is simply untrue —
+                                       and the most privileged thing at that. *@
+                                    <td>
+                                        @if (device.HasAccount)
+                                        {
+                                            <Bdi Text="@AdminAr.Devices.EmployeeLine(device.EmployeeName, device.EmployeeNo)" />
+                                        }
+                                        else
+                                        {
+                                            <span>@AdminAr.Devices.Unknown</span>
+                                        }
+                                    </td>
+                                    <td>@(device.HasAccount ? AdminAr.Devices.RoleName(device.Role) : AdminAr.Devices.Unknown)</td>
+                                    <td>@(device.HasAccount ? AdminAr.Devices.ScopeName(device.SyncScope) : AdminAr.Devices.Unknown)</td>
+                                    <td>
+                                        @if (!device.HasAccount)
+                                        {
+                                            <WTooltip Text="@AdminAr.Devices.IncompleteTooltip">
+                                                <WChip Label="@AdminAr.Devices.IncompleteChip" Variant="WChipVariant.Warning" />
+                                            </WTooltip>
+                                        }
+                                        else if (device.IsRevoked)
+                                        {
+                                            <WChip Label="@AdminAr.Devices.RevokedChip" Variant="WChipVariant.Danger" />
+                                        }
+                                        else if (device.IsActive)
+                                        {
+                                            <WChip Label="@AdminAr.Devices.ActiveChip" Variant="WChipVariant.Success" />
+                                        }
+                                        else
+                                        {
+                                            <WChip Label="@AdminAr.Devices.PendingChip" Variant="WChipVariant.Warning" />
+                                        }
+
+                                        @if (device.SeedsHeld)
+                                        {
+                                            <WChip Label="@AdminAr.Devices.SeedsHeldChip" Variant="WChipVariant.Neutral" ShowDot="false" />
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="a06-row-actions">
+                                            @if (device.IsPhone)
+                                            {
+                                                <WTooltip Text="@AdminAr.Devices.PhoneReadOnly">
+                                                    <WIcon Name="info" Size="16" />
+                                                </WTooltip>
+                                            }
+                                            else
+                                            {
+                                                <WButton Variant="WButtonVariant.Icon"
+                                                         Icon="pencil"
+                                                         Tooltip="@AdminAr.Devices.EditTooltip"
+                                                         Disabled="@device.IsRevoked"
+                                                         OnClick="@(() => OpenEdit(device))" />
+
+                                                <WButton Variant="WButtonVariant.Icon"
+                                                         Icon="trash-2"
+                                                         Tooltip="@(device.ExportedAt is null ? AdminAr.Devices.RemoveTooltip : AdminAr.Devices.RemoveBlocked)"
+                                                         Disabled="@(device.ExportedAt is not null || device.IsRevoked)"
+                                                         OnClick="@(() => OpenRemove(device))" />
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </ChildContent>
+                    </WTable>
+
+                    @if (_devices.Any(d => d.IsPhone))
+                    {
+                        <p class="a06-note"><WIcon Name="info" Size="14" /> @AdminAr.Devices.PhoneReadOnly</p>
+                    }
+
+                    @* How a device gets here, said once under the table where the preview says it:
+                       the row is written here, and the computer itself is joined by the setup file
+                       that is carried to it. *@
+                    <WBanner Variant="WSemanticVariant.Info"
+                             Icon="info"
+                             Title="@AdminAr.Devices.HowToAdd"
+                             Body="@AdminAr.Devices.HowToAddDesc" />
+
+                    <p class="a06-note"><Bdi Text="@AdminAr.Devices.LastChecked(_devicesReadAt)" /></p>
+                </WCard>
+            }
+        </section>
+    </div>
+}
+
+<AdminConfirmDialog Open="@_editorOpen"
+                    Title="@(_editing is null ? AdminAr.Devices.AddTitle : AdminAr.Devices.EditTitle)"
+                    ConfirmLabel="@AdminAr.Devices.SaveLabel"
+                    ConfirmIcon="check"
+                    OnConfirm="CommitEditor"
+                    OnCancel="CancelEditor">
+    <div class="a06-form">
+        <WSelect Label="@AdminAr.Devices.DeviceNoLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.NumberOptions"
+                 Value="@_formDeviceNo"
+                 ValueChanged="@(value => _formDeviceNo = value ?? "1")"
+                 Hint="@AdminAr.Devices.DeviceNoHint"
+                 Disabled="@(_editing is not null)" />
+
+        <WInput Label="@AdminAr.Devices.EmployeeNameLabel"
+                Required="true"
+                Value="@_formEmployeeName"
+                ValueChanged="@(value => _formEmployeeName = value ?? string.Empty)"
+                Placeholder="@AdminAr.Devices.EmployeeNamePlaceholder" />
+
+        <WSelect Label="@AdminAr.Devices.EmployeeNoLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.NumberOptions"
+                 Value="@_formEmployeeNo"
+                 ValueChanged="@(value => _formEmployeeNo = value ?? "1")"
+                 Hint="@AdminAr.Devices.EmployeeNoHint" />
+
+        <WSelect Label="@AdminAr.Devices.RoleLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.RoleOptions"
+                 Value="@_formRole"
+                 ValueChanged="@(value => _formRole = value ?? DeviceRoles.Secretary)" />
+
+        <WSelect Label="@AdminAr.Devices.ScopeLabel"
+                 Required="true"
+                 Options="AdminAr.Devices.ScopeOptions"
+                 Value="@_formScope"
+                 ValueChanged="@(value => _formScope = value ?? SyncScopes.Full)"
+                 Hint="@AdminAr.Devices.ScopeHint" />
+    </div>
+
+    @if (_formError is { Length: > 0 })
+    {
+        <p class="a06-error"><WIcon Name="alert-circle" Size="14" /> @_formError</p>
+    }
+</AdminConfirmDialog>
+
+<AdminConfirmDialog Open="@_confirmRemove"
+                    Danger="true"
+                    Title="@AdminAr.Devices.RemoveTitle"
+                    Desc="@AdminAr.Devices.RemoveWarning"
+                    ConfirmLabel="@AdminAr.Devices.Remove"
+                    ConfirmIcon="trash-2"
+                    OnConfirm="CommitRemove"
+                    OnCancel="@(() => _confirmRemove = false)" />
+
+@code {
+    private static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
+
+    private IReadOnlyList<AdminOffice>? _offices;
+    private IReadOnlyList<AdminDevice> _devices = [];
+
+    /// <summary>When the device rows on screen were last read, said in the foot of the card.</summary>
+    private DateTimeOffset _devicesReadAt;
+
+    private string? _officeId;
+    private string _search = string.Empty;
+
+    private bool _editorOpen;
+    private AdminDevice? _editing;
+    private string _formDeviceNo = "1";
+    private string _formEmployeeName = string.Empty;
+    private string _formEmployeeNo = "1";
+    private string _formRole = DeviceRoles.Secretary;
+    private string _formScope = SyncScopes.Full;
+    private string? _formError;
+
+    private bool _confirmRemove;
+    private AdminDevice? _removing;
+
+    /// <summary>The office whose devices are on screen.</summary>
+    private AdminOffice? Office =>
+        _officeId is null || _offices is null
+            ? null
+            : _offices.FirstOrDefault(o => string.Equals(o.Id, _officeId, StringComparison.Ordinal));
+
+    /// <summary>The first free device number in the selected office, or null when all nine are taken.</summary>
+    private int? NextNumber => _officeId is null ? null : Devices.NextDeviceNo(_officeId);
+
+    private IReadOnlyList<AdminOffice> FilteredOffices
+    {
+        get
+        {
+            if (_offices is null)
+            {
+                return [];
+            }
+
+            var term = _search.Trim();
+            return term.Length == 0
+                ? _offices
+                : _offices
+                    .Where(o => o.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+                                || o.OfficeCode.Contains(term, StringComparison.OrdinalIgnoreCase)
+                                || o.Path.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(
+            AdminAr.Devices.Title,
+            AdminAr.Devices.Sub,
+            AdminAr.Tabs.OfficesAndDevices,
+            BuildActions());
+
+        Reload();
+        SelectFromAddress();
+    }
+
+    private RenderFragment BuildActions() => builder =>
+    {
+        builder.OpenComponent<WButton>(0);
+        builder.AddComponentParameter(1, nameof(WButton.Variant), WButtonVariant.Secondary);
+        builder.AddComponentParameter(2, nameof(WButton.Icon), "refresh-cw");
+        builder.AddComponentParameter(3, nameof(WButton.Label), AdminAr.Devices.Refresh);
+        builder.AddComponentParameter(4, nameof(WButton.Tooltip), AdminAr.Devices.RefreshTooltip);
+        builder.AddComponentParameter(5, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, Reload));
+        builder.CloseComponent();
+    };
+
+    /// <summary>
+    /// A05's «أجهزة هذا المكتب» arrives carrying the structure node of the office, which is not the
+    /// office's own identifier; the office is looked up by the node it sits on.
+    /// </summary>
+    private void SelectFromAddress()
+    {
+        if (_offices is null || _offices.Count == 0)
+        {
+            return;
+        }
+
+        var wanted = AdminQuery.Value(Nav.Uri, "office");
+
+        var office = wanted is null
+            ? null
+            : _offices.FirstOrDefault(o =>
+                string.Equals(o.UnitId, wanted, StringComparison.Ordinal)
+                || string.Equals(o.Id, wanted, StringComparison.Ordinal));
+
+        SelectOffice((office ?? _offices[0]).Id);
+    }
+
+    private void Reload()
+    {
+        try
+        {
+            _offices = Devices.ListOffices();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _offices = null;
+            return;
+        }
+
+        if (_officeId is not null && Office is null)
+        {
+            _officeId = null;
+        }
+
+        _devices = _officeId is null ? [] : Devices.ListDevices(_officeId);
+        _devicesReadAt = Time.GetLocalNow();
+        StateHasChanged();
+    }
+
+    private void SelectOffice(string officeId)
+    {
+        _officeId = officeId;
+        _devices = Devices.ListDevices(officeId);
+        _devicesReadAt = Time.GetLocalNow();
+    }
+
+    private void GoToStructure()
+    {
+        if (AdminRoutes.ForTab(AdminAr.Tabs.Structure) is { } route)
+        {
+            Nav.NavigateTo(route);
+        }
+    }
+
+    private void GoToKeys(string officeId)
+    {
+        if (AdminRoutes.ForTab(AdminAr.Tabs.AccountsAndKeys) is { } route)
+        {
+            Nav.NavigateTo($"{route}?office={Uri.EscapeDataString(officeId)}");
+        }
+    }
+
+    private void OpenAdd()
+    {
+        if (NextNumber is not { } next)
+        {
+            return;
+        }
+
+        _editing = null;
+        _formDeviceNo = next.ToString(Culture);
+        _formEmployeeName = string.Empty;
+        _formEmployeeNo = next.ToString(Culture);
+        _formRole = _devices.Count == 0 ? DeviceRoles.Manager : DeviceRoles.Secretary;
+        _formScope = SyncScopes.Full;
+        _formError = null;
+        _editorOpen = true;
+    }
+
+    private void OpenEdit(AdminDevice device)
+    {
+        _editing = device;
+        _formDeviceNo = device.DeviceNo.ToString(Culture);
+        _formEmployeeName = device.EmployeeName;
+        _formEmployeeNo = device.EmployeeNo.ToString(Culture);
+        _formRole = device.Role;
+        _formScope = device.SyncScope;
+        _formError = null;
+        _editorOpen = true;
+    }
+
+    private void CancelEditor()
+    {
+        _editorOpen = false;
+        _editing = null;
+        _formError = null;
+    }
+
+    private void CommitEditor()
+    {
+        if (_officeId is null)
+        {
+            _editorOpen = false;
+            return;
+        }
+
+        var deviceNo = int.Parse(_formDeviceNo, Culture);
+        var employeeNo = int.Parse(_formEmployeeNo, Culture);
+
+        var refusal = _editing is null
+            ? Devices.AddDevice(_officeId, deviceNo, _formRole, _formEmployeeName, employeeNo, _formScope, out _)
+            : Devices.UpdateDevice(_editing.Id, _formRole, _formEmployeeName, employeeNo, _formScope);
+
+        if (refusal != DeviceRefusal.None)
+        {
+            _formError = AdminAr.Devices.Refusal(refusal);
+            return;
+        }
+
+        _editorOpen = false;
+        _editing = null;
+        _formError = null;
+        Reload();
+        Toasts.Show(AdminAr.Devices.Saved, WSemanticVariant.Success);
+    }
+
+    private void OpenRemove(AdminDevice device)
+    {
+        _removing = device;
+        _confirmRemove = true;
+    }
+
+    private void CommitRemove()
+    {
+        _confirmRemove = false;
+        if (_removing is null)
+        {
+            return;
+        }
+
+        var refusal = Devices.RemoveDevice(_removing.Id);
+        _removing = null;
+
+        if (refusal != DeviceRefusal.None)
+        {
+            Toasts.Show(AdminAr.Devices.Refusal(refusal), WSemanticVariant.Warning);
+            return;
+        }
+
+        Reload();
+        Toasts.Show(AdminAr.Devices.Removed, WSemanticVariant.Success);
+    }
+
+    private static string Figures(int value) => AdminAr.Digits(value);
+}

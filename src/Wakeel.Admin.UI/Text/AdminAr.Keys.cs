@@ -12,6 +12,22 @@ public static partial class AdminAr
         public const string Sub = "شهادات الأجهزة ومفاتيح المكاتب وتفعيل الحسابات واستردادها وإلغاء جهاز.";
 
         public const string AccountsHeading = "حسابات الأجهزة";
+        public const string AccountsDesc = "لكل جهاز في المكتب حساب وشهادة موقّعة بمفتاح الهيئة.";
+        public const string OfficeLabel = "المكتب";
+        public const string CreateAccount = "إنشاء حساب جهاز";
+        public const string CreateAccountTooltip = "إنشاء حساب وشهادة لجهاز جديد في هذا المكتب";
+        public const string CreateAccountDesc = "تُنشأ مفاتيح الجهاز وشهادته الآن، وتبقى بذرة مفتاحه محفوظة في الأداة إلى أن يُصدَّر أول ملف إعداد له.";
+        public const string AccountCreated = "أُنشئ الحساب وصدرت شهادته. صدّر ملف الإعداد لتسليمه.";
+        public const string NoneInFilter = "لا حسابات في هذا العرض";
+        public const string NoneInFilterDesc = "غيّر العرض أعلاه أو أنشئ حساب جهاز جديد.";
+        public const string KeyActiveChip = "نشط";
+        public const string KeyVersionLabel = "إصدار المفتاح";
+        public const string NeverRotated = "لم يُدوَّر منذ الإنشاء";
+        public const string ColumnRole = "الدور";
+        public const string RevokedUnknownDevice = "جهاز لم يعد مسجّلًا";
+
+        public const string RevokeWhatStays =
+            "تبقى مراسلات هذا الجهاز وعُهده محفوظة في المكتب، ويلزم تصدير ملف إعداد جديد للحواسيب المتبقّية.";
         public const string AccountsEmpty = "لا حسابات بعد";
         public const string AccountsEmptyDesc = "سجّل أجهزة المكاتب أولًا في «المكاتب والأجهزة».";
         public const string OpenDevices = "فتح المكاتب والأجهزة";
@@ -60,6 +76,12 @@ public static partial class AdminAr
         public const string RevokeTooltip = "منع هذا الجهاز من العمل نهائيًا";
         public const string RevokeTitle = "إلغاء هذا الجهاز نهائيًا؟";
 
+        /// <summary>
+        /// What a switched-off row action says instead of what it would have done: a control that
+        /// cannot be pressed should explain why, not describe an action that is no longer offered.
+        /// </summary>
+        public const string RevokedNoAction = "أُلغي هذا الجهاز، ولا إجراء بعد الإلغاء";
+
         public const string RevokeWarning =
             "الجهاز الملغى لا يعود يعمل ولا يُستردّ. تُضاف هويّته إلى قائمة الإلغاء الموقّعة التي تحملها ملفات الإعداد التالية، فتعرفه كل حواسيب الهيئة وترفضه. لا يمكن التراجع عن هذا.";
 
@@ -77,6 +99,12 @@ public static partial class AdminAr
         public const string CertificateNone = "لا شهادة";
         public const string SeedsHeld = "بذرة المفتاح محفوظة بانتظار أول ملف إعداد";
         public const string SeedsGone = "غادرت بذرة المفتاح الأداة مع ملف الإعداد";
+
+        /// <summary>
+        /// A device revoked before any setup file was ever made for it: the seed was wiped here and
+        /// never left the tool, which is a different — and better — fact than «غادرت مع ملف الإعداد».
+        /// </summary>
+        public const string SeedsDestroyed = "أُتلفت بذرة المفتاح عند إلغاء الجهاز";
 
         public const string FilterAll = "الكل";
         public const string FilterPending = "بانتظار التفعيل";
@@ -96,13 +124,36 @@ public static partial class AdminAr
             _ => string.Empty,
         };
 
+        /// <summary>
+        /// A day as the rest of the tool writes one: day, month, year with spelt-out slashes rather
+        /// than whatever separator the machine's regional settings happen to carry — which is what
+        /// turned this screen's dates into a shape nothing else in the tool uses. The figures stay
+        /// plain, as every standalone figure in a table or on a card does.
+        /// </summary>
+        private static string Day(DateTimeOffset at) =>
+            at.ToLocalTime().ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>When a certificate was issued.</summary>
+        public static string IssuedOn(DateTimeOffset at) => Bidi($"{CertificateIssued} {Day(at)}");
+
+        /// <summary>
+        /// When the office key last changed. A key still on its first version has never been
+        /// rotated, so the line says when it was issued; from the second version onwards it says
+        /// when it was last renewed.
+        /// </summary>
+        public static string RotatedOn(DateTimeOffset at, int version) =>
+            Bidi(version <= 1 ? $"أُصدر في {Day(at)}" : $"آخر تدوير {Day(at)}");
+
+        /// <summary>When a device was shut out.</summary>
+        public static string RevokedOn(DateTimeOffset at) => Bidi($"{Day(at)}");
+
         /// <summary>The line naming an office key's issue.</summary>
         public static string KeyVersion(int version) =>
             version <= 0 ? OfficeKeyNone : Bidi($"الإصدار {Digits(version)}");
 
         /// <summary>How many devices would need a new setup file if the key were rotated.</summary>
         public static string RotateAffects(int devices) =>
-            Bidi($"{Counting.Devices(devices)} في هذا المكتب تحتاج ملف إعداد جديد.");
+            Bidi($"{Counting.Devices(devices)} في هذا المكتب بحاجة إلى ملف إعداد جديد.");
 
         /// <summary>The heading over the keys of the selected office.</summary>
         public static string KeysOf(string officeName) => Bidi($"مفتاح «{officeName}»");
@@ -110,7 +161,7 @@ public static partial class AdminAr
         /// <summary>The line under the revocation list: how many and when it was signed.</summary>
         public static string RevocationSummary(int count, DateTimeOffset? at) => at is null
             ? Counting.Devices(count)
-            : Bidi($"{Counting.Devices(count)} · وُقّعت في {at.Value.ToLocalTime():yyyy/MM/dd}");
+            : Bidi($"{Counting.Devices(count)} · وُقّعت في {Day(at.Value)}");
 
         /// <summary>What the operations log records about A07.</summary>
         public static class Log

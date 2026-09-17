@@ -1,0 +1,700 @@
+@page "/structure"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminStructureService Structure
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IToastService Toasts
+@inject NavigationManager Nav
+
+@* A05 — the shape of the organisation: four fixed layers, هيئة ← دائرة ← قسم ← وحدة. The tree on
+   one side, everything about whatever is picked in it on the other. Nothing here can put a layer
+   where it does not belong: what may be added under a node is decided by the node itself. *@
+@if (_root is null)
+{
+    <AdminErrorState Message="@AdminAr.Errors.DataUnreadable" OnRetry="Reload" />
+}
+else
+{
+    <div class="a05">
+        <section class="a05-tree" aria-label="@AdminAr.Structure.TreeLabel">
+            <div class="a05-tree-head">
+                <h2 class="a05-pane-title">@AdminAr.Structure.TreeLabel</h2>
+                <div class="a05-tree-tools">
+                    <WButton Variant="WButtonVariant.Text"
+                             Icon="chevron-down"
+                             Label="@AdminAr.Structure.ExpandAll"
+                             Tooltip="@AdminAr.Structure.ExpandAll"
+                             OnClick="ExpandAll" />
+                    <WButton Variant="WButtonVariant.Text"
+                             Icon="chevron-up"
+                             Label="@AdminAr.Structure.CollapseAll"
+                             Tooltip="@AdminAr.Structure.CollapseAll"
+                             OnClick="CollapseAll" />
+                </div>
+            </div>
+
+            <WInput Value="@_search"
+                    ValueChanged="OnSearchChanged"
+                    Placeholder="@AdminAr.Structure.SearchPlaceholder" />
+
+            @if (Visible.Count == 0)
+            {
+                <p class="a05-muted">@AdminAr.Structure.SearchNothing</p>
+            }
+            else
+            {
+                <ul class="a05-list" role="tree">
+                    <AdminStructureNode Node="_root"
+                                        Depth="0"
+                                        SelectedId="@_selectedId"
+                                        ChildrenOf="VisibleChildrenOf"
+                                        IsCollapsed="IsFolded"
+                                        OnSelect="Select"
+                                        OnToggle="Toggle" />
+                </ul>
+            }
+        </section>
+
+        <section class="a05-detail" aria-label="@AdminAr.Structure.DetailsHeading">
+            @if (Selected is not { } node)
+            {
+                <WStateCard Icon="list"
+                            Title="@AdminAr.Structure.ChooseHeading"
+                            Desc="@AdminAr.Structure.ChooseDesc"
+                            />
+            }
+            else
+            {
+                <WCard Title="@AdminAr.Structure.SelectedHeading(node.Level, node.Name)">
+                    <div class="a05-chips">
+                        <WChip Label="@AdminAr.Structure.LevelName(node.Level)" Variant="WChipVariant.Info" />
+                        @if (node.IsOffice)
+                        {
+                            <WChip Label="@AdminAr.Structure.OfficeChip" Variant="WChipVariant.Success" />
+                        }
+                        @if (node.IsDisabled)
+                        {
+                            <WChip Label="@AdminAr.Structure.DisabledChip" Variant="WChipVariant.Warning" />
+                        }
+                        else if (Structure.IsOutOfService(_all, node))
+                        {
+                            <WChip Label="@AdminAr.Structure.OutOfServiceHint" Variant="WChipVariant.Warning" />
+                        }
+                    </div>
+
+                    @* Every field is the same width, so they are laid out two to a row and each row
+                       is full: a field on its own left half the card empty beside it. *@
+                    <div class="a05-fields">
+                        <WInput Label="@AdminAr.Structure.NameLabel"
+                                Required="true"
+                                Value="@_name"
+                                ValueChanged="@(value => _name = value ?? string.Empty)"
+                                Placeholder="@AdminAr.Structure.NamePlaceholder"
+                                Error="@_nameError"
+                                Disabled="@(node.Level == OrgLevel.Org)"
+                                Hint="@(node.Level == OrgLevel.Org ? AdminAr.Structure.RootNameHint : null)" />
+
+                        <WInput Label="@AdminAr.Structure.HeadTitleLabel"
+                                Value="@_headTitle"
+                                ValueChanged="@(value => _headTitle = value)"
+                                Placeholder="@AdminAr.Structure.HeadTitlePlaceholder" />
+
+                        <WInput Label="@AdminAr.Structure.HeadNameLabel"
+                                Value="@_headName"
+                                ValueChanged="@(value => _headName = value)" />
+
+                        @if (node.Level != OrgLevel.Org)
+                        {
+                            <WSelect Label="@AdminAr.Structure.ParentLabel"
+                                     Options="ParentOptions"
+                                     Value="@_parentId"
+                                     ValueChanged="@(value => _parentId = value)"
+                                     Hint="@ParentHint" />
+                        }
+                    </div>
+
+                    <div class="a05-actions">
+                        <WButton Variant="WButtonVariant.Primary"
+                                 Icon="check"
+                                 Label="@AdminAr.Structure.SaveLabel"
+                                 Tooltip="@AdminAr.Structure.SaveTooltip"
+                                 Disabled="@(node.Level == OrgLevel.Org)"
+                                 OnClick="SaveSelected" />
+
+                        @if (AdminStructureService.ChildLevelOf(node.Level) is not null)
+                        {
+                            <WButton Variant="WButtonVariant.Secondary"
+                                     Icon="plus"
+                                     Label="@AdminAr.Structure.AddChildLabel(node.Level)"
+                                     Tooltip="@AdminAr.Structure.AddChildTooltip(node.Level, node.Name)"
+                                     OnClick="@(() => OpenAdd(node.Id))" />
+                        }
+
+                        @if (node.Level != OrgLevel.Org)
+                        {
+                            @if (node.IsDisabled)
+                            {
+                                <WButton Variant="WButtonVariant.Secondary"
+                                         Icon="check-circle"
+                                         Label="@AdminAr.Structure.Enable"
+                                         Tooltip="@AdminAr.Structure.Enable"
+                                         OnClick="EnableSelected" />
+                            }
+                            else
+                            {
+                                <WButton Variant="WButtonVariant.Secondary"
+                                         Icon="ban"
+                                         Label="@AdminAr.Structure.Disable"
+                                         Tooltip="@AdminAr.Structure.Disable"
+                                         OnClick="@(() => _confirmDisable = true)" />
+                            }
+
+                            <WTooltip Text="@DeleteTooltip(node)">
+                                <WButton Variant="WButtonVariant.Danger"
+                                         Icon="trash-2"
+                                         Label="@AdminAr.Structure.Delete"
+                                         Disabled="@(!CanDelete(node))"
+                                         OnClick="@(() => _confirmDelete = true)" />
+                            </WTooltip>
+                        }
+                    </div>
+
+                    @* The office and its inventory code are a section of the same card, not a second
+                       card stacked under it: one thing is being looked at, so it reads as one panel
+                       and the detail column stops ending halfway up the tree beside it. *@
+                    @if (node.Level != OrgLevel.Org)
+                    {
+                        <WSectionHeader Title="@AdminAr.Structure.OfficeHeading"
+                                        Sub="@AdminAr.Structure.OfficeDesc" />
+                        <WInput Label="@AdminAr.Structure.OfficeCodeLabel"
+                                Value="@_officeCode"
+                                ValueChanged="@(value => _officeCode = value ?? string.Empty)"
+                                Placeholder="@AdminAr.Structure.OfficeCodePlaceholder"
+                                Hint="@AdminAr.Structure.OfficeCodeHint"
+                                Error="@_officeError" />
+
+                        <div class="a05-actions">
+                            <WButton Variant="WButtonVariant.Secondary"
+                                     Icon="building"
+                                     Label="@(node.IsOffice ? AdminAr.Structure.SaveLabel : AdminAr.Structure.MarkAsOffice)"
+                                     Tooltip="@AdminAr.Structure.MarkAsOfficeTooltip"
+                                     OnClick="SaveOffice" />
+
+                            @if (node.IsOffice)
+                            {
+                                <WTooltip Text="@(node.DeviceCount > 0 ? AdminAr.Structure.DeleteBlockedByDevices : AdminAr.Structure.UnmarkOfficeTooltip)">
+                                    <WButton Variant="WButtonVariant.Text"
+                                             Icon="x"
+                                             Label="@AdminAr.Structure.UnmarkOffice"
+                                             Disabled="@(node.DeviceCount > 0)"
+                                             OnClick="ClearOffice" />
+                                </WTooltip>
+
+                                <WButton Variant="WButtonVariant.Text"
+                                         Icon="cpu"
+                                         Label="@AdminAr.Structure.OpenDevices"
+                                         Tooltip="@AdminAr.Structure.OpenDevicesTooltip"
+                                         OnClick="@(() => GoToDevices(node.Id))" />
+                            }
+                        </div>
+
+                        @if (node.IsOffice && node.DeviceCount > 0)
+                        {
+                            <p class="a05-muted">
+                                <Bdi Text="@($"{AdminAr.Structure.DevicesHere}: {AdminAr.Counting.Devices(node.DeviceCount)}")" />
+                            </p>
+                        }
+                    }
+                </WCard>
+            }
+        </section>
+    </div>
+}
+
+<AdminConfirmDialog Open="@_addOpen"
+                    Title="@AddTitle"
+                    ConfirmLabel="@AdminAr.Structure.SaveLabel"
+                    ConfirmIcon="check"
+                    OnConfirm="CommitAdd"
+                    OnCancel="CancelAdd">
+    <WInput Label="@AdminAr.Structure.NameLabel"
+            Required="true"
+            Value="@_addName"
+            ValueChanged="@(value => _addName = value ?? string.Empty)"
+            Placeholder="@AdminAr.Structure.NamePlaceholder"
+            Error="@_addError" />
+    <WInput Label="@AdminAr.Structure.HeadTitleLabel"
+            Value="@_addHeadTitle"
+            ValueChanged="@(value => _addHeadTitle = value)"
+            Placeholder="@AdminAr.Structure.HeadTitlePlaceholder" />
+    <WInput Label="@AdminAr.Structure.HeadNameLabel"
+            Value="@_addHeadName"
+            ValueChanged="@(value => _addHeadName = value)" />
+</AdminConfirmDialog>
+
+<AdminConfirmDialog Open="@_confirmDisable"
+                    Title="@AdminAr.Structure.DisableTitle"
+                    Desc="@AdminAr.Structure.DisableWarning"
+                    ConfirmLabel="@AdminAr.Structure.Disable"
+                    ConfirmIcon="ban"
+                    OnConfirm="DisableSelected"
+                    OnCancel="@(() => _confirmDisable = false)" />
+
+<AdminConfirmDialog Open="@_confirmDelete"
+                    Danger="true"
+                    Title="@AdminAr.Structure.DeleteTitle"
+                    Desc="@AdminAr.Structure.DeleteWarning"
+                    ConfirmLabel="@AdminAr.Structure.Delete"
+                    ConfirmIcon="trash-2"
+                    OnConfirm="DeleteSelected"
+                    OnCancel="@(() => _confirmDelete = false)" />
+
+@code {
+    private IReadOnlyList<OrgNode> _all = [];
+    private OrgNode? _root;
+    private string? _selectedId;
+
+    private readonly HashSet<string> _collapsed = new(StringComparer.Ordinal);
+    private string _search = string.Empty;
+
+    private string _name = string.Empty;
+    private string? _headName;
+    private string? _headTitle;
+    private string? _parentId;
+    private string _officeCode = string.Empty;
+
+    private string? _nameError;
+    private string? _officeError;
+
+    private bool _addOpen;
+    private string? _addParentId;
+    private string _addName = string.Empty;
+    private string? _addHeadName;
+    private string? _addHeadTitle;
+    private string? _addError;
+
+    private bool _confirmDisable;
+    private bool _confirmDelete;
+
+    /// <summary>The node whose details are on the side, or null while nothing is picked.</summary>
+    private OrgNode? Selected =>
+        _selectedId is null ? null : _all.FirstOrDefault(n => string.Equals(n.Id, _selectedId, StringComparison.Ordinal));
+
+    /// <summary>
+    /// Which nodes the search leaves on screen. A match keeps everything above it too, otherwise a
+    /// unit three layers down would have nothing to hang from.
+    /// </summary>
+    private HashSet<string> Visible
+    {
+        get
+        {
+            var visible = new HashSet<string>(StringComparer.Ordinal);
+            var term = _search.Trim();
+            if (term.Length == 0)
+            {
+                foreach (var node in _all)
+                {
+                    visible.Add(node.Id);
+                }
+
+                return visible;
+            }
+
+            foreach (var node in _all)
+            {
+                if (!Matches(node, term))
+                {
+                    continue;
+                }
+
+                for (var walk = node; walk is not null;
+                     walk = walk.ParentId is null ? null : _all.FirstOrDefault(n => string.Equals(n.Id, walk.ParentId, StringComparison.Ordinal)))
+                {
+                    visible.Add(walk.Id);
+                }
+            }
+
+            return visible;
+        }
+    }
+
+    private static bool Matches(OrgNode node, string term) =>
+        node.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+        || (node.HeadName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+        || (node.OfficeCode?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false);
+
+    /// <summary>
+    /// Where the selected node may be moved to: every node of the layer above it that is not inside
+    /// its own branch (moving a node under itself would cut the branch off the tree).
+    /// </summary>
+    private IReadOnlyList<(string Value, string Label)> ParentOptions
+    {
+        get
+        {
+            if (Selected is not { } node || node.ParentId is null)
+            {
+                return [];
+            }
+
+            return _all
+                .Where(candidate => AdminStructureService.ChildLevelOf(candidate.Level) == node.Level)
+                .Where(candidate => !string.Equals(candidate.Id, node.Id, StringComparison.Ordinal))
+                .Where(candidate => !Structure.IsDescendantOf(candidate.Id, node.Id))
+                // The name alone: a whole path does not fit in a field and was cut off mid-word, and
+                // the line under the chooser spells out where the chosen one sits anyway.
+                .Select(candidate => (candidate.Id, Bidi.Wrap(candidate.Name)))
+                .ToList();
+        }
+    }
+
+    /// <summary>
+    /// The line under the parent chooser: where the chosen parent sits, written out from the top
+    /// down, and then the one rule about moving.
+    /// </summary>
+    private string ParentHint =>
+        _all.FirstOrDefault(n => string.Equals(n.Id, _parentId, StringComparison.Ordinal)) is { } parent
+            ? $"{Bidi.Wrap(PathOf(parent))} — {AdminAr.Structure.MoveHint}"
+            : AdminAr.Structure.MoveHint;
+
+    private string AddTitle =>
+        _addParentId is not null
+        && _all.FirstOrDefault(n => string.Equals(n.Id, _addParentId, StringComparison.Ordinal)) is { } parent
+            ? AdminAr.Structure.AddChildLabel(parent.Level)
+            : AdminAr.Structure.AddTitle;
+
+    /// <summary>The node's place in the tree, written out from the top down.</summary>
+    private string PathOf(OrgNode node)
+    {
+        var parts = new List<string>(4);
+        for (var walk = node; walk is not null;
+             walk = walk.ParentId is null ? null : _all.FirstOrDefault(n => string.Equals(n.Id, walk.ParentId, StringComparison.Ordinal)))
+        {
+            parts.Insert(0, walk.Name);
+        }
+
+        return string.Join(" / ", parts);
+    }
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(
+            AdminAr.Structure.Title,
+            AdminAr.Structure.Sub,
+            AdminAr.Tabs.Structure,
+            BuildActions());
+
+        Reload();
+    }
+
+    private RenderFragment BuildActions() => builder =>
+    {
+        builder.OpenComponent<WButton>(0);
+        builder.AddComponentParameter(1, nameof(WButton.Variant), WButtonVariant.Primary);
+        builder.AddComponentParameter(2, nameof(WButton.Icon), "plus");
+        builder.AddComponentParameter(3, nameof(WButton.Label), AdminAr.Structure.AddDepartment);
+        builder.AddComponentParameter(4, nameof(WButton.Tooltip), AdminAr.Structure.AddDepartmentTooltip);
+        builder.AddComponentParameter(5, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, () => OpenAdd(_root?.Id)));
+        builder.CloseComponent();
+    };
+
+    private void Reload()
+    {
+        try
+        {
+            _root = Structure.EnsureRoot();
+            _all = Structure.ReadAll();
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            _root = null;
+            _all = [];
+            return;
+        }
+
+        if (_root is null)
+        {
+            return;
+        }
+
+        if (_selectedId is not null && Selected is null)
+        {
+            _selectedId = null;
+        }
+
+        LoadSelectedIntoFields();
+
+        // The bar at the top counts the departments, sections and units: it has just been told
+        // something different from what it is showing.
+        HeaderState.Refresh();
+        StateHasChanged();
+    }
+
+    private void LoadSelectedIntoFields()
+    {
+        if (Selected is not { } node)
+        {
+            return;
+        }
+
+        _name = node.Name;
+        _headName = node.HeadName;
+        _headTitle = node.HeadTitle;
+        _parentId = node.ParentId;
+        _officeCode = node.OfficeCode ?? string.Empty;
+        _nameError = null;
+        _officeError = null;
+    }
+
+    private void Select(string id)
+    {
+        _selectedId = id;
+        LoadSelectedIntoFields();
+    }
+
+    private void OnSearchChanged(string? value)
+    {
+        _search = value ?? string.Empty;
+        if (_search.Trim().Length > 0)
+        {
+            _collapsed.Clear();
+        }
+    }
+
+    private void Toggle(string id)
+    {
+        if (!_collapsed.Remove(id))
+        {
+            _collapsed.Add(id);
+        }
+    }
+
+    private void ExpandAll() => _collapsed.Clear();
+
+    private void CollapseAll()
+    {
+        _collapsed.Clear();
+        foreach (var node in _all.Where(n => n.ParentId is not null && _all.Any(c => c.ParentId == n.Id)))
+        {
+            _collapsed.Add(node.Id);
+        }
+    }
+
+    private bool CanDelete(OrgNode node) =>
+        node.Level != OrgLevel.Org
+        && node.DeviceCount == 0
+        && !_all.Any(n => string.Equals(n.ParentId, node.Id, StringComparison.Ordinal));
+
+    private string DeleteTooltip(OrgNode node) =>
+        node.DeviceCount > 0
+            ? AdminAr.Structure.DeleteBlockedByDevices
+            : _all.Any(n => string.Equals(n.ParentId, node.Id, StringComparison.Ordinal))
+                ? AdminAr.Structure.DeleteBlockedByChildren
+                : AdminAr.Structure.DeleteTitle;
+
+    private void GoToDevices(string unitId)
+    {
+        if (AdminRoutes.ForTab(AdminAr.Tabs.OfficesAndDevices) is { } route)
+        {
+            Nav.NavigateTo($"{route}?office={Uri.EscapeDataString(unitId)}");
+        }
+    }
+
+    private void OpenAdd(string? parentId)
+    {
+        if (parentId is null)
+        {
+            return;
+        }
+
+        _addParentId = parentId;
+        _addName = string.Empty;
+        _addHeadName = null;
+        _addHeadTitle = null;
+        _addError = null;
+        _addOpen = true;
+    }
+
+    private void CancelAdd()
+    {
+        _addOpen = false;
+        _addParentId = null;
+    }
+
+    private void CommitAdd()
+    {
+        if (_addParentId is null)
+        {
+            _addOpen = false;
+            return;
+        }
+
+        var refusal = Structure.Add(_addParentId, _addName, _addHeadName, _addHeadTitle, out var newId);
+        if (refusal != StructureRefusal.None)
+        {
+            _addError = AdminAr.Structure.Refusal(refusal);
+            return;
+        }
+
+        _addOpen = false;
+        _addParentId = null;
+        _collapsed.Clear();
+        Reload();
+
+        if (newId is not null)
+        {
+            Select(newId);
+        }
+
+        Toasts.Show(AdminAr.Structure.Saved, WSemanticVariant.Success);
+    }
+
+    /// <summary>
+    /// Saves the name, the head and — when the person picked another parent — the move, in that
+    /// order: a move that goes wrong should not throw away a rename that was fine.
+    /// </summary>
+    private void SaveSelected()
+    {
+        if (Selected is not { } node)
+        {
+            return;
+        }
+
+        var refusal = Structure.Update(node.Id, _name, _headName, _headTitle);
+        if (refusal != StructureRefusal.None)
+        {
+            _nameError = AdminAr.Structure.Refusal(refusal);
+            return;
+        }
+
+        _nameError = null;
+
+        if (_parentId is not null && !string.Equals(_parentId, node.ParentId, StringComparison.Ordinal))
+        {
+            var moved = Structure.Move(node.Id, _parentId);
+            if (moved != StructureRefusal.None)
+            {
+                Reload();
+                Toasts.Show(AdminAr.Structure.Refusal(moved), WSemanticVariant.Warning);
+                return;
+            }
+
+            Reload();
+            Toasts.Show(AdminAr.Structure.Moved, WSemanticVariant.Success);
+            return;
+        }
+
+        Reload();
+        Toasts.Show(AdminAr.Structure.Saved, WSemanticVariant.Success);
+    }
+
+    private void DisableSelected()
+    {
+        _confirmDisable = false;
+        if (Selected is not { } node)
+        {
+            return;
+        }
+
+        var refusal = Structure.Disable(node.Id);
+        Reload();
+        Toasts.Show(
+            refusal == StructureRefusal.None ? AdminAr.Structure.Disabled : AdminAr.Structure.Refusal(refusal),
+            refusal == StructureRefusal.None ? WSemanticVariant.Success : WSemanticVariant.Warning);
+    }
+
+    private void EnableSelected()
+    {
+        if (Selected is not { } node)
+        {
+            return;
+        }
+
+        var refusal = Structure.Enable(node.Id);
+        Reload();
+        Toasts.Show(
+            refusal == StructureRefusal.None ? AdminAr.Structure.Enabled : AdminAr.Structure.Refusal(refusal),
+            refusal == StructureRefusal.None ? WSemanticVariant.Success : WSemanticVariant.Warning);
+    }
+
+    private void DeleteSelected()
+    {
+        _confirmDelete = false;
+        if (Selected is not { } node)
+        {
+            return;
+        }
+
+        var refusal = Structure.Delete(node.Id);
+        if (refusal != StructureRefusal.None)
+        {
+            Toasts.Show(AdminAr.Structure.Refusal(refusal), WSemanticVariant.Warning);
+            return;
+        }
+
+        _selectedId = node.ParentId;
+        Reload();
+        Toasts.Show(AdminAr.Structure.Deleted, WSemanticVariant.Success);
+    }
+
+    private void SaveOffice()
+    {
+        if (Selected is not { } node)
+        {
+            return;
+        }
+
+        var refusal = Structure.SetOffice(node.Id, _officeCode);
+        if (refusal != StructureRefusal.None)
+        {
+            _officeError = AdminAr.Structure.Refusal(refusal);
+            return;
+        }
+
+        _officeError = null;
+        Reload();
+        Toasts.Show(AdminAr.Structure.OfficeSaved, WSemanticVariant.Success);
+    }
+
+    private void ClearOffice()
+    {
+        if (Selected is not { } node)
+        {
+            return;
+        }
+
+        var refusal = Structure.ClearOffice(node.Id);
+        if (refusal != StructureRefusal.None)
+        {
+            _officeError = AdminAr.Structure.Refusal(refusal);
+            return;
+        }
+
+        _officeError = null;
+        Reload();
+        Toasts.Show(AdminAr.Structure.OfficeCleared, WSemanticVariant.Success);
+    }
+
+
+    /// <summary>
+    /// The children of a node that the search has left standing, in the order the tree draws them.
+    /// A node whose own name does not match but whose child's does stays in <see cref="Visible"/>,
+    /// so a branch is never cut in half by a search.
+    /// </summary>
+    private IReadOnlyList<OrgNode> VisibleChildrenOf(OrgNode node)
+    {
+        var visible = Visible;
+        return _all
+            .Where(n => string.Equals(n.ParentId, node.Id, StringComparison.Ordinal) && visible.Contains(n.Id))
+            .ToList();
+    }
+
+    /// <summary>Whether a node has been folded away.</summary>
+    private bool IsFolded(string id) => _collapsed.Contains(id);
+}

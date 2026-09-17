@@ -1,5 +1,6 @@
 @page "/first-run"
 @namespace Wakeel.Admin.UI.Pages
+@implements IDisposable
 @layout Wakeel.Admin.UI.Layout.AdminBareLayout
 @inject AdminAccountService Accounts
 @inject IAdminPrintService Printer
@@ -238,7 +239,9 @@
             }
             else
             {
-                <span class="a01-footer-hint">@(IsCreated ? AdminAr.Account.Create.StartHint : AdminAr.Account.Create.CreateHint)</span>
+                @* Once the four fields hold up, telling the person to fill them in is stale advice;
+                   what they need then is what comes next. *@
+                <span class="a01-footer-hint">@FooterHint</span>
             }
 
             @if (IsCreated)
@@ -305,6 +308,27 @@
     /// <summary>The sheet exists, which means the account and the organisation keys now exist too.</summary>
     private bool IsCreated => _sheet is not null;
 
+    /// <summary>
+    /// Whether the four fields would be accepted as they stand. Read only to decide what the line at
+    /// the foot of the screen says; the account itself is still made by the service, which checks
+    /// the same things again.
+    /// </summary>
+    private bool ReadyToCreate =>
+        !string.IsNullOrWhiteSpace(_adminName)
+        && !string.IsNullOrWhiteSpace(_orgName)
+        && AdminPasswordStrength.IsAcceptable(_password)
+        && string.Equals(_password, _confirmation, StringComparison.Ordinal);
+
+    /// <summary>
+    /// What the line at the foot of the screen says: what is missing, then what the button will do,
+    /// then what happens after it has been pressed.
+    /// </summary>
+    private string FooterHint => IsCreated
+        ? AdminAr.Account.Create.StartHint
+        : ReadyToCreate
+            ? AdminAr.Account.Create.ReadyHint
+            : AdminAr.Account.Create.CreateHint;
+
     private AdminPasswordRules Rules => AdminPasswordStrength.Rules(_password);
 
     private int FilledSegments => AdminPasswordStrength.FilledSegments(_password);
@@ -346,8 +370,33 @@
         if (Accounts.IsCreated)
         {
             Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
         }
+
+        // The window's own close button goes straight past everything on this screen, so it is made
+        // to ask the same question the footer's «الخروج» asks: while the recovery sheet is on screen
+        // unsaved, closing destroys the only copy of the code.
+        Window.SetCloseGuard(CloseGuard);
     }
+
+    /// <summary>
+    /// Whether the tool may close right now. While the sheet is unsaved it may not, and the same red
+    /// question the footer raises is put on screen instead.
+    /// </summary>
+    private bool CloseGuard()
+    {
+        if (!SheetUnsaved)
+        {
+            return true;
+        }
+
+        _exitConfirmOpen = true;
+        StateHasChanged();
+        return false;
+    }
+
+    /// <summary>Takes the guard away, so nothing outlives this screen holding the window shut.</summary>
+    public void Dispose() => Window.SetCloseGuard(null);
 
     private void OnPasswordChanged(string? value)
     {
@@ -552,6 +601,10 @@
     private async Task ConfirmExit()
     {
         _exitConfirmOpen = false;
+
+        // The guard exists to stop an accidental close; this close is the deliberate one, so it is
+        // taken away first or the window would refuse itself.
+        Window.SetCloseGuard(null);
 
         // The code may be on this computer's clipboard; the tool does not leave it there behind a
         // window that has closed.

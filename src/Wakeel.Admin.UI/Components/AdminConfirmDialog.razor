@@ -13,7 +13,8 @@
          ConfirmIcon="@ConfirmIcon"
          OnConfirm="HandleConfirm"
          OnCancel="HandleCancel"
-         CloseOnScrimClick="@(!Danger)">
+         CloseOnScrimClick="@(!Danger)"
+         Class="@(CanConfirm ? null : LockedClass)">
     @if (ChildContent is not null)
     {
         <div class="a-confirm-body">@ChildContent</div>
@@ -26,11 +27,24 @@
                     Value="@_typed"
                     ValueChanged="OnTypedChanged"
                     Placeholder="@AdminAr.Confirm.ConfirmWord" />
+
+            @* The button above is switched off until the word matches; the reason is said here in
+               words rather than left for the person to work out from a button that does nothing. *@
+            <p class="a-confirm-reason">
+                @(CanConfirm ? AdminAr.Confirm.Unlocked : AdminAr.Confirm.LockedReason)
+            </p>
         </div>
     }
 </WDialog>
 
 @code {
+    /// <summary>
+    /// Marks the dialog's surface while the main button must stay switched off. The shared dialog
+    /// draws its own button and takes no «switched off» of its own, so the look of it is carried by
+    /// this one class (wwwroot/css/admin.css) rather than by a second, hand-made button.
+    /// </summary>
+    private const string LockedClass = "w-dialog--confirm-locked";
+
     private string? _typed;
 
     /// <summary>Whether the dialog is on screen.</summary>

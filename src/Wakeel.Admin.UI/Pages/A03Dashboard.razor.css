@@ -130,3 +130,11 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* The reason a switched-off control is switched off, in plain sight rather than only on hover: a
+   disabled button takes no focus, so a hover bubble never reaches somebody on the keyboard. */
+.a03-off-note {
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  line-height: 1.5;
+}

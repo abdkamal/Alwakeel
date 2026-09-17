@@ -7,7 +7,10 @@ using Wakeel.Admin.Services;
 using Wakeel.Admin.UI;
 using Wakeel.Admin.UI.Services;
 using Wakeel.Admin.UI.Services.Account;
+using Wakeel.Admin.UI.Services.Organisation;
 using Wakeel.Crypto;
+using Wakeel.Admin.UI.Data;
+using Wakeel.Admin.UI.Text;
 using Wakeel.Design.Services;
 
 namespace Wakeel.Admin;
@@ -27,13 +30,31 @@ public partial class App : Application
         base.OnStartup(e);
 
         // Before anything opens a file: a run started with --data-folder keeps its whole layout
-        // there instead of touching the organisation this computer carries.
-        AdminHostPaths.Configure(e.Args);
-        ConfigureRemoteDebugging(e.Args);
-        ConfigureLogging();
-        Log.Information("Wakeel admin host starting up");
+        // there instead of touching the organisation this computer carries. All of it happens before
+        // the unhandled-exception handler that ConfigureLogging installs exists, so a computer where
+        // the folder cannot be made would meet the raw crash dialog — English, with a stack trace —
+        // instead of a sentence it can act on (AGREEMENT item 15).
+        AdminPaths paths;
+        try
+        {
+            AdminHostPaths.Configure(e.Args);
+            ConfigureRemoteDebugging(e.Args);
+            ConfigureLogging();
+            paths = AdminHostPaths.CreatePaths();
+        }
+        catch (Exception exception)
+            when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            MessageBox.Show(
+                AdminAr.Errors.CannotPrepareDataFolder,
+                AdminAr.ToolName,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            Shutdown(1);
+            return;
+        }
 
-        var paths = AdminHostPaths.CreatePaths();
+        Log.Information("Wakeel admin host starting up");
         MainWindow? window = null;
 
         _host = Host.CreateDefaultBuilder()
@@ -48,6 +69,7 @@ public partial class App : Application
                 services.AddSingleton<IUiStateStore>(_ => new AdminFileUiStateStore(AdminHostPaths.UiStateFilePath));
                 services.AddSingleton<IPlatformProtector, AdminDpapiProtector>();
                 services.AddSingleton<IAdminImagePixels, AdminWindowsImagePixels>();
+                services.AddSingleton<IAdminImageSquareCrop, AdminWindowsImageSquareCrop>();
                 services.AddSingleton<IAdminWindow>(_ => new WpfAdminWindow(Dispatcher));
                 services.AddSingleton<IAdminPrintService>(_ =>
                     new AdminWebView2PrintService(() => window?.Engine, Dispatcher));

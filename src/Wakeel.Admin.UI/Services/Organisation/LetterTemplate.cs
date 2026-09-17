@@ -82,8 +82,22 @@ public static class LetterTemplateInspector
 {
     private const string WordNamespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
+    /// <summary>
+    /// The namespace Word uses to write the same thing twice: once the way a modern Word draws it
+    /// and once the way an old one would. Both copies carry the same words, so only the first is
+    /// read (see <see cref="ReadParagraphs"/>).
+    /// </summary>
+    private const string CompatibilityNamespace = "http://schemas.openxmlformats.org/markup-compatibility/2006";
+
     /// <summary>The largest template file the tool will open.</summary>
     public const int MaxBytes = 4 * 1024 * 1024;
+
+    /// <summary>
+    /// The largest a single part of the package may be once unpacked. <see cref="MaxBytes"/> limits
+    /// only the packed file, and a small package can hold a part that unpacks to far more than the
+    /// window has room for.
+    /// </summary>
+    public const int MaxPartBytes = 8 * 1024 * 1024;
 
     /// <summary>
     /// The nine marks the tool fills in when it writes a letter (AGREEMENT item 57), longest first
@@ -108,11 +122,44 @@ public static class LetterTemplateInspector
     private static readonly string[] ByLength =
         KnownPlaceholders.OrderByDescending(p => p.Length).ToArray();
 
+    /// <summary>
+    /// Whether a file is a Word document at all, judged by what is inside it rather than by what it
+    /// is called: a Word document is a package that carries <c>word/document.xml</c>. The monthly
+    /// report template is stored and shipped without ever being read, so this is the only thing
+    /// standing between a renamed program and the organisation's report template.
+    /// </summary>
+    /// <param name="file">The whole file.</param>
+    public static bool IsWordDocument(ReadOnlySpan<byte> file)
+    {
+        if (file.IsEmpty || file.Length > MaxBytes)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = new MemoryStream(file.ToArray(), writable: false);
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+            return archive.GetEntry("word/document.xml") is not null;
+        }
+        catch (Exception exception) when (exception is InvalidDataException or IOException or NotSupportedException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Reads a template file and reports what is in it.</summary>
     /// <param name="fileName">The file's name, kept for the screen.</param>
     /// <param name="docx">The whole file.</param>
     public static LetterTemplateReport Inspect(string fileName, ReadOnlySpan<byte> docx)
     {
+        // The limit this class names is its own: a file past it is not opened at all, whoever asked
+        // and whatever limit they were keeping.
+        if (docx.Length > MaxBytes)
+        {
+            return LetterTemplateReport.Unreadable(fileName);
+        }
+
         var bytes = docx.ToArray();
         List<LetterParagraph> paragraphs;
 
@@ -297,9 +344,12 @@ public static class LetterTemplateInspector
     private static List<LetterParagraph> ReadParagraphs(ZipArchive archive)
     {
         var paragraphs = new List<LetterParagraph>();
+        XNamespace mc = CompatibilityNamespace;
 
-        // The body first, then whatever is drawn at the top and bottom of every page: a letterhead
-        // usually carries the date and the outgoing number, and those are marks like any other.
+        // In the order a letter is read: what is drawn at the top of every page, then the body, then
+        // what is drawn at the bottom. A letterhead usually carries the date and the outgoing number,
+        // and those are marks like any other, so the preview shows them where the printer puts them
+        // instead of after the signature.
         foreach (var name in PartsInOrder(archive))
         {
             var entry = archive.GetEntry(name);
@@ -308,12 +358,19 @@ public static class LetterTemplateInspector
                 continue;
             }
 
-            using var part = entry.Open();
-            var document = XDocument.Load(part);
+            var document = LoadPart(entry);
             XNamespace w = WordNamespace;
 
             foreach (var paragraph in document.Descendants(w + "p"))
             {
+                // Word writes a drawing twice — once for itself and once as a fallback for an older
+                // Word — and both copies carry the same lines. Reading both would show every line of
+                // the letterhead twice and count every mark in it twice, so the fallback is skipped.
+                if (paragraph.Ancestors(mc + "Fallback").Any())
+                {
+                    continue;
+                }
+
                 var text = JoinText(paragraph, w);
                 if (text.Length == 0)
                 {
@@ -327,17 +384,57 @@ public static class LetterTemplateInspector
         return paragraphs;
     }
 
+    /// <summary>
+    /// Reads one part out of the package, refusing anything that unpacks past
+    /// <see cref="MaxPartBytes"/>. The four-megabyte limit above is on the packed file; a part
+    /// inside it can claim to unpack to hundreds of megabytes, so the size the package declares is
+    /// checked first and the unpacking is stopped at the same limit for a package that understates
+    /// it. Either refusal is an <see cref="InvalidDataException"/>, which the caller already turns
+    /// into «تعذّرت قراءة الملف».
+    /// </summary>
+    private static XDocument LoadPart(ZipArchiveEntry entry)
+    {
+        if (entry.Length > MaxPartBytes)
+        {
+            throw new InvalidDataException("Template part is larger than the tool will open.");
+        }
+
+        using var part = entry.Open();
+        using var buffer = new MemoryStream();
+        var chunk = new byte[64 * 1024];
+
+        int read;
+        while ((read = part.Read(chunk, 0, chunk.Length)) > 0)
+        {
+            if (buffer.Length + read > MaxPartBytes)
+            {
+                throw new InvalidDataException("Template part is larger than the tool will open.");
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        buffer.Position = 0;
+        return XDocument.Load(buffer);
+    }
+
     private static IEnumerable<string> PartsInOrder(ZipArchive archive)
     {
+        foreach (var entry in archive.Entries)
+        {
+            if (entry.FullName.StartsWith("word/header", StringComparison.Ordinal))
+            {
+                yield return entry.FullName;
+            }
+        }
+
         yield return "word/document.xml";
 
         foreach (var entry in archive.Entries)
         {
-            var name = entry.FullName;
-            if (name.StartsWith("word/header", StringComparison.Ordinal)
-                || name.StartsWith("word/footer", StringComparison.Ordinal))
+            if (entry.FullName.StartsWith("word/footer", StringComparison.Ordinal))
             {
-                yield return name;
+                yield return entry.FullName;
             }
         }
     }
@@ -347,12 +444,24 @@ public static class LetterTemplateInspector
     /// a spell-check mark is enough — so a mark that reads whole on the page can be four runs in the
     /// file, and only the joined line can be searched.
     /// </summary>
+    /// <remarks>
+    /// Text that belongs to a paragraph nested inside this one — the letterhead of this very
+    /// template puts its lines in text boxes, and a text box holds paragraphs of its own — is left
+    /// out here and picked up when that paragraph comes round in its own turn. Taking it in would
+    /// run the end of one line straight into the start of another, and a mark sitting at the end of
+    /// a line would read as an unknown mark made of two lines glued together.
+    /// </remarks>
     private static string JoinText(XElement paragraph, XNamespace w)
     {
         var builder = new StringBuilder();
 
         foreach (var node in paragraph.Descendants())
         {
+            if (!ReferenceEquals(node.Ancestors(w + "p").FirstOrDefault(), paragraph))
+            {
+                continue;
+            }
+
             if (node.Name == w + "t")
             {
                 builder.Append(node.Value);

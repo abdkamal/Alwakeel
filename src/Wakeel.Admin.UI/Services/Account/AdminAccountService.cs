@@ -91,6 +91,13 @@ public readonly record struct AdminSignInResult(
 /// </remarks>
 public sealed class AdminAccountService
 {
+    /// <summary>
+    /// How many lock-outs at most are queued for the operations log while the database is shut.
+    /// Twenty is far more than a forgetful person ever produces and far fewer than somebody sitting
+    /// at the machine guessing could bury the log under.
+    /// </summary>
+    public const int MaxLockOutsToReport = 20;
+
     private readonly AdminPaths _paths;
     private readonly AdminDb _db;
     private readonly AdminKeyService _keys;
@@ -467,8 +474,11 @@ public sealed class AdminAccountService
         {
             keyFile.LockOutRound++;
             // The log cannot be written now — the database is shut, which is the whole point of the
-            // lock-out — so the count waits in the key file until something opens it.
-            keyFile.LockOutsToReport++;
+            // lock-out — so the count waits in the key file until something opens it. It is capped:
+            // somebody who keeps triggering lock-outs at the machine must not be able to queue an
+            // unbounded pile of identical rows that all land at once on the one screen meant to make
+            // an attack visible. Past the cap the rows stop, not the lock-out.
+            keyFile.LockOutsToReport = Math.Min(keyFile.LockOutsToReport + 1, MaxLockOutsToReport);
             keyFile.FailedAttempts = 0;
             keyFile.LockedUntil = now.AddSeconds(_options.LockOutSecondsForRound(keyFile.LockOutRound));
             TrySaveKeyFile(keyFile);

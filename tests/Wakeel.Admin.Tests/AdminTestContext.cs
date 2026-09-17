@@ -4,6 +4,10 @@ using Wakeel.Admin.UI;
 using Wakeel.Admin.UI.Data;
 using Wakeel.Admin.UI.Services;
 using Wakeel.Admin.UI.Services.Account;
+using Wakeel.Admin.UI.Services.Devices;
+using Wakeel.Admin.UI.Services.Keys;
+using Wakeel.Admin.UI.Services.Organisation;
+using Wakeel.Admin.UI.Services.Structure;
 using Wakeel.Crypto;
 
 namespace Wakeel.Admin.Tests;
@@ -47,6 +51,14 @@ public abstract class AdminTestContext : IDisposable
         Keys = new AdminKeyService(Db, Time);
         Dashboard = new AdminDashboardService(Db, Keys);
         Accounts = new AdminAccountService(Paths, Db, Keys, Audit, Session, Options, Time);
+
+        // admin-2's four areas, wired exactly as AddWakeelAdmin() wires them so a service test and
+        // a screen test are looking at the same tool rather than two copies of it.
+        Pending = new AdminPendingChanges(Db, Time);
+        Org = new AdminOrgService(Db, Audit, Session, Pending, Time);
+        Structure = new AdminStructureService(Db, Audit, Session, Pending, Time);
+        DeviceKeys = new AdminDeviceKeyService(Db, Keys, Audit, Session, Pending, Paths, Time);
+        DeviceRegistry = new AdminDeviceService(Db, DeviceKeys, Audit, Session, Pending, Time);
     }
 
     /// <summary>A password that satisfies every rule A01 prints.</summary>
@@ -72,6 +84,16 @@ public abstract class AdminTestContext : IDisposable
     protected AdminDashboardService Dashboard { get; }
 
     protected AdminAccountService Accounts { get; }
+
+    protected AdminPendingChanges Pending { get; }
+
+    protected AdminOrgService Org { get; }
+
+    protected AdminStructureService Structure { get; }
+
+    protected AdminDeviceKeyService DeviceKeys { get; }
+
+    protected AdminDeviceService DeviceRegistry { get; }
 
     /// <summary>Creates the account the way A01 does, and returns the sheet it showed once.</summary>
     protected AdminRecoverySheet CreateAccount(
@@ -99,6 +121,11 @@ public abstract class AdminTestContext : IDisposable
         context.Services.AddSingleton(Keys);
         context.Services.AddSingleton(Dashboard);
         context.Services.AddSingleton(Accounts);
+        context.Services.AddSingleton(Pending);
+        context.Services.AddSingleton(Org);
+        context.Services.AddSingleton(Structure);
+        context.Services.AddSingleton(DeviceKeys);
+        context.Services.AddSingleton(DeviceRegistry);
         context.Services.AddWakeelAdmin(Paths);
     }
 

@@ -1,0 +1,135 @@
+/* A06 — the offices down one side, the devices of whichever is picked down the other. */
+
+/* The offices are a column of short names; the devices beside them are a table of six columns, so
+   the list keeps a fixed narrow column and the table takes the rest — sized in fractions the list
+   took a third of the page and the table had to scroll sideways to show its own row. */
+.a06 {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.a06-offices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Names come from the organisation and may mix Arabic with Latin or digits, so a line that a design
+   component draws as plain text still takes its direction from its own first word (item 55). */
+.a06 ::deep .w-section-header-title,
+.a06 ::deep .w-section-header-sub,
+.a06 ::deep .w-card-title {
+  unicode-bidi: plaintext;
+}
+
+.a06-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.a06-muted {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+}
+
+/* The offices themselves are drawn by the shared tree (one flat level), so this page paints no row,
+   no surface and no selected state of its own. Only the rail's own edges are arranged here: a very
+   long list of offices scrolls inside its card instead of pushing the devices table down the page. */
+.a06-offices ::deep .w-tree {
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+/* The head of the selected office: the card and its heading are design components, so only what
+   sits on the far side of the heading is arranged here. */
+
+.a06-head-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* The devices themselves. */
+
+/* The shared table keeps its headings on one line so the columns line up; the status column carries
+   two chips and grew wide enough to push the table past its card and paint a sideways scroll bar
+   under three rows, so the cells of this table are allowed to wrap instead. The table's own class is
+   named in the selector so this rule outweighs the component's, which carries the same weight and is
+   read after it. */
+.a06 ::deep .w-table th,
+.a06 ::deep .w-table td {
+  white-space: normal;
+}
+
+/* This table can never be long — an office holds nine devices at the very most — so it is left to
+   stand at its own height instead of living in a scrolling box. The shared table keeps that box for
+   the long lists it is also used for, and inside it a hidden tooltip bubble reaching past the edge,
+   or a pixel of rounding, was enough to paint a scroll bar across three rows of a table that fits. */
+.a06 ::deep .w-table-scroll {
+  overflow: visible;
+  max-height: none;
+}
+
+.a06-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.a06-device {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.a06-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.a06-row--revoked {
+  opacity: 0.62;
+}
+
+.a06-note,
+.a06-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--w-fs-meta);
+  line-height: 1.6;
+}
+
+.a06-note {
+  color: var(--w-muted);
+}
+
+.a06-error {
+  color: var(--w-danger);
+}
+
+.a06-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 1100px) {
+  .a06 {
+    grid-template-columns: 1fr;
+  }
+
+  .a06-form {
+    grid-template-columns: 1fr;
+  }
+}

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
 using Wakeel.Admin.Services;
 using Wakeel.Admin.UI;
+using Wakeel.Admin.UI.Services;
 using Wakeel.Admin.UI.Services.Account;
 
 namespace Wakeel.Admin;
@@ -35,9 +36,22 @@ public partial class MainWindow : Window
         // before Razor's source generator has produced the Routes class.
         BlazorView.RootComponents.Add(new RootComponent { Selector = "#app", ComponentType = typeof(Routes) });
 
+        // The title bar's own close button bypasses everything the screens draw, so it asks the
+        // screen first: A01's recovery sheet is the only copy of the organisation's recovery code,
+        // and closing the window over it destroys it as surely as the footer's «الخروج» would.
+        Closing += OnClosing;
+
         var args = Environment.GetCommandLineArgs();
         ConfigureStartUrl(args);
         ConfigureWindowSize(args);
+    }
+
+    private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_services.GetService<IAdminWindow>() is WpfAdminWindow window && !window.MayClose())
+        {
+            e.Cancel = true;
+        }
     }
 
     /// <summary>

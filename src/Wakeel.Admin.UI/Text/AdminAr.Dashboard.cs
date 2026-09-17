@@ -90,12 +90,12 @@ public static partial class AdminAr
         {
             1 => "جهاز مُلغى",
             2 => "جهازان مُلغيان",
-            >= 3 and <= 10 => $"{count} أجهزة مُلغاة",
-            _ => $"{count} جهازًا مُلغى",
+            >= 3 and <= 10 => $"{Digits(count)} أجهزة مُلغاة",
+            _ => $"{Digits(count)} جهازًا مُلغى",
         };
 
-        /// <summary>«من ٦» under the activated-offices figure.</summary>
-        public static string OfOffices(int total) => $"من {total}";
+        /// <summary>«من 6» under the activated-offices figure.</summary>
+        public static string OfOffices(int total) => $"من {Digits(total)}";
 
         /// <summary>The sub-line of the offices card: how many are still waiting for a setup file.</summary>
         /// <param name="waiting">Offices with no setup file yet.</param>
@@ -106,10 +106,31 @@ public static partial class AdminAr
                 ? "كل المكاتب مفعّلة"
                 : $"{Counting.Offices(waiting)} بانتظار ملف الإعداد";
 
-        /// <summary>The sub-line of the devices card: how many are revoked.</summary>
-        public static string DevicesRevoked(int active, int revoked) => revoked == 0
-            ? $"{Counting.Devices(active)} نشطة"
-            : $"{Counting.Devices(active)} نشطة · {RevokedDevices(revoked)}";
+        /// <summary>
+        /// The sub-line of the devices card. It says what it counts instead of using one word for
+        /// two different things: how many devices are actually activated (the state A06 and A07 draw
+        /// as «مفعّل»), how many are still waiting for their custodian to activate them, and how many
+        /// were revoked. The card's own figure above it stays the number of devices registered.
+        /// </summary>
+        /// <param name="activated">Devices whose custodian has activated them.</param>
+        /// <param name="waiting">Devices registered but not activated yet.</param>
+        /// <param name="revoked">Devices that were revoked.</param>
+        public static string DevicesStatus(int activated, int waiting, int revoked)
+        {
+            var parts = new List<string> { Counting.ActivatedDevices(activated) };
+
+            if (waiting > 0)
+            {
+                parts.Add($"{Counting.Devices(waiting)} بانتظار التفعيل");
+            }
+
+            if (revoked > 0)
+            {
+                parts.Add(RevokedDevices(revoked));
+            }
+
+            return string.Join(" · ", parts);
+        }
 
         /// <summary>One line of the structure summary: a department and what is inside it.</summary>
         public static string BranchSummary(int sections, int units, int offices, int waiting)

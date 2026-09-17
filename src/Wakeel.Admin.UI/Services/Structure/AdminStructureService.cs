@@ -307,7 +307,7 @@ public sealed class AdminStructureService
         }
 
         newId = id;
-        Record(id, "structure_added", AdminAr.Structure.Log.Added(AdminAr.Structure.LevelName(level), trimmed));
+        Record(id, "structure_added", AdminAr.Structure.Log.Added(level, trimmed));
         return StructureRefusal.None;
     }
 
@@ -363,7 +363,7 @@ public sealed class AdminStructureService
             ("$name", trimmed),
             ("$at", Now()));
 
-        Record(id, "structure_updated", AdminAr.Structure.Log.Updated(AdminAr.Structure.LevelName(node.Level), trimmed));
+        Record(id, "structure_updated", AdminAr.Structure.Log.Updated(node.Level, trimmed));
         return StructureRefusal.None;
     }
 
@@ -434,7 +434,7 @@ public sealed class AdminStructureService
             ("$id", id),
             ("$at", Now()));
 
-        Record(id, "structure_disabled", AdminAr.Structure.Log.Disabled(AdminAr.Structure.LevelName(node.Level), node.Name));
+        Record(id, "structure_disabled", AdminAr.Structure.Log.Disabled(node.Level, node.Name));
         return StructureRefusal.None;
     }
 
@@ -452,7 +452,7 @@ public sealed class AdminStructureService
             ("$id", id),
             ("$at", Now()));
 
-        Record(id, "structure_enabled", AdminAr.Structure.Log.Enabled(AdminAr.Structure.LevelName(node.Level), node.Name));
+        Record(id, "structure_enabled", AdminAr.Structure.Log.Enabled(node.Level, node.Name));
         return StructureRefusal.None;
     }
 
@@ -499,7 +499,7 @@ public sealed class AdminStructureService
         _audit.Write(
             _session.AdminName,
             "structure_deleted",
-            AdminAr.Structure.Log.Deleted(AdminAr.Structure.LevelName(node.Level), node.Name),
+            AdminAr.Structure.Log.Deleted(node.Level, node.Name),
             entityType: "unit",
             entityId: id);
 
