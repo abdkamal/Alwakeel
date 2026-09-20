@@ -1,0 +1,15 @@
+# Workflow scripts for the design phase
+
+Run with the Claude Code `Workflow` tool (`scriptPath` + `args`).
+
+- `alwakeel-design-rows-routed.js` — Windows screens (template atJKT). `args.rows = [{title, y, screens:[{id, name, col, nav, model?}], existing?:[{id, nodeId}], reviewModel?}]`; x = 1450 × col. Builders default to Sonnet, reviewers to Opus.
+- `alwakeel-design-rows-routed-v2.js` — same, plus per-row `template` (`atJKT` | `ACap6` | `HpNIs`), `xStep`, `w`, `h`. For ACap6 `nav` is the admin tab name ("ATab <name>"), `—` for no tab, `بلا قائمة` for the standalone pre-login screens.
+- `alwakeel-android-kit.js` — builds the M.* kit (three Opus builders by x-range) then one Opus reviewer that fixes the kit and creates the phone template TM0 at (10200, 21000). No args.
+- `batch6-args.json`, `batch7-args.json` — the row arguments used for batches 6 and 7.
+
+Every execute snippet starts with the guard from docs/design/DESIGN-GUIDE.md; save the .pen with `../pen-save.ps1` after each batch and commit.
+- `alwakeel-android-kit-review.js` — review-only pass over an already-inserted M.* kit (args.comps = [{name,nodeId}]); used after the kit builders died at the usage limit. Fixes the kit and builds TM0.
+- `alwakeel-design-rows-routed-v3.js` — v2 plus the Android phone template `TM0` (row.template "TM0" → 412×915, xStep 500; screen.nav = bottom-nav label | "—" (detail/form, no BottomNav) | "بلا قائمة" (onboarding); screen.org=true inserts M.OrgHeader). Use with `batch8-args.json` (M01–M32). TM0 node id: z3AH5.
+- `alwakeel-brand-finalize.js` — one Opus designer adds per-candidate brand derivatives (AppIcon, AdaptiveIcon, Splash, PhoneSplash, InstallerHeader) inside the BRAND frame s7Urbn.
+- `alwakeel-logo-apply.js` — one Opus designer applies the approved logo (LogoArt1 K92L6h / white knockout in InstallerHeader1 M3mcX) to the app-logo tiles of W02, A01/A02, W90, M25, TI0+I01–I06, M01, M24 (org-logo places untouched).
+- `alwakeel-bidi-content-pass.js` — content-only rewrite of mixed Arabic/English strings per screen group (args.groups = [{key,title,re,y0,y1}]): Sonnet rewrites, Opus verifies against exported PNGs. Pen's renderer has weak bidi; the product uses real bidi (see docs/design/bidi-test.html).
