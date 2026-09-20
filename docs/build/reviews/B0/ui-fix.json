@@ -1,0 +1,42 @@
+{
+  "status": "done",
+  "files_created": [
+    "src/Wakeel.Desktop/Wakeel.Desktop.csproj",
+    "src/Wakeel.Desktop/wwwroot/index.html",
+    "src/Wakeel.Desktop/App.xaml.cs",
+    "src/Wakeel.UI/wwwroot/js/app.js",
+    "src/Wakeel.UI/Components/WSearch.razor",
+    "src/Wakeel.UI/Components/WDialog.razor",
+    "src/Wakeel.UI/Components/WBadge.razor.css",
+    "src/Wakeel.UI/Components/WTopBar.razor.css",
+    "src/Wakeel.UI/Components/WSidebar.razor",
+    "src/Wakeel.UI/Components/WSidebar.razor.css",
+    "src/Wakeel.UI/Components/WInput.razor",
+    "src/Wakeel.UI/Components/WInput.razor.css",
+    "src/Wakeel.UI/Components/WSelect.razor",
+    "src/Wakeel.UI/Components/WSelect.razor.css",
+    "src/Wakeel.UI/Components/WTimelineItem.razor.css",
+    "src/Wakeel.UI/Components/WCard.razor.css",
+    "src/Wakeel.UI/Components/WStateCard.razor.css",
+    "src/Wakeel.UI/Components/WIcon.razor",
+    "src/Wakeel.UI/Services/ToastService.cs",
+    "src/Wakeel.UI/Components/WToastHost.razor",
+    "src/Wakeel.UI/Bidi/Bidi.cs",
+    "src/Wakeel.UI/Text/Ar.cs",
+    "src/Wakeel.UI/Pages/Gallery.razor",
+    "src/Wakeel.UI/Pages/W08AttentionCenter.razor",
+    "src/Wakeel.UI/Layout/MainLayout.razor",
+    "tests/Wakeel.UI.Tests/Components/WButtonTests.cs",
+    "tests/Wakeel.UI.Tests/BidiWrapTests.cs",
+    "tests/Wakeel.UI.Tests/Components/WInputTests.cs",
+    "tests/Wakeel.UI.Tests/Components/ListsAndTableTests.cs",
+    "tests/Wakeel.UI.Tests/Components/BadgesAndChipsTests.cs"
+  ],
+  "tests_total": 133,
+  "tests_passed": 133,
+  "build_ok": true,
+  "open_issues": [
+    "The mandated command `dotnet test tests/Wakeel.UI.Tests --no-dependencies` still fails with `MSBUILD : error MSB1001: Unknown switch` on this machine's .NET SDK 10.0.401 (dotnet test no longer forwards --no-dependencies to MSBuild) — reproduced identically to the prior review's note. Verification used the dependency-safe equivalent: `dotnet build tests/Wakeel.UI.Tests --no-dependencies` (0W/0E) then `dotnet test tests/Wakeel.UI.Tests --no-build` -> 133/133 passed. Wakeel.Core was never built or touched, per instructions."
+  ],
+  "notes": "Addressed every high/medium finding, every low finding, and every missing_spec_item from the review.\n\nHIGH #1/#2 (Desktop host renders nothing): Wakeel.Desktop.csproj now uses `Microsoft.NET.Sdk.Razor` (kept UseWPF/OutputType/TargetFramework). index.html now also links `Wakeel.Desktop.styles.css`. Rebuilt and confirmed `Wakeel.Desktop.staticwebassets.runtime.json` now declares index.html, Wakeel.Desktop.styles.css, and every `_content/Wakeel.UI/...` asset (css/js/fonts/icons) resolvable by the BlazorWebView file provider — the exact gap the finding identified.\n\nMEDIUM (JS listener leaks): app.js gained `unbindCtrlF(token)` (token-guarded so a disposed WSearch instance can't tear down a newer instance's binding — WSearch now passes a per-instance GUID token to bindCtrlF/unbindCtrlF) and `releaseDialog()` (removes the keydown handler and restores focus to the element that had it before the dialog opened, recorded by trapDialog). WSearch.DisposeAsync and WDialog's `!Open && _wasOpen` branch / DisposeAsync now call these, swallowing JSException/JSDisconnectedException.\n\nMEDIUM (WBadge group tokens): `.w-badge--group` now uses `--w-sidebar-selected`/`--w-sidebar-text` instead of `--w-surface2`/`--w-muted`.\n\nMEDIUM (WTopBar height): 64px -> 56px; `.w-topbar-user` height reduced 44px -> 40px to fit.\n\nMEDIUM (WSidebar group header RTL order): reordered to label, badge, chevron; `.w-sidebar-group-label` no longer `flex:1`, `.w-sidebar-chevron` gets `margin-inline-start:auto`.\n\nMEDIUM (WInput plaintext bidi): added `unicode-bidi: plaintext` to `.w-field-control`/`.w-field-textarea` (WInput), `.w-select-control` (WSelect), `.w-timeline-desc`, `.w-card-body`/`.w-card-semantic-desc`, `.w-state-desc`. Added a bUnit test and reused Bidi.Wrap on the page-header Sub in MainLayout (harmless no-op on pure-Arabic strings, correct once Sub can carry embedded digits as it now does for W08).\n\nLOW fixes: App.xaml.cs validates the remote-debugging port with `ushort.TryParse`. WSidebar footer reordered (refresh button first, `justify-content:flex-start`) and `border-inline-start` -> `border-inline-end`. Gallery.razor rewritten to reference `Ar.Gallery.*`/`Ar.CorrespondenceStatus.*`/`Ar.AttentionCenter.*`/`Ar.Menu.*`/`Ar.Sample.*` throughout (added the missing consts: SectionTheme, SectionThemeSub, DisabledLabel, SplitActionLabel/MenuText, ViewOptionList/Grid, Toast*/DialogNormal* labels, CalendarEvent1-3); WInput password-toggle aria-labels and WSidebar's nav aria-label now use new `Ar.Fields.ShowPassword/HidePassword` and `Ar.Nav.MainNavigationLabel`. WIcon no longer throws for an unknown name — falls back to an empty glyph and only calls `Debug.Fail` when a debugger is attached (avoids crashing both the shipped app and an unattended bUnit run while still surfacing loudly under a debugger); updated the old `WIcon_Throws_ForUnknownIconName` test to `WIcon_DegradesToEmptyGlyph_ForUnknownIconName`. ToastService.Dismiss now drains the stale queue head; WToastHost removes ids from `_scheduled` after auto-dismiss. Bidi.cs's token regex is now anchored on an alphanumeric at both ends so trailing sentence punctuation stays outside the LRI/PDI isolate; added two regression tests. W08AttentionCenter: التزامات tab Count 4->2, `Ar.AttentionCenter.Sub` now the full pixel-verified subtitle («... — السبت 12/09/2026، مكتب نابلس») consumed directly (removed the old ad-hoc concatenation), MonthlyReportBanner month أكتوبر->سبتمبر. WDialog: role is `dialog` for Normal / `alertdialog` for Danger; added `ConfirmIcon`/`CancelIcon` parameters (defaults check/x, x-circle for the Danger confirm) rendered via WButton's existing Icon slot. WButtonTests: `Disabled_PreventsClick` now actually clicks the button; added `Loading_DoubleClickGuard_RunsHandlerOnlyOnce` using a TaskCompletionSource. `_seq` counters in WInput/WSelect/WDialog switched to `Interlocked.Increment`. Removed the unreferenced `QRCoder` PackageReference from Wakeel.Desktop.csproj.\n\nMissing spec items: added a WSidebar tooltip on the group-header collapse control and the footer sync-refresh icon-only button (the only two icon-only sidebar controls that lacked one, per the finding). Added tests rendering exact mixed-language lines from docs/design/bidi-test.html through WTimelineItem and WDocumentRow, asserting they land inside `<bdi class=\"w-bdi\">`/`bdi.w-doc-row-name`.\n\nFull verification: `dotnet build src/Wakeel.UI --no-dependencies` and `dotnet build src/Wakeel.Desktop --no-dependencies` both 0W/0E; `dotnet build tests/Wakeel.UI.Tests --no-dependencies` 0W/0E then `dotnet test tests/Wakeel.UI.Tests --no-build` -> 133/133 passed (127 original + 6 new: WButton double-click-guard test, 2 Bidi trailing-punctuation regression tests, 1 WInput plaintext-class test, 2 bidi-test.html-line-in-bdi tests). Wakeel.Core untouched throughout."
+}
