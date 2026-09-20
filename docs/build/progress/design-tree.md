@@ -1,0 +1,27 @@
+# design-tree — progress
+
+- [x] Read A05 preview tree pane, WChip/WBadge/WSearch/Kbd/Bidi/gallery conventions.
+- [x] Added `WTreeRow` display record to `src/Wakeel.Design/Components/Enums.cs`.
+- [x] Added `Ar.Tree` (+ `Ar.Tree.Demo` gallery sample vocabulary) to `src/Wakeel.Design/Text/Ar.Common.cs`.
+- [x] Created `WTree.razor` / `WTree.razor.css` (generic tree, ARIA tree/treeitem/group, keyboard, search, level chips).
+- [x] Created `WTreeToolbar.razor` / `WTreeToolbar.razor.css` (title + count badge + expand/collapse + search with Ctrl+F hint).
+- [x] `dotnet build src/Wakeel.Design --no-dependencies` green.
+- [x] Added the «الشجرة» gallery section (four-level sample, every row state) + `.w-gallery-tree` CSS.
+- [x] Created `tests/Wakeel.UI.Tests/Components/WTreeTests.cs` — 16 tests, all green.
+- [x] `dotnet build src/Wakeel.Desktop` green; host launched on port 9335 with an empty temp data folder and `--start-url=/gallery`.
+- [x] Screenshots (light / collapsed / dark) taken over CDP at 1366x768, compared with the A05 preview tree pane, host killed, log clean.
+- [x] Package complete: 16 WTree tests green; the only failing tests in the project (4 ShellTests/W08AttentionCenter) belong to another package's in-flight edit.
+- [x] Review round 1: keyboard trap removed (no preventDefault/stopPropagation on the tree keydown), bidi-safe search highlight (token-boundary snapping), caret now indents with its node, selected+attention CSS precedence.
+- [x] Review round 1 (low): ShowShortcutHint follows BindGlobalShortcut, DefaultExpandAll seeded in OnParametersSet, SearchTextOf for custom rows, ExpandAllAsync/CollapseAllAsync, indent 20px / row height 38px per A05, handle cursor no longer promises a drag.
+- [x] Tests extended to 22 (partial-Latin highlight, custom-row search, late items, selected+attention, shortcut hint both ways) — all green.
+- [x] Toolbar search box widened to the pane (A05 anatomy) via `.w-tree-toolbar ::deep .w-search { max-width: none }`.
+- [x] Re-verified in the host on port 9335: caret steps 20px per level and hugs its icon (caret right 1050/1030/1010, row height 38, right edge 1067 on all ten rows); Tab leaves the tree; selected+attention keeps the primary tint with the amber border; «Arch» highlights the whole «Archive» token inside one isolate. Log clean, process killed.
+- [x] Review round 1 complete: full command chain green, 22/22 WTree tests.
+- [x] Review round 2 (medium): gallery WTreeToolbar now passes `ShowShortcutHint="true"` beside `BindGlobalShortcut="false"`, so the demonstrated pane shows the Ctrl+F chip of the A05 anatomy.
+- [x] Review round 2 (low): toolbar title rendered as `<bdi>@Bidi.Wrap(Title)</bdi>` (item 55).
+- [x] Review round 2 (low): no dead caret during a search — `HasChildren` now follows the effective (filtered) child count.
+- [x] Review round 2 (low): `ExpandAll()`/`CollapseAll()` dispatch through `InvokeAsync`, so a failing ExpandedChanged handler reaches the error boundary.
+- [x] Review round 2 (low): new `Hint` parameter prints the guidance line inside the pane under the last row (A05); the gallery moved the move hint there from the section sub-title.
+- [x] Tests extended to 26 (shortcut hint opt-in, toolbar title isolation, caret-free filtered branch, in-pane hint) — all green.
+- [x] Review round 2 verified in the host (port 9335, fresh temp data folder, /gallery): Ctrl+F chip present at the end of the tree search box (bdi.w-kbd, 586→629 inside the 573→1067 box), hint line inside the pane below the last row (top 546 vs last row bottom 538), pane 520px, ten rows of 38px, caret step 20px per depth; light and dark both looked at; log clean; host killed and port 9335 closed.
+- [x] Review round 2 complete: full command chain green, 26/26 WTree tests, 0 warnings.

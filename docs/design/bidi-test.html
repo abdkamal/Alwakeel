@@ -1,0 +1,113 @@
+<title>اختبار النص المختلط</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&family=Noto+Sans:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+:root{--bg:#F4F7F6;--surface:#FFFFFF;--text:#1B2A28;--muted:#5E6E6B;--border:#D7DFDC;--accent:#0F766E;--accent-soft:#E3F1EE;--mono-bg:#EEF2F1;--bad:#B3261E;--bad-soft:#FBEAE8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0F1716;--surface:#16211F;--text:#E6ECEA;--muted:#9AA9A5;--border:#26332F;--accent:#5FC1B4;--accent-soft:#16302C;--mono-bg:#1D2A27;--bad:#F2A59E;--bad-soft:#3A1F1C}}
+:root[data-theme="dark"]{--bg:#0F1716;--surface:#16211F;--text:#E6ECEA;--muted:#9AA9A5;--border:#26332F;--accent:#5FC1B4;--accent-soft:#16302C;--mono-bg:#1D2A27;--bad:#F2A59E;--bad-soft:#3A1F1C}
+html{direction:rtl}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans Arabic","Noto Sans","Segoe UI",Tahoma,sans-serif;font-size:15px;line-height:1.7;margin:0;padding-block:32px;padding-inline:20px;font-variant-numeric:tabular-nums}
+main{max-width:1040px;margin-inline:auto;display:grid;gap:28px}
+header h1{font-size:26px;font-weight:700;margin:0 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:70ch}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--accent);font-weight:600;margin-bottom:6px}
+section h2{font-size:17px;margin:0 0 12px;font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:10px 18px;color:var(--muted);font-size:13px;margin-bottom:12px}
+.legend b{color:var(--text);font-weight:600}
+.cases{display:grid;gap:10px}
+.case{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;align-items:start}
+.case .k{grid-column:1 / -1;font-size:12px;color:var(--muted);letter-spacing:.04em}
+.cell{display:grid;gap:4px}
+.cell .lbl{font-size:12px;color:var(--muted)}
+.cell .line{font-size:16px;font-weight:600;padding:8px 10px;border-radius:8px;background:var(--accent-soft)}
+.cell .line.plain{background:transparent;border:1px dashed var(--border);font-weight:600}
+.src{grid-column:1 / -1;direction:ltr;text-align:left;font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;background:var(--mono-bg);border-radius:6px;padding:6px 10px;overflow-x:auto;white-space:nowrap;color:var(--muted)}
+.src b{color:var(--accent);font-weight:400}
+bdi{unicode-bidi:isolate}
+.free{unicode-bidi:plaintext}
+.rules{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.rules ol{margin:0;padding-inline-start:22px;display:grid;gap:6px}
+.rules code{font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;background:var(--mono-bg);padding:1px 6px;border-radius:4px;direction:ltr;unicode-bidi:isolate}
+.note{border-inline-start:3px solid var(--bad);background:var(--bad-soft);padding:10px 14px;border-radius:8px;font-size:14px}
+@media (max-width:640px){.case{grid-template-columns:1fr}}
+</style>
+<main>
+<header>
+<div class="eyebrow">الوكيل v0.21 · مرجع البناء</div>
+<h1>اختبار النص المختلط عربي/إنجليزي</h1>
+<p>السطور أدناه هي نفسها الواردة في شاشات التصميم، معروضة بمحرّك متصفح حقيقي (وهو المحرّك الذي سيعرض واجهة الوكيل داخل WebView2). كل سطر مرّتين: كما يعرضه المتصفح دون أي معالجة، ثم مع عزل الرموز اللاتينية والأرقام كما سيُبنى البرنامج. هذه الصفحة تصبح جزءًا من الاختبارات الآلية للواجهة.</p>
+</header>
+
+<div class="note">ملاحظة: تطبيق Pen الذي صُمّمت فيه الشاشات يستخدم محرّك نص محدود الدعم للاتجاه المختلط، فيعرض بعض السطور بترتيب خاطئ (رقم يقفز بجوار كلمة لاتينية، أو حرف «و» ينفصل عن الكلمة). ما تراه هنا هو العرض الفعلي المتوقع في البرنامج.</div>
+
+<section>
+<h2>حالات من الشاشات</h2>
+<div class="legend"><span><b>بلا معالجة</b> = <span dir="ltr" style="unicode-bidi:isolate">dir="rtl"</span> فقط</span><span><b>مع العزل</b> = كل رمز لاتيني أو رقمي داخل <span dir="ltr" style="unicode-bidi:isolate">&lt;bdi&gt;</span></span><span><b>المصدر</b> = الترتيب المنطقي للأحرف كما يُخزَّن</span></div>
+<div class="cases">
+
+<div class="case"><div class="k">W02 · التشغيل الأول</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">أحضر ملف الإعداد PLN-PC-01.wakeel-setup من مدير النظام (الإصدار v0.21) عبر USB.</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line">أحضر ملف الإعداد <bdi>PLN-PC-01.wakeel-setup</bdi> من مدير النظام (الإصدار <bdi>v0.21</bdi>) عبر <bdi>USB</bdi>.</div></div>
+<div class="src">أحضر ملف الإعداد <b>PLN-PC-01.wakeel-setup</b> من مدير النظام (الإصدار <b>v0.21</b>) عبر <b>USB</b>.</div></div>
+
+<div class="case"><div class="k">W12 · مركز الصحة</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">نماذج البحث وOCR</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line">نماذج البحث و<bdi>OCR</bdi></div></div>
+<div class="src">نماذج البحث و<b>OCR</b></div></div>
+
+<div class="case"><div class="k">W12 · الماسح الضوئي — سطر يبدأ برمز لاتيني</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">Canon DR-C240 غير متصل منذ 09:12</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line"><bdi>Canon DR-C240</bdi> غير متصل منذ <bdi>09:12</bdi></div></div>
+<div class="src"><b>Canon DR-C240</b> غير متصل منذ <b>09:12</b></div></div>
+
+<div class="case"><div class="k">W12 · المساحة — أرقام مع وحدات لاتينية</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">184 GB متاحة من 512 GB على القرص D</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line"><bdi>184 GB</bdi> متاحة من <bdi>512 GB</bdi> على القرص <bdi>D</bdi></div></div>
+<div class="src"><b>184 GB</b> متاحة من <b>512 GB</b> على القرص <b>D</b></div></div>
+
+<div class="case"><div class="k">W12 · المساحة — قائمة بفواصل</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">الوثائق 246 GB · قاعدة البيانات 2.4 GB · المؤقتات 6.1 GB</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line">الوثائق <bdi>246 GB</bdi> · قاعدة البيانات <bdi>2.4 GB</bdi> · المؤقتات <bdi>6.1 GB</bdi></div></div>
+<div class="src">الوثائق <b>246 GB</b> · قاعدة البيانات <b>2.4 GB</b> · المؤقتات <b>6.1 GB</b></div></div>
+
+<div class="case"><div class="k">W27 · رقم رسمي وتاريخ ومبلغ</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">الرقم 20260912/12046 بتاريخ 12/09/2026 والمبلغ 1,250 ₪ — عبر WebView2 وOCR</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line">الرقم <bdi>20260912/12046</bdi> بتاريخ <bdi>12/09/2026</bdi> والمبلغ <bdi>1,250</bdi> ₪ — عبر <bdi>WebView2</bdi> و<bdi>OCR</bdi></div></div>
+<div class="src">الرقم <b>20260912/12046</b> بتاريخ <b>12/09/2026</b> والمبلغ <b>1,250</b> ₪ — عبر <b>WebView2</b> و<b>OCR</b></div></div>
+
+<div class="case"><div class="k">W04 · اسم الحساب</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">الحساب a.khatib · الموظف أحمد الخطيب · الجهاز 1 — PLN-PC-01</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line">الحساب <bdi>a.khatib</bdi> · الموظف أحمد الخطيب · الجهاز <bdi>1</bdi> — <bdi>PLN-PC-01</bdi></div></div>
+<div class="src">الحساب <b>a.khatib</b> · الموظف أحمد الخطيب · الجهاز 1 — <b>PLN-PC-01</b></div></div>
+
+<div class="case"><div class="k">W17 · أقواس حول نص عربي بعد رمز لاتيني</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">فُتح في Microsoft Word 365 (النافذة نشطة) — 10:24</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line">فُتح في <bdi>Microsoft Word 365</bdi> (النافذة نشطة) — <bdi>10:24</bdi></div></div>
+<div class="src">فُتح في <b>Microsoft Word 365</b> (النافذة نشطة) — <b>10:24</b></div></div>
+
+<div class="case"><div class="k">W12 · مسار ويندوز</div>
+<div class="cell"><div class="lbl">بلا معالجة</div><div class="line plain">1.8 GB إلى D:\Backups\AlWakeel · النسخة التالية الليلة 23:30</div></div>
+<div class="cell"><div class="lbl">مع العزل</div><div class="line"><bdi>1.8 GB</bdi> إلى <bdi>D:\Backups\AlWakeel</bdi> · النسخة التالية الليلة <bdi>23:30</bdi></div></div>
+<div class="src"><b>1.8 GB</b> إلى <b>D:\Backups\AlWakeel</b> · النسخة التالية الليلة <b>23:30</b></div></div>
+
+<div class="case"><div class="k">نص حر يكتبه المستخدم — يُعرض بـ plaintext ليتبع أول حرف قوي</div>
+<div class="cell"><div class="lbl">عربي أولًا</div><div class="line free">اجتماع مع GIZ بشأن مشروع Water-2026 في رام الله الساعة 11:30</div></div>
+<div class="cell"><div class="lbl">إنجليزي أولًا</div><div class="line free">Water-2026 progress meeting — مع دائرة التخطيط 11:30</div></div>
+<div class="src">unicode-bidi: plaintext — الفقرة تأخذ اتجاه أول حرف قوي فيها، وهو المطلوب للملاحظات والنص المستخرج بـ OCR</div></div>
+
+</div>
+</section>
+
+<section class="rules">
+<h2>قواعد البناء (البند 55)</h2>
+<ol>
+<li>الجذر <code>&lt;html dir="rtl" lang="ar"&gt;</code> والاتجاه الأساسي RTL لكل الشاشات مهما كان أول حرف.</li>
+<li>كل رمز لاتيني أو رقمي (رقم رسمي، معرّف جهاز، اسم ملف، إصدار، مصطلح تقني، مبلغ، تاريخ) داخل <code>&lt;bdi&gt;</code> أو <code>unicode-bidi: isolate</code>.</li>
+<li>النص الحر (الملاحظات، النص المستخرج، الرسائل) بـ <code>unicode-bidi: plaintext</code>.</li>
+<li>خصائص CSS منطقية فقط: <code>margin-inline-start</code> و<code>padding-inline</code> و<code>inset-inline</code>؛ لا <code>left</code> ولا <code>right</code>.</li>
+<li>الأيقونات ذات الاتجاه (أسهم، رجوع، شيفرون) تُعكس في RTL؛ الأيقونات الرمزية لا تُعكس.</li>
+<li>أندرويد: <code>LocalLayoutDirection</code> وBidiFormatter.unicodeWrap للسلاسل المختلطة، و<code>TextDirection.ContentOrRtl</code> للنص الحر.</li>
+<li>Word وPDF: فقرات RTL مع تشغيلات <span dir="ltr" style="unicode-bidi:isolate">bidi</span> للرموز اللاتينية داخل القالب الرسمي.</li>
+<li>هذه الحالات تُضاف إلى اختبارات الواجهة الآلية وتُقارن لقطاتها في كل إصدار.</li>
+</ol>
+</section>
+</main>

@@ -1,0 +1,109 @@
+{
+  "verdict": "fix",
+  "build_ok": true,
+  "tests_ok": true,
+  "findings": [
+    {
+      "severity": "high",
+      "file": "src/Wakeel.Admin.UI/Pages/A04Organisation.razor.css (lines 116-133, 223-255), src/Wakeel.Admin.UI/Pages/A06OfficesAndDevices.razor.css (lines 106-119), src/Wakeel.Admin.UI/Pages/A07AccountsAndKeys.razor.css (lines 92-131)",
+      "issue": "Five chips/pill-lists and one button are hand-rolled in page CSS, each defining its own surface, border, radius and semantic colour — exactly what the owner's design-consistency rule forbids. `.a04-mark` / `.a04-mark--known|--unknown|--missing` (the nine placeholder pills on A04, visible in the host screenshot as green bordered rows), `.a04-file-button` (a <span> painted to look like a button for the docx picker), `.a06-code` (the «رمز المكتب للجرد INV-1042» pill), `.a07-key` (the «الإصدار ١ · نشط» row) and `.a07-revoked li` (the red revocation-list rows). WChip already exists with Neutral/Success/Warning/Danger variants and is used a few lines away on the same pages (A06 «لا مفتاح للمكتب بعد», A04 «مدمج»), and WButton/WKvRow exist for the other two. The result is two different chip anatomies on the same screen: a WChip («مدمج», dot + pill) beside a hand-made `.a04-mark` pill with an icon and a different radius/padding.",
+      "fix": "Replace `.a04-mark*` with WChip (Success for known, Warning for unknown, Neutral for missing) inside a plain <ul> whose page CSS only sets flex/gap; replace `.a06-code` and `.a07-key` with WChip or WKvRow; render each `.a07-revoked` entry as a WChip(Danger) plus a WKvRow for the date. For the file picker, add a WFilePicker (label + hidden InputFile + WButton look) to Wakeel.Design with css + gallery entry + bUnit test and use it on A04 for both templates and the logo; delete the corresponding blocks from the three page stylesheets so page CSS only arranges components."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.Admin.UI/Pages/A07AccountsAndKeys.razor.css",
+      "issue": "At the mandated 1366x768 the A07 accounts table does not fit its card and paints BOTH scrollbars over three rows: measured on the running host, `.w-table-scroll` has scrollWidth 907 vs clientWidth 878 and scrollHeight 181 vs clientHeight 172, so the horizontal bar eats 9px and the third row's bottom border is clipped. Both host screenshots (light and dark) show the vertical track on the left of the table and the horizontal track under it; the A07 preview shows a table that fills its card with no scrollbars.",
+      "fix": "Give the table room instead of letting it overflow: in A07Organisation's page CSS scope the certificate and status columns with `::deep td`/`::deep th { white-space: normal }` (WTable sets `white-space: nowrap` on th) or drop the office column's 360px side rail to ~320px, then re-measure on the host until scrollWidth == clientWidth and scrollHeight == clientHeight for a three-row table."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.Admin.UI/Pages/A06OfficesAndDevices.razor.css",
+      "issue": "Same defect on A06: the devices table's `.w-table-scroll` measures scrollWidth 1004 vs clientWidth 959 on the running host, so a horizontal scroll track is painted across the bottom of a three-row table in both themes. The builder's notes claim this was fixed by the 300px + rest grid; the rows do now sit on one line, but the table still scrolls sideways. Column widths measured 83/201/114/126/305/130 — the 305px status column (two chips, nowrap) is what pushes it over.",
+      "fix": "Let the status cell wrap or shrink: add `.a06 ::deep td:nth-child(5), .a06 ::deep th:nth-child(5) { white-space: normal }` (or stack the two state chips vertically) and verify on the host that `.w-table-scroll` scrollWidth equals clientWidth."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.Admin.UI/Components/AdminConfirmDialog.razor",
+      "issue": "The typed-confirmation gate is invisible. `CanConfirm` (line ~79) blocks `HandleConfirm`, but the confirm button is never disabled: driving the host I clicked «إلغاء الجهاز» in the revoke dialog with the field empty and the button rendered `w-btn w-btn--danger` with disabled=false, the click did nothing, the dialog stayed open and nothing was said. The A07 preview explicitly captions this control «يُفتَّح الزر بعد تطابق العبارة.» This affects every danger dialog in the tool — device revocation, office-key rotation and the item-5 numbering change.",
+      "fix": "Pass `ConfirmDisabled=\"@(!CanConfirm)\"` down to WDialog's confirm button (add the parameter to WDialog if it has none) so the button is visibly switched off until «تأكيد» matches, and keep a short visible reason line under the field, as the preview does."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.Admin.UI/Services/Keys/AdminDeviceKeyService.cs (Revoke) with src/Wakeel.Admin.UI/Pages/A07AccountsAndKeys.razor:74",
+      "issue": "A07 tells the administrator something untrue about a secret. `Revoke` sets `sealed_seeds = NULL` but leaves `seeds_exported_at` NULL, and the page infers the seed's fate from `SeedsHeld` alone, so it prints `AdminAr.Keys.SeedsGone` — «غادرت بذرة المفتاح الأداة مع ملف الإعداد». I reproduced this on the host: device ٢ was revoked before any setup file existed (exports folder empty, A03 still says «لم يُصدَّر ملف إعداد بعد») and its row now claims the seed left the tool inside a setup file. The seed was in fact destroyed, which is a different and better fact to report.",
+      "fix": "Distinguish the three states: keep `seeds_exported_at` as the only marker of an export and add a third line, e.g. `AdminAr.Keys.SeedsDestroyed` = «أُتلفت بذرة المفتاح عند إلغاء الجهاز», selected when `SeedsHeld` is false and `ExportedAt` is null. `AdminDevice` already carries `ExportedAt`, so the page change is `device.SeedsHeld ? SeedsHeld : device.ExportedAt is null ? SeedsDestroyed : SeedsGone`. Add a test that revokes a never-exported device and asserts the destroyed wording."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.Admin.UI/ServiceCollectionExtensions.cs:87",
+      "issue": "The square crop the A04 specification requires («رفع PNG/JPG ≤ 2MB مع معاينة وقصّ مربّع») is never available in the shipping tool: the only registration is `TryAddSingleton<IAdminImageSquareCrop, NoAdminImageSquareCrop>()` and `src/Wakeel.Admin` registers nothing of its own, so `Cropper.IsAvailable` is always false, the focus slider (A04Organisation.razor:81) never renders, and every logo is stored exactly as chosen with the permanent note «تعذّر القصّ». The seam and the tests are in place; the implementation the seam exists for is missing.",
+      "fix": "Add a WPF implementation in src/Wakeel.Admin/Services (e.g. WpfImageSquareCrop) using System.Windows.Media.Imaging — BitmapDecoder, CroppedBitmap for the largest square at the given focus, TransformedBitmap to 512px, PngBitmapEncoder — and register it in the host's service setup so it wins over the TryAdd fallback. No new package is needed (UseWPF already provides the imaging stack)."
+    },
+    {
+      "severity": "medium",
+      "file": "src/Wakeel.Admin.UI/Text/AdminAr.Common.cs:90-97 and src/Wakeel.Admin.UI/Services/AdminDashboardService.cs:372",
+      "issue": "Figures inside Arabic prose come out in Latin digits while the same figures elsewhere are Arabic-Indic, on every screen of this package. `Counting.Count` interpolates the raw int, so A06 draws «3 أجهزة في هذا المكتب» directly under an office row whose count chip reads «٣» and above rows that read «الجهاز ١/٢/٣»; A07 draws «3 أجهزة في هذا المكتب بحاجة إلى ملف إعداد جديد»; A03 draws «8 تغييرات بانتظار التوزيع». The dashboard's revoked-device alert writes «(الجهاز 2)» with InvariantCulture while `AdminAr.Devices.DeviceName` writes «الجهاز ٢» everywhere else. The project's own rule is written in AdminAr.Numbers.cs: prose counts in Arabic-Indic figures and a sentence that mixed the two «would read as two voices».",
+      "fix": "Use `AdminAr.Digits(count)` inside `Counting.Count` for the >= 3 and >= 11 branches, and replace the InvariantCulture interpolation at AdminDashboardService.cs:372 with `AdminAr.Devices.DeviceName(reader.GetInt32(1))`. Leave standalone figures in KPI values as they are."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Components/AdminStructureNode.razor + A05Structure.razor.css:18-26",
+      "issue": "KNOWN, RESERVED — recorded as the one permitted deviation, not a blocker. A05's tree is still the hand-rolled AdminStructureNode and the tree pane itself is a hand-made card (surface + border + radius in page CSS) rather than WCard. Measured on the host the indent is about 20px a level, so the four layers read as an almost flat list. A WTree component now exists untracked in src/Wakeel.Design (another package's live work).",
+      "fix": "Leave for the shared-WTree design-consistency package as ruled; when it lands, also move the pane onto WCard."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Pages/A04Organisation.razor (ReadDocx, ~line 679)",
+      "issue": "The monthly report template is accepted on its file name alone — size plus `.docx` extension — and stored in admin.db to be shipped inside setup files. The letter template on the same screen is read as a zip first and refused when it is not a Word file. A renamed executable or an arbitrary blob therefore becomes the organisation's report template with no complaint.",
+      "fix": "Run the same structural check for the report template: open it as a ZipArchive and require `word/document.xml` to exist (a cheap `archive.GetEntry(\"word/document.xml\") is not null`), showing `AdminAr.Organisation.ReportTemplate.WrongKind` otherwise. No macro execution is involved either way, which is correct."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Services/Keys/AdminDeviceKeyService.cs (ReadDeviceRow)",
+      "issue": "`COALESCE(a.employee_no, 1)` and `COALESCE(a.role, 'manager')` silently default a device with no account row to employee ١ in the manager role, and `ReIssueDevice` then signs a certificate that says so. A device can only reach that state through a partial failure, but the default the code picks is the most privileged one.",
+      "fix": "Return null (DeviceNotFound) when the LEFT JOIN finds no account instead of coalescing, so a half-made device cannot be handed a manager certificate."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Services/Devices/AdminDeviceService.cs (AddDevice)",
+      "issue": "Any SqliteException raised by the accounts INSERT is reported to the person as `DeviceRefusal.DeviceNoTaken` («رقم الجهاز مأخوذ»), which is the one thing that INSERT cannot be about — the device row was already inserted successfully at that point. A disk or constraint problem would read as a wrong device number.",
+      "fix": "Map the rollback path to a neutral refusal (add e.g. `DeviceRefusal.CouldNotSave` with `AdminAr.Errors`-style wording) and keep DeviceNoTaken for the explicit pre-check above it."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Services/Organisation/LetterTemplate.cs:93",
+      "issue": "`LetterTemplateInspector.MaxBytes = 4 * 1024 * 1024` is never read — `Inspect` takes any span and the page limits with `AdminOrgService.MaxTemplateBytes`. A reader of the inspector would reasonably assume the class enforces its own limit.",
+      "fix": "Either enforce it at the top of `Inspect` (return `LetterTemplateReport.Unreadable` past the limit) or delete the constant and let AdminOrgService own the number."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Pages/A07AccountsAndKeys.razor (row actions)",
+      "issue": "On a revoked row the two switched-off icon buttons keep their action tooltips («إصدار شهادة جديدة وغلاف جديد لهذا الجهاز», «منع هذا الجهاز من العمل نهائيًا») instead of the reason they are off — the same complaint that was raised and closed against A03 in the admin-1 review.",
+      "fix": "Swap the Tooltip when `device.IsRevoked` for a reason line, e.g. «أُلغي هذا الجهاز، ولا إجراء بعد الإلغاء»."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Text/AdminAr.Dashboard.cs:111-112",
+      "issue": "«جهازان نشطة» — a dual noun with a feminine-plural adjective. Seen on the running host's A03 KPI after admin-2's devices existed («3 أجهزة / جهازان نشطة · جهاز مُلغى»). The adjective has to agree: «جهازان نشطان», «٣ أجهزة نشطة», «جهاز نشط».",
+      "fix": "Give `Counting` a matching adjective helper (or four-shape strings for «نشط») and use it in ActiveDevices so the adjective follows the same 0/1/2/3-10/11+ shapes as the noun."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Pages/A06OfficesAndDevices.razor and A05Structure.razor",
+      "issue": "Two anatomy deviations the builder did not record in its side-by-side. A06: the preview closes the devices section with an information banner («إضافة جهاز إلى هذا المكتب» plus how the setup file reaches the computer) and a «آخر تحديث لحالة الأجهزة» footer line; the host has neither. A05: the preview keeps name, level, parent, head, title and code in ONE detail card with the actions at its foot, while the host splits them into two stacked cards (detail + «المكتب والجرد»), which leaves the tree column ending at y≈500 against a left column running to y≈760.",
+      "fix": "Add the A06 explainer as a WBanner under the table and an «آخر تحديث» meta line in the card foot; on A05 either fold «المكتب والجرد» into the detail card as its own section (WSectionHeader inside the same WCard) or record both as accepted deviations with the reason, as the package's rules require."
+    },
+    {
+      "severity": "low",
+      "file": "src/Wakeel.Admin.UI/Pages/A01CreateAccount.razor",
+      "issue": "Confirmed on the host and already flagged by the builder: after every field is valid and «إنشاء الحساب والمتابعة» has gone live, the footer still reads «أكمل الحقول ثم أنشئ الحساب.» admin-1 work, accepted, not a blocker for this package.",
+      "fix": "When the form validates, swap the hint for the next step («بعد الإنشاء تُعرض ورقة الاسترداد مرة واحدة») or clear it. Belongs to whoever reopens admin-1."
+    }
+  ],
+  "missing_spec_items": [
+    "A04 «قصّ مربّع» — the square crop of the uploaded logo is never performed in the shipping host: only NoAdminImageSquareCrop is registered (ServiceCollectionExtensions.cs:87) and src/Wakeel.Admin adds no implementation, so Cropper.IsAvailable is always false, the focus slider never renders and the logo is stored uncropped with a permanent «تعذّر القصّ» note. The seam, the focus slider and the tests exist; the implementation does not.",
+    "A04 report template — validated by file extension only (no docx structure check), while the spec pairs it with the letter template that is content-checked.",
+    "A12 danger-dialog state — the typed-confirmation gate exists in code but the confirm button is never switched off, so the state the preview shows («يُفتَّح الزر بعد تطابق العبارة.») is not rendered."
+  ],
+  "notes": "BUILD AND TESTS — all four commands run exactly as given. `dotnet build src/Wakeel.Admin.UI --no-dependencies`, `dotnet build src/Wakeel.Admin --no-dependencies`, `dotnet build tests/Wakeel.Admin.Tests --no-dependencies`: 0 Warning(s), 0 Error(s) each (TreatWarningsAsErrors clean). `dotnet test tests/Wakeel.Admin.Tests --no-build`: Failed 0, Passed 156, Skipped 0, Total 156, 12 s. Nothing was modified; the progress file was not written.\n\nHOST RUN — Wakeel.Admin.exe launched with --remote-debugging-port=9334 --window-size=1366x768 and a temporary --data-folder; /json/version answered (Edg 153). Every screenshot was taken at exactly 1366x768 through Emulation.setDeviceMetricsOverride. Drove the whole package myself rather than trusting the builder's run: A01 (password + names -> recovery sheet, one code + QR, no «تذكر هذا الجهاز» -> «ابدأ») -> A03 -> A05 (two دوائر, قسم, وحدة marked office with code INV-1042; the fifth layer is correctly refused — a unit's detail pane offers no «إضافة وحدة») -> A06 (three devices, the three roles, both scopes) -> A07 (office key issued, custodian activated, الجهاز ٢ revoked through the typed danger dialog -> signed revocation list) -> back to A03. Host log after the whole run: one line, «Wakeel admin host starting up», no WRN/ERR/FTL. Process killed and the endpoint confirmed down.\n\nSECURITY — checked on the live data folder, all clean except finding 5. admin.db has no SQLite header (SQLCipher) and greps for the admin password, the recovery code and organisation/employee names return nothing. logs/wakeel-admin-20260917.log contains no secret. keys/revocations.json holds only device ids, instants, org id and an Ed25519 signature. ui-state.json holds {\"theme\":\"dark\"}. Device seeds are sealed with the database key at issue time, cleared from memory in a finally (Array.Clear on both seeds and the serialized copy), handed out exactly once by TakeSeedsForExport which nulls the column in the same call, and wiped again on revoke; SeedsAlreadyExported is returned on a second take (test-covered). The office key is RandomBytes(32), sealed with the database key, and only ever leaves wrapped to the device's own X25519 key under a fixed context. The revocation list is signed by the organisation identity and re-verifies in tests. The letter template is parsed as a zip with XDocument (DTD prohibited by default in .NET, no macro execution, mc:Fallback skipped so the letterhead is not counted twice — that regression is genuinely fixed and covered). Logo validation reads PNG/JPEG headers only, refuses >2MB, wrong kind, unreadable and <48px.\n\nSPEC COVERAGE — A04 org name / logo upload+preview / cycle day 1-28 with the twenty-eight options and the effect explained / numbering YYYYMMDD/DESSS behind the item-5 danger dialog with the amber caution always in the card / optional report template / item-57 letter template with the nine placeholders detected (host showed all nine known, nothing unknown), A4+A5 sheet preview, print-to-PDF, built-in default in use. A05 four fixed levels, add/edit/move/disable/delete, head title+name, item-45 inventory code, duplicate-name and no-delete-with-active-devices rules (verified in code and by the disabled «حذف»/«إلغاء صفة المكتب» on the host). A06 devices 1-9 unique per office, three roles, employee name+number, two sync scopes, phones read-only. A07 account creation with the seed kept until first export, custodian activation, recovery by re-issue, office key issue/rotate with the «كل الأجهزة تحتاج ملف إعداد جديد» warning and the count, item-24 revoke -> signed list. Routes /organisation /structure /offices /accounts all registered and reachable; A03 counts came live off the tables (2/1/1, 3 أجهزة, 8 pending changes, the revoked-device and no-setup-file alerts). The six admin-1 lows are closed in code (seed zeroing, .bak overwrite, close guard, lock-out cap of 20, App.OnStartup Arabic message box, A03 visible reasons).\n\nTESTS — assertions are real behaviour, not tautologies: the structure suite drives the level rules, sibling-name rules, move loops, branch disable, delete refusals and office-code uniqueness through the service and reads the result back out of the database; the key suite issues certificates and verifies them against the organisation key and the whole chain, proves seeds can be taken once, proves a revoked certificate is turned away by the chain check, and proves the rotated office key wraps per device; the organisation suite includes the new letterhead regression (every placeholder count == 1, no repeated paragraph) and a misspelt-mark test that asserts both the unknown and the missing side. 21 bUnit screen facts cover the four screens' anatomy and empty states.\n\nWHAT BLOCKS ACCEPTANCE — one high (hand-rolled chips/pills/button in page CSS on A04/A06/A07 where WChip/WButton are already in use on the same pages) and six mediums, of which the two that matter most beyond looks are the false «غادرت بذرة المفتاح الأداة مع ملف الإعداد» line on a revoked-but-never-exported device, and the danger dialog whose confirm button is not switched off and silently swallows the click. The A05 tree is recorded once as the reserved deviation and is not held against the package."
+}
