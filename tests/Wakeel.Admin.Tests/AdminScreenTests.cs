@@ -293,7 +293,7 @@ public class AdminScreenTests : AdminTestContext
     }
 
     [Fact]
-    public void A03_SwitchesOffTheWaysOutThisBuildDoesNotCarryYet()
+    public void A03_OpensTheWaysOutNowThatTheScreensBehindThemExist()
     {
         CreateAccount();
 
@@ -307,18 +307,14 @@ public class AdminScreenTests : AdminTestContext
 
         var cut = _bunit.Render<A03Dashboard>();
 
-        // «عرض الكل» leads to the operations log, which admin-3 builds. Until then the button is on
-        // screen switched off, saying in words why it will not open — never live and silent. The
-        // reason stands beside it rather than in a hover bubble: a disabled button takes no focus,
-        // so a bubble would never reach somebody working from the keyboard.
+        // Until admin-3 both ways out were drawn switched off, with the reason standing beside them:
+        // a control that looks live and does nothing when pressed is indistinguishable from a broken
+        // tool. A11 and A08 exist now, so both are live and the note is gone.
         var showAll = cut.FindAll("button")
             .Single(button => button.TextContent.Contains(AdminAr.Dashboard.AlertsAll, StringComparison.Ordinal));
 
-        Assert.True(showAll.HasAttribute("disabled"));
-        Assert.Contains(
-            AdminAr.Dashboard.NotReadyYetTooltip,
-            cut.Find("[aria-labelledby=a03-alerts-title] .a03-off-note").TextContent,
-            StringComparison.Ordinal);
+        Assert.False(showAll.HasAttribute("disabled"));
+        Assert.Empty(cut.FindAll("[aria-labelledby=a03-alerts-title] .a03-off-note"));
 
         // The same for «تصدير ملف الإعداد», which the shell draws from the page's own header actions.
         var header = (AdminPageHeaderState)_bunit.Services.GetService(typeof(AdminPageHeaderState))!;
@@ -326,11 +322,9 @@ public class AdminScreenTests : AdminTestContext
         var export = actions.FindAll("button")
             .Single(button => button.TextContent.Contains(AdminAr.Dashboard.ExportSetup, StringComparison.Ordinal));
 
-        Assert.True(export.HasAttribute("disabled"));
-        Assert.Contains(
-            AdminAr.Dashboard.NotReadyYetTooltip,
-            actions.Markup,
-            StringComparison.Ordinal);
+        Assert.False(export.HasAttribute("disabled"));
+        Assert.DoesNotContain(AdminAr.Dashboard.NotReadyYetTooltip, actions.Markup, StringComparison.Ordinal);
+        Assert.Contains(AdminAr.Dashboard.ExportSetupTooltip, actions.Markup, StringComparison.Ordinal);
     }
 
     [Fact]

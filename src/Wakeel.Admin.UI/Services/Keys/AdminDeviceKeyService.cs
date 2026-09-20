@@ -130,7 +130,8 @@ public sealed class AdminDeviceKeyService
             return KeyRefusal.NoOrganisation;
         }
 
-        if (_db.Scalar("SELECT COUNT(*) FROM offices WHERE id = $id;", ("$id", officeId)) == 0)
+        var officeUnitId = _db.ScalarText("SELECT unit_id FROM offices WHERE id = $id;", ("$id", officeId));
+        if (officeUnitId is null)
         {
             return KeyRefusal.OfficeNotFound;
         }
@@ -141,10 +142,13 @@ public sealed class AdminDeviceKeyService
         using var identity = DeviceIdentity.Generate();
         using var orgIdentity = _org.OpenOrgIdentity();
 
+        // The certificate names the office by the structure node it sits in, which is the identifier
+        // a setup file carries as `office.unitId` and the one an installation stores. Naming the
+        // offices row here instead would make every exported file fail the reader's own office check.
         var certificate = DeviceCertificate.Issue(
             new DeviceCertificateBody(
                 org.Id,
-                officeId,
+                officeUnitId,
                 id,
                 deviceNo,
                 employeeNo,
@@ -209,7 +213,7 @@ public sealed class AdminDeviceKeyService
         var certificate = DeviceCertificate.Issue(
             new DeviceCertificateBody(
                 org.Id,
-                row.Value.OfficeId,
+                row.Value.OfficeUnitId,
                 deviceId,
                 row.Value.DeviceNo,
                 row.Value.EmployeeNo,
@@ -276,7 +280,7 @@ public sealed class AdminDeviceKeyService
         var certificate = DeviceCertificate.Issue(
             new DeviceCertificateBody(
                 org.Id,
-                row.Value.OfficeId,
+                row.Value.OfficeUnitId,
                 deviceId,
                 row.Value.DeviceNo,
                 employeeNo,
@@ -356,6 +360,41 @@ public sealed class AdminDeviceKeyService
             ("$at", _time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture)));
 
         return KeyRefusal.None;
+    }
+
+    /// <summary>
+    /// Puts seeds back that <see cref="TakeSeedsForExport"/> handed over for a setup file that was
+    /// then never written. Without this a disk that filled up halfway through an export would cost
+    /// the device its identity and force it to be issued again for no reason at all.
+    /// </summary>
+    public void ReturnSeeds(string deviceId, DeviceSeeds seeds)
+    {
+        ArgumentNullException.ThrowIfNull(seeds);
+
+        if (!_db.IsOpen)
+        {
+            return;
+        }
+
+        var plain = CanonicalJson.SerializeToUtf8Bytes(seeds);
+        byte[] sealedSeeds;
+        try
+        {
+            sealedSeeds = _db.Seal(plain);
+        }
+        finally
+        {
+            Array.Clear(plain);
+        }
+
+        _db.Execute(
+            """
+            UPDATE devices SET sealed_seeds = $seeds, seeds_exported_at = NULL, updated_at = $at
+            WHERE id = $id AND revoked_at IS NULL;
+            """,
+            ("$id", deviceId),
+            ("$seeds", sealedSeeds),
+            ("$at", _time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture)));
     }
 
     /// <summary>Whether the device's seeds are still in the tool, waiting for its first setup file.</summary>
@@ -447,6 +486,33 @@ public sealed class AdminDeviceKeyService
             });
         _pending.Add("office", officeId, summary);
 
+        return KeyRefusal.None;
+    }
+
+    /// <summary>
+    /// The office key itself, for the one caller that is allowed to see it: the export, which puts
+    /// it inside the encrypted payload of a setup file. The bytes are handed back in the clear, so
+    /// the caller wipes them the moment the file is written; nothing else in the tool may call this.
+    /// </summary>
+    /// <param name="officeId">The office whose key is wanted.</param>
+    /// <param name="key">The thirty two bytes, or an empty array when the office has no key.</param>
+    public KeyRefusal ReadOfficeKeyForExport(string officeId, out byte[] key)
+    {
+        key = [];
+
+        if (!_db.IsOpen || _db.Scalar("SELECT COUNT(*) FROM offices WHERE id = $id;", ("$id", officeId)) == 0)
+        {
+            return KeyRefusal.OfficeNotFound;
+        }
+
+        using var command = _db.Command("SELECT sealed_key FROM offices WHERE id = $id;");
+        command.Parameters.AddWithValue("$id", officeId);
+        if (command.ExecuteScalar() is not byte[] sealedKey || sealedKey.Length == 0)
+        {
+            return KeyRefusal.NoOfficeKey;
+        }
+
+        key = _db.Unseal(sealedKey);
         return KeyRefusal.None;
     }
 
@@ -631,6 +697,7 @@ public sealed class AdminDeviceKeyService
     private readonly record struct DeviceRow(
         string Id,
         string OfficeId,
+        string OfficeUnitId,
         string OfficeName,
         string OfficeCode,
         int DeviceNo,
@@ -648,7 +715,7 @@ public sealed class AdminDeviceKeyService
 
         using var command = _db.Command(
             """
-            SELECT d.id, d.office_id, o.name, o.office_code, d.device_no,
+            SELECT d.id, d.office_id, o.unit_id, o.name, o.office_code, d.device_no,
                    a.employee_no, a.role, d.x25519_pub, d.revoked_at
             FROM devices d
             JOIN offices o ON o.id = d.office_id
@@ -666,7 +733,7 @@ public sealed class AdminDeviceKeyService
         // writes. It counts as not being there at all rather than being given a stand-in employee
         // number and a stand-in role: the stand-in role would be the most powerful one in the tool,
         // and a certificate would then be signed saying so.
-        if (reader.IsDBNull(5) || reader.IsDBNull(6))
+        if (reader.IsDBNull(6) || reader.IsDBNull(7))
         {
             return null;
         }
@@ -676,12 +743,13 @@ public sealed class AdminDeviceKeyService
             reader.GetString(1),
             reader.GetString(2),
             reader.GetString(3),
-            reader.GetInt32(4),
+            reader.GetString(4),
             reader.GetInt32(5),
-            reader.GetString(6),
+            reader.GetInt32(6),
             reader.GetString(7),
-            reader.IsDBNull(8)
+            reader.GetString(8),
+            reader.IsDBNull(9)
                 ? null
-                : DateTimeOffset.Parse(reader.GetString(8), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+                : DateTimeOffset.Parse(reader.GetString(9), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
     }
 }

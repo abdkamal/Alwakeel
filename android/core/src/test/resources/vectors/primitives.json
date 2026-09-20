@@ -1,0 +1,24 @@
+{
+  "sha256OfMessageHex": "0d2512cfe7697a197c357af25f9fb6b4335531bcc216d34fc551b32a7d6cde45",
+  "messageBase64Url": "2KfZhNmI2YPZitmEIOKAlCBpbnRlcm9wZXJhYmlsaXR5IHZlY3Rvcg",
+  "hkdf": {
+    "saltBase64Url": "cXJzdHV2d3h5ent8fX5_gA",
+    "info": "wakeel.container|phone",
+    "outputBase64Url": "pINfV27qE9puQb6_FnK_O2CNyXOqnu6c23SEHB1xtN0"
+  },
+  "hkdfNoSalt": {
+    "info": "wakeel.vector|no-salt",
+    "outputBase64Url": "x9GgiN0XJ1J8rZcdUGXwXcpJI_x7iFWRI7Ze9Sr9fU2AiK7dlWeC2e7h4AzbCRUAiVyw-6KbNafC5E3d3QsmIQ"
+  },
+  "aeadBuffer": {
+    "associatedData": "wakeel.vector",
+    "sealedBase64Url": "AcPY3i2rRKATQ4Pz8Js4A7xjMpsZ2N7Dew-3hQ5ZM65G8O-4UcsXL65E-CivCA6FXmXXNgFSy5xNF1AtWUY2DI6dsaEN"
+  },
+  "aeadStream": {
+    "associatedData": "wakeel.vector.stream",
+    "chunkSize": 1024,
+    "sealedBase64Url": "AQAEAAAA90xXE3kpPMxT2sRVOAAAACrvP2yLOJ5zb4gJbia1j0vrtipS4Bui73Z2SttJYDzI_GHJaFidf0lZrhZAw6cWNV1T7nkM8yICAckY80pZgOKzugc_4xAAAACjbd33fDiMkPiaDFrAq9n4"
+  },
+  "shortCodeOfPairingToken": "371212",
+  "tokenProof": "Fkzn4s5N38sVNlteuVpxmh1iQzUOy4-1yobDra6vTS8"
+}

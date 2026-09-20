@@ -7,6 +7,7 @@ using Wakeel.Admin.Services;
 using Wakeel.Admin.UI;
 using Wakeel.Admin.UI.Services;
 using Wakeel.Admin.UI.Services.Account;
+using Wakeel.Admin.UI.Services.Export;
 using Wakeel.Admin.UI.Services.Organisation;
 using Wakeel.Crypto;
 using Wakeel.Admin.UI.Data;
@@ -71,6 +72,7 @@ public partial class App : Application
                 services.AddSingleton<IAdminImagePixels, AdminWindowsImagePixels>();
                 services.AddSingleton<IAdminImageSquareCrop, AdminWindowsImageSquareCrop>();
                 services.AddSingleton<IAdminWindow>(_ => new WpfAdminWindow(Dispatcher));
+                services.AddSingleton<IAdminFileDialog>(_ => new WpfAdminFileDialog(Dispatcher));
                 services.AddSingleton<IAdminPrintService>(_ =>
                     new AdminWebView2PrintService(() => window?.Engine, Dispatcher));
 

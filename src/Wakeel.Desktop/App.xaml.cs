@@ -8,9 +8,14 @@ using Wakeel.Core.Services;
 using Wakeel.Crypto;
 using Wakeel.Design;
 using Wakeel.Design.Services;
+using Wakeel.Core.Services.Correspondence;
+using Wakeel.Core.Services.Documents;
 using Wakeel.Desktop.Services;
+using Wakeel.Ocr;
+using Wakeel.Reports.Letters;
 using Wakeel.UI.Services;
 using Wakeel.UI.Services.Account;
+using Wakeel.UI.Services.Shell;
 
 namespace Wakeel.Desktop;
 
@@ -70,6 +75,42 @@ public partial class App : Application
                 services.AddSingleton<IPrintService>(_ => new WebView2PrintService(
                     () => window?.Engine,
                     Current.Dispatcher));
+
+                // The two things the daily shell needs from Windows: the date-and-time settings
+                // page W11's «تصحيح الساعة» opens, and the save dialog W12's «تصدير تقرير الصحة»
+                // writes through. Registered before AddWakeelAccount so its TryAdd leaves them in
+                // place instead of the "this machine cannot" answers Wakeel.UI falls back to.
+                services.AddSingleton<ISystemSettingsLauncher, WindowsSystemSettings>();
+                services.AddSingleton<IFileSaveService>(_ => new WindowsFileSaveService(Current));
+
+                // B3-1b — the official letter (AGREEMENT items 10 and 57, ARCHITECTURE §9).
+                // Filling a template and reading its marks need nothing from Windows; opening a
+                // letter in Word and turning one into a PDF do, and are wired here. Word not being
+                // installed is a state, not a failure: the composer, the internal editor and the
+                // HTML rendering all work without it.
+                services.AddSingleton<ILetterTemplateInspector, LetterTemplateInspector>();
+                services.AddSingleton<ILetterComposer, LetterComposer>();
+                services.AddSingleton<IBuiltInLetterTemplate, BuiltInLetterTemplate>();
+                services.AddSingleton<ITemplateService, TemplateService>();
+                services.AddSingleton(_ => new WordAutomation(installation));
+                services.AddSingleton<IWordAutomation>(sp => sp.GetRequiredService<WordAutomation>());
+                services.AddSingleton<ILetterPdfWriter>(sp => new LetterPdfWriter(
+                    sp.GetRequiredService<WordAutomation>(),
+                    installation,
+                    Current.Dispatcher));
+
+                // B3-2 — the vault, the documents, the scanner and the reader. The scanner and the
+                // page binder are registered BEFORE AddWakeelOcr and are what Core's optional
+                // dependencies resolve to; the vault's key provider bridges Core to the account
+                // session, which is the only thing that holds the key while it is unlocked.
+                services.AddSingleton<IScanner, WiaScanner>();
+                services.AddScoped<IVaultKeyProvider, SessionVaultKeyProvider>();
+                services.AddWakeelOcr();
+
+                // B3-1b's last two services, which were left unregistered because they need the
+                // vault: the letter package's window onto it comes from AddWakeelCore, and the
+                // builder that writes the referral print copy of AGREEMENT item 31 sits on top.
+                services.AddScoped<IDerivedDocumentBuilder, DerivedDocumentBuilder>();
 
                 services.AddWakeelAccount();
             })

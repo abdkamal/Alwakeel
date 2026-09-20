@@ -1,0 +1,282 @@
+@page "/distribution"
+@namespace Wakeel.Admin.UI.Pages
+@inject DistributionService Distribution
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IAdminFileDialog Files
+@inject AdminPaths Paths
+@inject IToastService Toasts
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+
+@* A10 — what the offices have not been told yet, which offices those changes reach, and the one
+   action that tells them: a fresh setup file for every computer of every affected office, each with
+   a password of its own that is shown once and stored nowhere. *@
+<div class="a10">
+    <WCard>
+        <WSectionHeader Title="@AdminAr.Distribution.WaitingHeading" Sub="@AdminAr.Distribution.WaitingDesc" />
+
+        <WTable IsEmpty="@(_waiting.Count == 0)">
+            <EmptyState>
+                <WStateCard Icon="check-circle"
+                            Variant="WSemanticVariant.Success"
+                            Title="@AdminAr.Distribution.NothingWaiting"
+                            Desc="@AdminAr.Distribution.NothingWaitingDesc" />
+            </EmptyState>
+            <HeaderRow>
+                <th scope="col">@AdminAr.Distribution.ColumnChange</th>
+                <th scope="col">@AdminAr.Distribution.ColumnKind</th>
+                <th scope="col">@AdminAr.Distribution.ColumnReach</th>
+                <th scope="col">@AdminAr.Distribution.ColumnWhen</th>
+                <th scope="col">@AdminAr.Distribution.ColumnState</th>
+            </HeaderRow>
+            <ChildContent>
+                @foreach (var change in _waiting)
+                {
+                    <tr>
+                        <td><Bdi Text="@change.SummaryAr" /></td>
+                        <td>@AdminAr.Distribution.KindName(change.EntityType)</td>
+                        <td>@AdminAr.Distribution.Reach(change.EntityType)</td>
+                        <td><Bdi Text="@AdminAr.Distribution.Since(change.CreatedAt, Now)" /></td>
+                        <td>
+                            <WChip Label="@AdminAr.Distribution.WaitingChip" Variant="WChipVariant.Warning" />
+                        </td>
+                    </tr>
+                }
+            </ChildContent>
+        </WTable>
+    </WCard>
+
+    <WCard>
+        <WSectionHeader Title="@AdminAr.Distribution.TargetsHeading" Sub="@AdminAr.Distribution.TargetsDesc" />
+
+        <WTable IsEmpty="@(_targets.Count == 0)">
+            <EmptyState>
+                <WStateCard Icon="building"
+                            Title="@AdminAr.Distribution.NothingWaiting"
+                            Desc="@AdminAr.Distribution.NothingWaitingDesc" />
+            </EmptyState>
+            <HeaderRow>
+                <th scope="col">@AdminAr.Distribution.ColumnOffice</th>
+                <th scope="col">@AdminAr.Distribution.ColumnDevices</th>
+                <th scope="col">@AdminAr.Distribution.ColumnWaitingFor</th>
+                <th scope="col">@AdminAr.Distribution.ColumnLastExport</th>
+                <th scope="col">@AdminAr.Distribution.ColumnState</th>
+            </HeaderRow>
+            <ChildContent>
+                @foreach (var target in _targets)
+                {
+                    <tr>
+                        <td><Bdi Text="@AdminAr.Export.OfficeOption(target.Name, target.OfficeCode)" /></td>
+                        <td><Bdi Text="@AdminAr.Distribution.DeviceCount(target.Devices.Count)" /></td>
+                        <td><Bdi Text="@AdminAr.Distribution.WaitingCount(Distribution.WaitingFor(target.OfficeId))" /></td>
+                        <td>
+                            <Bdi Text="@(Distribution.LastExport(target.OfficeId) is { } at
+                                           ? AdminAr.Maintenance.Day(at)
+                                           : AdminAr.Distribution.NeverExported)" />
+                        </td>
+                        <td>
+                            @if (target.Devices.Count > 0)
+                            {
+                                <WChip Label="@AdminAr.Distribution.ReadyChip" Variant="WChipVariant.Success" />
+                            }
+                            else
+                            {
+                                <WTooltip Text="@string.Join(" · ", target.Blocked.Select(item => item.Reason))">
+                                    <WChip Label="@AdminAr.Distribution.BlockedChip" Variant="WChipVariant.Warning" />
+                                </WTooltip>
+                            }
+                        </td>
+                    </tr>
+                }
+            </ChildContent>
+        </WTable>
+
+        @if (_targets.Count > 0)
+        {
+            <WBanner Variant="WSemanticVariant.Warning"
+                     Icon="alert-triangle"
+                     Title="@AdminAr.Distribution.DistributeTitle"
+                     Body="@AdminAr.Distribution.DistributeWarning"
+                     Notice="@AdminAr.Distribution.DistributeWhatStays" />
+
+            <WButton Variant="WButtonVariant.Primary"
+                     Icon="download"
+                     Label="@AdminAr.Distribution.Distribute"
+                     Tooltip="@AdminAr.Distribution.DistributeTooltip"
+                     Disabled="@(ReadyDevices == 0)"
+                     OnClick="@(() => _confirm = true)" />
+
+            @if (ReadyDevices == 0)
+            {
+                <p class="a10-reason">@AdminAr.Distribution.NothingReady</p>
+            }
+        }
+    </WCard>
+
+    @if (_run is not null)
+    {
+        <WCard>
+            <WSectionHeader Title="@AdminAr.Distribution.ResultHeading" Sub="@AdminAr.Distribution.ResultDesc" />
+
+            <WTable IsEmpty="@(_run.Files.Count == 0)">
+                <EmptyState>
+                    <WStateCard Icon="alert-triangle"
+                                Variant="WSemanticVariant.Warning"
+                                Title="@AdminAr.Distribution.NoneGenerated" />
+                </EmptyState>
+                <HeaderRow>
+                    <th scope="col">@AdminAr.Distribution.ColumnOffice</th>
+                    <th scope="col">@AdminAr.Distribution.ColumnDevice</th>
+                    <th scope="col">@AdminAr.Distribution.ColumnEmployee</th>
+                    <th scope="col">@AdminAr.Distribution.ColumnFile</th>
+                    <th scope="col">@AdminAr.Distribution.ColumnPassword</th>
+                </HeaderRow>
+                <ChildContent>
+                    @foreach (var file in _run.Files)
+                    {
+                        <tr>
+                            <td><Bdi Text="@AdminAr.Export.OfficeOption(file.OfficeName, file.OfficeCode)" /></td>
+                            <td><Bdi Text="@AdminAr.Devices.DeviceName(file.DeviceNo)" /></td>
+                            <td><Bdi Text="@file.EmployeeName" /></td>
+                            <td><Bdi Text="@file.FileName" /></td>
+                            <td><span class="a10-password"><bdi>@file.PackagePassword</bdi></span></td>
+                        </tr>
+                    }
+                </ChildContent>
+            </WTable>
+
+            <div class="a10-actions">
+                <WButton Variant="WButtonVariant.Secondary"
+                         Icon="copy"
+                         Label="@AdminAr.Distribution.CopyAll"
+                         Tooltip="@AdminAr.Distribution.CopyAllTooltip"
+                         Disabled="@(_run.Files.Count == 0)"
+                         OnClick="CopyAll" />
+
+                <WButton Variant="WButtonVariant.Secondary"
+                         Icon="folder-open"
+                         Label="@AdminAr.Distribution.OpenFolder"
+                         Tooltip="@AdminAr.Distribution.OpenFolderTooltip"
+                         Disabled="@(!Files.IsAvailable)"
+                         OnClick="@(() => Files.Reveal(Paths.ExportsFolder))" />
+            </div>
+
+            @if (_run.Failures.Count > 0)
+            {
+                <WSectionHeader Title="@AdminAr.Distribution.FailuresHeading" />
+                <WTable>
+                    <HeaderRow>
+                        <th scope="col">@AdminAr.Distribution.ColumnDevice</th>
+                    </HeaderRow>
+                    <ChildContent>
+                        @foreach (var failure in _run.Failures)
+                        {
+                            <tr>
+                                <td><Bdi Text="@failure" /></td>
+                            </tr>
+                        }
+                    </ChildContent>
+                </WTable>
+            }
+        </WCard>
+    }
+</div>
+
+<AdminConfirmDialog Open="@_confirm"
+                    Danger="true"
+                    Title="@AdminAr.Distribution.DistributeTitle"
+                    Desc="@AdminAr.Distribution.DistributeWarning"
+                    ConfirmLabel="@AdminAr.Distribution.Distribute"
+                    ConfirmIcon="download"
+                    OnConfirm="Run"
+                    OnCancel="@(() => _confirm = false)">
+    <p class="a10-reason">@AdminAr.Distribution.DistributeWhatStays</p>
+</AdminConfirmDialog>
+
+@code {
+    [Inject] private TimeProvider Time { get; set; } = default!;
+
+    private IReadOnlyList<AdminPendingChange> _waiting = [];
+    private IReadOnlyList<DistributionTarget> _targets = [];
+    private DistributionRun? _run;
+    private bool _confirm;
+
+    private DateTimeOffset Now => Time.GetUtcNow();
+
+    private int ReadyDevices => _targets.Sum(target => target.Devices.Count);
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(
+            AdminAr.Distribution.Title,
+            AdminAr.Distribution.Sub,
+            AdminAr.Tabs.SetupExport,
+            actions: BuildActions());
+
+        Reload();
+    }
+
+    private RenderFragment BuildActions() => builder =>
+    {
+        builder.OpenComponent<WButton>(0);
+        builder.AddComponentParameter(1, nameof(WButton.Variant), WButtonVariant.Secondary);
+        builder.AddComponentParameter(2, nameof(WButton.Icon), "refresh-cw");
+        builder.AddComponentParameter(3, nameof(WButton.Label), AdminAr.Audit.Refresh);
+        builder.AddComponentParameter(4, nameof(WButton.Tooltip), AdminAr.Audit.RefreshTooltip);
+        builder.AddComponentParameter(5, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, Reload));
+        builder.CloseComponent();
+    };
+
+    private void Reload()
+    {
+        _waiting = Distribution.Waiting();
+        _targets = Distribution.Targets();
+    }
+
+    private void Run()
+    {
+        _confirm = false;
+        _run = Distribution.Distribute();
+
+        Toasts.Show(
+            _run.Files.Count > 0 ? AdminAr.Distribution.DoneToast : AdminAr.Distribution.NoneGenerated,
+            _run.Files.Count > 0 ? WSemanticVariant.Success : WSemanticVariant.Warning);
+
+        Reload();
+    }
+
+    private async Task CopyAll()
+    {
+        if (_run is null)
+        {
+            return;
+        }
+
+        var text = string.Join(
+            Environment.NewLine,
+            _run.Files.Select(file => AdminAr.Distribution.ClipboardLine(
+                file.OfficeName, file.DeviceNo, file.FileName, file.PackagePassword)));
+
+        var copied = false;
+        try
+        {
+            copied = await Js.InvokeAsync<bool>("wakeelAdmin.copyText", text);
+        }
+        catch (JSException)
+        {
+            copied = false;
+        }
+
+        Toasts.Show(
+            copied ? AdminAr.Distribution.Copied : AdminAr.Distribution.CopyFailed,
+            copied ? WSemanticVariant.Success : WSemanticVariant.Warning);
+    }
+}

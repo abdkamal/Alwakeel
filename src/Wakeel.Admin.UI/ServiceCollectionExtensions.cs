@@ -3,7 +3,11 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Wakeel.Admin.UI.Data;
 using Wakeel.Admin.UI.Services;
 using Wakeel.Admin.UI.Services.Account;
+using Wakeel.Admin.UI.Services.Audit;
 using Wakeel.Admin.UI.Services.Devices;
+using Wakeel.Admin.UI.Services.Distribution;
+using Wakeel.Admin.UI.Services.Export;
+using Wakeel.Admin.UI.Services.Maintenance;
 using Wakeel.Admin.UI.Services.Keys;
 using Wakeel.Admin.UI.Services.Organisation;
 using Wakeel.Admin.UI.Services.Structure;
@@ -50,6 +54,25 @@ public static class ServiceCollectionExtensions
         services.AddAdminStructure();
         services.AddAdminDevices();
         services.AddAdminKeys();
+        services.AddAdminExport();
+
+        return services;
+    }
+
+    /// <summary>
+    /// admin-3's A08 to A11: making a setup file, opening a copy of الوكيل for maintenance, sending
+    /// an office's changes out again, and reading the operations log back. The file chooser they all
+    /// need is host-supplied and has a do-nothing default, exactly like printing above.
+    /// </summary>
+    public static IServiceCollection AddAdminExport(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<IAdminFileDialog, NoAdminFileDialog>();
+        services.TryAddSingleton<SetupExportService>();
+        services.TryAddSingleton<MaintenanceService>();
+        services.TryAddSingleton<DistributionService>();
+        services.TryAddSingleton<AdminAuditQuery>();
 
         return services;
     }

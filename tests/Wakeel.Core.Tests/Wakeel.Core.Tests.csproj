@@ -27,6 +27,13 @@
       solution file is not this package's to change.
     -->
     <ProjectReference Include="..\..\src\Wakeel.Reports\Wakeel.Reports.csproj" />
+
+    <!--
+      B3-2: the reader, the rasteriser and the page binder live in Wakeel.Ocr and their tests live
+      here for the same reason — the solution file is not this package's to change. The reference
+      also brings SkiaSharp, which the tests use to draw the pictures they then read back.
+    -->
+    <ProjectReference Include="..\..\src\Wakeel.Ocr\Wakeel.Ocr.csproj" />
   </ItemGroup>
 
 </Project>

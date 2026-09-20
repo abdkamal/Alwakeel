@@ -12,6 +12,13 @@
 
 
   <ItemGroup>
+    <!--
+      B3-2: Tesseract reads the text, PDFtoImage (PDFium) turns a PDF page into a picture for it
+      to read, and SkiaSharp is the bitmap both of them speak as well as the PDF writer that binds
+      a multi-page scan back into one document. All three are pinned in Directory.Packages.props.
+    -->
     <PackageReference Include="Tesseract" />
+    <PackageReference Include="PDFtoImage" />
+    <PackageReference Include="SkiaSharp" />
   </ItemGroup>
 </Project>

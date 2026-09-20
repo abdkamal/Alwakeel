@@ -39,6 +39,16 @@
     <!-- Wakeel.Design.Text.Ar.* is the single source of truth for the Arabic strings the tests
          assert against (GalleryOpens, W08ScreenshotDiff), per ARCHITECTURE.md §12. -->
     <ProjectReference Include="..\..\src\Wakeel.Design\Wakeel.Design.csproj" />
+
+    <!-- WalkthroughDataFolder.cs (Support) builds and activates a seeded installation on disk the
+         same way the walkthrough/host-seed fixtures do, so the daily-shell screenshot tests can
+         point Wakeel.Desktop.exe's data folder flag at it. Microsoft.Data.Sqlite (used to clear the
+         connection pool before the host opens the same file — see that class's remarks) comes in
+         transitively through Wakeel.Core's own Microsoft.EntityFrameworkCore.Sqlite.Core reference,
+         so no separate package pin is needed here. -->
+    <ProjectReference Include="..\..\src\Wakeel.Core\Wakeel.Core.csproj" />
+    <ProjectReference Include="..\..\src\Wakeel.Crypto\Wakeel.Crypto.csproj" />
+    <ProjectReference Include="..\..\src\Wakeel.UI\Wakeel.UI.csproj" />
   </ItemGroup>
 
 </Project>

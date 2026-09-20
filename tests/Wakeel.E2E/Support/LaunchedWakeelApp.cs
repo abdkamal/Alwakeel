@@ -48,6 +48,7 @@ internal sealed class LaunchedWakeelApp : IAsyncDisposable
         string? windowSize,
         string? startUrl,
         TimeSpan readyTimeout,
+        string? dataFolder = null,
         CancellationToken cancellationToken = default)
     {
         var endpoint = $"http://127.0.0.1:{pollPort.ToString(CultureInfo.InvariantCulture)}";
@@ -87,6 +88,14 @@ internal sealed class LaunchedWakeelApp : IAsyncDisposable
         if (!string.IsNullOrEmpty(startUrl))
         {
             startInfo.ArgumentList.Add($"--start-url={startUrl}");
+        }
+
+        if (!string.IsNullOrEmpty(dataFolder))
+        {
+            // Wakeel.Desktop.Services.WakeelPaths.Configure reads this and moves the whole
+            // installation (and its WebView2 profile, so a data-folder run never shares a locked
+            // profile with the plain-launch tests) there instead of the real machine's ProgramData.
+            startInfo.ArgumentList.Add($"--data-folder={dataFolder}");
         }
 
         var process = Process.Start(startInfo)

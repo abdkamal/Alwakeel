@@ -1,0 +1,95 @@
+/* A08 — four steps across the top, the step's own card on the right, and the same summary of what
+   is being made standing beside them the whole way. */
+.a08 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The summary rail carries short key/value lines of known length, so it keeps a fixed column and the
+   step's card takes the rest; in fractions the content table was squeezed until its cells wrapped. */
+.a08-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 12px;
+  align-items: start;
+}
+
+.a08-main,
+.a08-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* The two choosers of the first step sit two to a row, like every other pair of fields in the tool. */
+.a08-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* The password is the one thing on this screen that is read character by character off the screen
+   and typed on another machine, so it is given the room and the spacing to be read that way. */
+.a08-password {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--w-radius-md);
+  background: var(--w-surface-2);
+}
+
+.a08-password-value {
+  font-family: var(--w-font-mono, monospace);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--w-text);
+  direction: ltr;
+}
+
+/* Why a switched-off button is switched off, said in words beside it rather than left to guesswork. */
+.a08-reason {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  line-height: 1.6;
+}
+
+.a08-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The way forward and the way back sit at the two ends of the step, so neither is ever hunted for. */
+.a08-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Names and paths mix Arabic with Latin and digits, so a line a design component draws as plain text
+   still takes its direction from its own first word (AGREEMENT item 55). */
+.a08 ::deep .w-kv-value,
+.a08 ::deep .w-section-header-title,
+.a08 ::deep .w-section-header-sub,
+.a08 ::deep .w-card-title {
+  unicode-bidi: plaintext;
+}
+
+/* Both tables of the content step hold at most a handful of short rows, so their cells may wrap
+   rather than push the card into a sideways scroll bar. The table's own class is named so this rule
+   outweighs the component's, which carries the same weight and is read before it. */
+.a08 ::deep .w-table th,
+.a08 ::deep .w-table td {
+  white-space: normal;
+}
+
+.a08 ::deep .w-table-scroll {
+  overflow: visible;
+  max-height: none;
+}

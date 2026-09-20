@@ -3,6 +3,7 @@ using Wakeel.Core.Data;
 using Wakeel.Core.Services;
 using Wakeel.Crypto;
 using Wakeel.UI.Services.Account;
+using Wakeel.UI.Services.Shell;
 
 namespace Wakeel.Walkthrough.Tests;
 
@@ -144,6 +145,14 @@ internal sealed class FirstRunWorld : IDisposable
     internal SignInProfileStore Profiles => _provider.GetRequiredService<SignInProfileStore>();
 
     internal AccountOptions Options => _provider.GetRequiredService<AccountOptions>();
+
+    /// <summary>
+    /// The daily shell's window onto the B2 Core services (attention, badges, notifications, the
+    /// reminder scheduler, the clock guard, quick capture) — the same class the real shell uses,
+    /// resolved from the same container the rest of the first run runs through. Its own scope
+    /// tracks <see cref="Session"/>, so it opens and closes exactly as a real sign-in/lock would.
+    /// </summary>
+    internal ShellServices Shell => _provider.GetRequiredService<ShellServices>();
 
     /// <summary>The bytes of the logo the administrator attached, so tests can look for them again.</summary>
     internal static byte[] Logo { get; } = SamplePng();

@@ -39,6 +39,8 @@ TestResults/
 # Android / Gradle
 **/.gradle/
 android/**/build/
+android/build/
+android/keystore/
 local.properties
 .idea/
 *.iml

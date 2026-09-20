@@ -5,6 +5,7 @@
    undone, and will not let the main button work until the person has written «تأكيد» by hand —
    a deliberate pause in front of the few actions that cannot be taken back. *@
 <WDialog Open="@Open"
+         Inline="@Inline"
          Kind="@(Danger ? WDialogKind.Danger : WDialogKind.Normal)"
          Title="@Title"
          Desc="@Desc"
@@ -52,6 +53,12 @@
 
     /// <summary>Red, and not undoable.</summary>
     [Parameter] public bool Danger { get; set; }
+
+    /// <summary>
+    /// Draws the dialog in the page instead of over it, which is how A12 shows the same dialogs side
+    /// by side: the reference sheet and the real thing are then one component and cannot drift apart.
+    /// </summary>
+    [Parameter] public bool Inline { get; set; }
 
     /// <summary>The question, in one line.</summary>
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;

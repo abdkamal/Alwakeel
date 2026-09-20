@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Wakeel.Core.Data;
 using Wakeel.Core.Data.Entities;
 using Wakeel.Core.Services;
+using Wakeel.Core.Services.Documents;
 using Wakeel.Crypto;
 using Wakeel.Design.Text;
 

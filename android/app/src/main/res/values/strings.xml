@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">الوكيل</string>
+
+    <!-- التنقل السفلي (من اليسار إلى اليمين كما في التصميم: البحث، الاجتماعات، المهام، المراسلات، الرئيسية) -->
+    <string name="nav_search">البحث</string>
+    <string name="nav_meetings">الاجتماعات</string>
+    <string name="nav_tasks">المهام</string>
+    <string name="nav_correspondence">المراسلات</string>
+    <string name="nav_home">الرئيسية</string>
+
+    <string name="quick_entry">إدخال سريع</string>
+    <string name="back">رجوع</string>
+    <string name="menu">القائمة</string>
+    <string name="more">المزيد</string>
+    <string name="search_hint">ابحث في هذه القائمة…</string>
+
+    <!-- الحالة الابتدائية للهيكل قبل وصول شاشات الحزم التالية -->
+    <string name="shell_placeholder_title">قيد الإعداد</string>
+    <string name="shell_placeholder_body">تظهر هنا محتويات هذا القسم بعد ربط الجهاز بالحاسوب.</string>
+</resources>

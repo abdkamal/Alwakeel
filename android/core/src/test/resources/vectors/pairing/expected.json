@@ -1,0 +1,9 @@
+{
+  "shortCode": "371212",
+  "tokenProof": "Fkzn4s5N38sVNlteuVpxmh1iQzUOy4-1yobDra6vTS8",
+  "requestSignature": "0Y5ecw-HM-deJTqgajQYI60zbBs69x3J-ENsWPG_kNNk8MIRrsoVcFXG9oRTHg7kwxJvAJluKIRxM24PRrZ_DQ",
+  "orgEd25519Pub": "7VSln7GsOlEjk1E2KUG4aOhaYOPXskhdgogh3Hppwnk",
+  "sessionKeyBase64Url": "UVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3A",
+  "officeKeyBase64Url": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+  "invitationFileName": "pairing-371212.wakeel-phone"
+}

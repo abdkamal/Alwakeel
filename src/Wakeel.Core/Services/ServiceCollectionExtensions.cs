@@ -80,6 +80,27 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<IAuditService>(),
             provider.GetService<Correspondence.IDerivedDocumentBuilder>()));
 
+        // B3-2 — the vault and the documents. The vault is Scoped because it asks
+        // IVaultKeyProvider for the open session's key, and a key belongs to a session; the host
+        // registers the provider (the desktop shell bridges it to the account session). The
+        // scanner and the PDF binder are OPTIONAL: Core has neither WIA nor an imaging library,
+        // and an installation without them still imports files from the disk and from the phone.
+        services.AddScoped<Documents.IDocumentStore, Documents.VaultStore>();
+        services.AddScoped<Documents.IDocumentService>(provider => new Documents.DocumentService(
+            provider.GetRequiredService<WakeelDb>(),
+            provider.GetRequiredService<Documents.IDocumentStore>(),
+            provider.GetRequiredService<IClock>(),
+            provider.GetRequiredService<IIdGenerator>(),
+            provider.GetRequiredService<IAuditService>(),
+            provider.GetService<Documents.IScanner>(),
+            provider.GetService<Documents.IScanPdfWriter>()));
+
+        // The letter package's window onto the vault, which B3-1b could not implement because the
+        // vault did not exist yet. Registering it here is what lets the desktop host register
+        // IDerivedDocumentBuilder over it, so the referral print copy of AGREEMENT item 31 is
+        // actually produced.
+        services.AddScoped<Correspondence.ILetterDocumentStore, Documents.LetterDocumentStore>();
+
         // The minute tick is Scoped like everything it drives. A singleton ticker would outlive
         // the session it was started for: after a sign-out its timer would keep firing into the
         // previous session's scheduler — whose database session has closed — and the container

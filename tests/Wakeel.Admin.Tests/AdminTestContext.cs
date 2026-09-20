@@ -4,7 +4,11 @@ using Wakeel.Admin.UI;
 using Wakeel.Admin.UI.Data;
 using Wakeel.Admin.UI.Services;
 using Wakeel.Admin.UI.Services.Account;
+using Wakeel.Admin.UI.Services.Audit;
 using Wakeel.Admin.UI.Services.Devices;
+using Wakeel.Admin.UI.Services.Distribution;
+using Wakeel.Admin.UI.Services.Export;
+using Wakeel.Admin.UI.Services.Maintenance;
 using Wakeel.Admin.UI.Services.Keys;
 using Wakeel.Admin.UI.Services.Organisation;
 using Wakeel.Admin.UI.Services.Structure;
@@ -59,6 +63,15 @@ public abstract class AdminTestContext : IDisposable
         Structure = new AdminStructureService(Db, Audit, Session, Pending, Time);
         DeviceKeys = new AdminDeviceKeyService(Db, Keys, Audit, Session, Pending, Paths, Time);
         DeviceRegistry = new AdminDeviceService(Db, DeviceKeys, Audit, Session, Pending, Time);
+
+        // admin-3's four areas, wired the same way.
+        Exports = new SetupExportService(
+            Db, Keys, Org, Structure, DeviceRegistry, DeviceKeys, Audit, Session, Paths, Time);
+        Maintenance = new MaintenanceService(
+            Keys, DeviceRegistry, DeviceKeys, Exports, Audit, Session, Paths, Time);
+        Distribution = new DistributionService(Db, Pending, DeviceRegistry, Exports, Audit, Session, Time);
+        AuditLog = new AdminAuditQuery(Db, Audit);
+        FileDialog = new TestFileDialog(Path.Combine(_root, "chosen"));
     }
 
     /// <summary>A password that satisfies every rule A01 prints.</summary>
@@ -95,6 +108,16 @@ public abstract class AdminTestContext : IDisposable
 
     protected AdminDeviceService DeviceRegistry { get; }
 
+    protected SetupExportService Exports { get; }
+
+    protected MaintenanceService Maintenance { get; }
+
+    protected DistributionService Distribution { get; }
+
+    protected AdminAuditQuery AuditLog { get; }
+
+    protected TestFileDialog FileDialog { get; }
+
     /// <summary>Creates the account the way A01 does, and returns the sheet it showed once.</summary>
     protected AdminRecoverySheet CreateAccount(
         string password = GoodPassword,
@@ -126,6 +149,11 @@ public abstract class AdminTestContext : IDisposable
         context.Services.AddSingleton(Structure);
         context.Services.AddSingleton(DeviceKeys);
         context.Services.AddSingleton(DeviceRegistry);
+        context.Services.AddSingleton(Exports);
+        context.Services.AddSingleton(Maintenance);
+        context.Services.AddSingleton(Distribution);
+        context.Services.AddSingleton(AuditLog);
+        context.Services.AddSingleton<IAdminFileDialog>(FileDialog);
         context.Services.AddWakeelAdmin(Paths);
     }
 
@@ -163,6 +191,64 @@ public abstract class AdminTestContext : IDisposable
             // the folder sits under the temporary directory and goes with it.
         }
     }
+}
+
+/// <summary>
+/// A file chooser that answers without a window: it says yes to a place inside the test's own
+/// folder, and remembers what it was asked, so a screen that saves a copy can be proved to have
+/// asked rather than to have written somewhere of its own choosing.
+/// </summary>
+public sealed class TestFileDialog : IAdminFileDialog
+{
+    private readonly string _folder;
+
+    public TestFileDialog(string folder)
+    {
+        _folder = folder;
+    }
+
+    /// <summary>What the caller last offered as a name.</summary>
+    public string? LastSuggestedName { get; private set; }
+
+    /// <summary>Where the chooser last said the copy should go.</summary>
+    public string? LastChosenPath { get; private set; }
+
+    /// <summary>What the caller last asked to be shown in a file window.</summary>
+    public string? LastRevealed { get; private set; }
+
+    /// <summary>The answer the next question gets; a test sets it to false to prove the way out.</summary>
+    public bool Answers { get; set; } = true;
+
+    /// <summary>The file or folder the next «which one?» question returns.</summary>
+    public string? NextChoice { get; set; }
+
+    /// <inheritdoc />
+    public bool IsAvailable => true;
+
+    /// <inheritdoc />
+    public AdminFileChoice AskWhereToSave(string suggestedFileName, string filterLabel, string extension)
+    {
+        LastSuggestedName = suggestedFileName;
+        if (!Answers)
+        {
+            return AdminFileChoice.None;
+        }
+
+        Directory.CreateDirectory(_folder);
+        LastChosenPath = Path.Combine(_folder, suggestedFileName);
+        return new AdminFileChoice(true, LastChosenPath);
+    }
+
+    /// <inheritdoc />
+    public AdminFileChoice AskWhichFile(string filterLabel, IReadOnlyList<string> extensions) =>
+        Answers && NextChoice is not null ? new AdminFileChoice(true, NextChoice) : AdminFileChoice.None;
+
+    /// <inheritdoc />
+    public AdminFileChoice AskWhichFolder(string prompt) =>
+        Answers && NextChoice is not null ? new AdminFileChoice(true, NextChoice) : AdminFileChoice.None;
+
+    /// <inheritdoc />
+    public void Reveal(string path) => LastRevealed = path;
 }
 
 /// <summary>A clock the test moves by hand, so a lock-out's timing can be watched without waiting.</summary>

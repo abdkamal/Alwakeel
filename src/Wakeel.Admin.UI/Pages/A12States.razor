@@ -1,0 +1,97 @@
+@page "/states"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject NavigationManager Nav
+
+@* A12 — the five moments the tool has to get right, side by side. Each one is the very component its
+   own screen uses, drawn in the page instead of over it (WDialog's inline shape), so this sheet and
+   the real dialogs can never say two different things. *@
+<div class="a12">
+    <div class="a12-grid">
+        <div class="a12-item">
+            <WSectionHeader Title="@AdminAr.States.RevokeCard" Sub="@AdminAr.States.RevokeCardDesc" />
+            <AdminConfirmDialog Inline="true"
+                                Danger="true"
+                                Title="@AdminAr.Keys.RevokeTitle"
+                                Desc="@AdminAr.Keys.RevokeWarning"
+                                ConfirmLabel="@AdminAr.Keys.Revoke"
+                                ConfirmIcon="ban">
+                <WKvRow Key="@AdminAr.Keys.ColumnDevice" Value="@AdminAr.States.SampleDevice" />
+                <WKvRow Key="@AdminAr.Keys.ColumnOffice" Value="@AdminAr.States.SampleOffice" />
+                <p class="a12-note">@AdminAr.Keys.RevokeWhatStays</p>
+            </AdminConfirmDialog>
+        </div>
+
+        <div class="a12-item">
+            <WSectionHeader Title="@AdminAr.States.NumberingCard" Sub="@AdminAr.States.NumberingCardDesc" />
+            <AdminConfirmDialog Inline="true"
+                                Danger="true"
+                                Title="@AdminAr.Organisation.Numbering.ChangeTitle"
+                                Desc="@AdminAr.Organisation.Numbering.ChangeWarning"
+                                ConfirmLabel="@AdminAr.Organisation.Save"
+                                ConfirmIcon="save">
+                <WKvRow Key="@AdminAr.Organisation.Numbering.FormatLabel"
+                        Value="@AdminAr.Organisation.Numbering.Sample(AdminKeyService.DefaultNumberingFormat)" />
+                <p class="a12-note">@AdminAr.Organisation.Numbering.Caption</p>
+            </AdminConfirmDialog>
+        </div>
+
+        <div class="a12-item">
+            <WSectionHeader Title="@AdminAr.States.FileErrorCard" Sub="@AdminAr.States.FileErrorCardDesc" />
+            <WDialog Inline="true"
+                     Kind="WDialogKind.Normal"
+                     Title="@AdminAr.States.FileErrorTitle"
+                     Desc="@AdminAr.Errors.FileUnreadable"
+                     Notice="@AdminAr.Errors.WrongPackagePassword"
+                     ConfirmLabel="@AdminAr.States.FileErrorChoose"
+                     ConfirmTooltip="@AdminAr.States.FileErrorChooseTooltip"
+                     ConfirmIcon="folder-open"
+                     CancelLabel="@AdminAr.Confirm.Back">
+                <WKvRow Key="@AdminAr.Export.FileNameLabel" Value="@AdminAr.States.SampleFile" />
+            </WDialog>
+        </div>
+
+        <div class="a12-item">
+            <WSectionHeader Title="@AdminAr.States.ExportDoneCard" Sub="@AdminAr.States.ExportDoneCardDesc" />
+            <WDialog Inline="true"
+                     Kind="WDialogKind.Normal"
+                     Title="@AdminAr.Export.SuccessTitle"
+                     Desc="@AdminAr.Export.SuccessDesc"
+                     Notice="@AdminAr.Export.PasswordWarning"
+                     ConfirmLabel="@AdminAr.Export.OpenFolder"
+                     ConfirmTooltip="@AdminAr.Export.OpenFolderTooltip"
+                     ConfirmIcon="folder-open"
+                     CancelLabel="@AdminAr.States.Close">
+                <WKvRow Key="@AdminAr.Export.FileNameLabel" Value="@AdminAr.States.SampleFile" />
+                <WKvRow Key="@AdminAr.Export.OfficeLabel" Value="@AdminAr.States.SampleOffice" />
+            </WDialog>
+        </div>
+
+        <div class="a12-item">
+            <WSectionHeader Title="@AdminAr.States.LogoCard" Sub="@AdminAr.States.LogoCardDesc" />
+            <WDialog Inline="true"
+                     Kind="WDialogKind.Normal"
+                     Title="@AdminAr.States.LogoTitle"
+                     Desc="@AdminAr.Organisation.Logo.TooLarge"
+                     Notice="@AdminAr.Organisation.Logo.EmptyDesc"
+                     ConfirmLabel="@AdminAr.Organisation.Logo.Choose"
+                     ConfirmTooltip="@AdminAr.Organisation.Logo.ChooseTooltip"
+                     ConfirmIcon="upload"
+                     CancelLabel="@AdminAr.Confirm.Back" />
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(AdminAr.States.Title, AdminAr.States.Sub, activeTab: null);
+    }
+}

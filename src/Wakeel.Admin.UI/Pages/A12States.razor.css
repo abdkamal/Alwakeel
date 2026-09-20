@@ -1,0 +1,35 @@
+/* A12 — the five dialogs two to a row, each under the line that says which moment it belongs to. */
+.a12-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.a12-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Drawn in the page, a dialog has no scrim to centre it, so it fills the column it was put in
+   instead of sitting at the width a floating one would take. */
+.a12-item ::deep .w-dialog--inline {
+  max-width: none;
+  width: 100%;
+}
+
+.a12-note {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  line-height: 1.6;
+}
+
+/* Device names, office codes and file names mix Arabic with Latin and digits (AGREEMENT item 55). */
+.a12 ::deep .w-kv-value,
+.a12 ::deep .w-section-header-title,
+.a12 ::deep .w-dialog-title {
+  unicode-bidi: plaintext;
+}

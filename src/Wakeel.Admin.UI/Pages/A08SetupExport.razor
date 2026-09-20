@@ -1,0 +1,593 @@
+@page "/export"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminDeviceService Devices
+@inject SetupExportService Exports
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IAdminFileDialog Files
+@inject AdminPaths Paths
+@inject IToastService Toasts
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+
+@* A08 — the four steps that turn everything the tool knows about one computer into the single file
+   that lets it begin: which computer, what travels with it, the password that locks the file, and
+   where the file goes. The password is shown once, on the third step, and is never written anywhere
+   by this screen — not to the log, not to the database, and not into any field it leaves behind. *@
+@if (_offices is null)
+{
+    <AdminErrorState Message="@AdminAr.Errors.DataUnreadable" OnRetry="Reload" />
+}
+else if (_offices.Count == 0)
+{
+    <WStateCard Icon="building"
+                Title="@AdminAr.Export.NoOffices"
+                Desc="@AdminAr.Export.NoOfficesDesc"
+                ActionLabel="@AdminAr.Export.OpenStructure"
+                ActionIcon="building"
+                OnAction="@(() => Nav.NavigateTo(AdminRoutes.Structure))" />
+}
+else
+{
+    <div class="a08">
+        <WStepper Steps="@AdminAr.Export.Steps" CurrentStep="@_step" />
+
+        <div class="a08-body">
+            <div class="a08-main">
+                @switch (_step)
+                {
+                    case 1:
+                        <WCard>
+                            <WSectionHeader Title="@AdminAr.Export.StepDeviceHeading"
+                                            Sub="@AdminAr.Export.StepDeviceDesc" />
+                            <div class="a08-fields">
+                                <WSelect Label="@AdminAr.Export.OfficeLabel"
+                                         Options="OfficeOptions"
+                                         Value="@_officeId"
+                                         ValueChanged="OnOfficeChanged" />
+
+                                <WSelect Label="@AdminAr.Export.DeviceLabel"
+                                         Options="DeviceOptions"
+                                         Value="@_deviceId"
+                                         Disabled="@(DeviceOptions.Count == 0)"
+                                         Hint="@(DeviceOptions.Count == 0 ? AdminAr.Export.NoDevices : null)"
+                                         ValueChanged="OnDeviceChanged" />
+                            </div>
+
+                            @if (DeviceOptions.Count == 0)
+                            {
+                                <WStateCard Icon="cpu"
+                                            Title="@AdminAr.Export.NoDevices"
+                                            Desc="@AdminAr.Export.NoDevicesDesc"
+                                            ActionLabel="@AdminAr.Export.OpenDevices"
+                                            ActionIcon="cpu"
+                                            OnAction="@(() => Nav.NavigateTo(AdminRoutes.OfficesAndDevices))" />
+                            }
+                            else if (_plan is { HasOfficeKey: false })
+                            {
+                                <WStateCard Icon="key"
+                                            Variant="WSemanticVariant.Warning"
+                                            Title="@AdminAr.Export.NoOfficeKey"
+                                            Desc="@AdminAr.Export.NoOfficeKeyDesc"
+                                            ActionLabel="@AdminAr.Export.OpenKeys"
+                                            ActionIcon="key"
+                                            OnAction="@(() => Nav.NavigateTo(AdminRoutes.AccountsAndKeys))" />
+                            }
+                            else if (_plan is not null)
+                            {
+                                <WBanner Variant="@(_plan.IsFirstFile ? WSemanticVariant.Info : WSemanticVariant.Warning)"
+                                         Icon="@(_plan.IsFirstFile ? "info" : "alert-triangle")"
+                                         Title="@(_plan.IsFirstFile ? AdminAr.Export.FirstFileChip : AdminAr.Export.RepeatFileChip)"
+                                         Body="@(_plan.IsFirstFile ? AdminAr.Export.FirstFileNote : AdminAr.Export.RepeatFileNote)" />
+                            }
+                        </WCard>
+
+                        break;
+
+                    case 2:
+                        <WCard>
+                            <WSectionHeader Title="@AdminAr.Export.StepContentHeading"
+                                            Sub="@AdminAr.Export.StepContentDesc" />
+
+                            <WTable>
+                                <HeaderRow>
+                                    <th scope="col">@AdminAr.Export.ColumnItem</th>
+                                    <th scope="col">@AdminAr.Export.ColumnDetail</th>
+                                    <th scope="col">@AdminAr.Export.ColumnState</th>
+                                </HeaderRow>
+                                <ChildContent>
+                                    @foreach (var row in Always)
+                                    {
+                                        <tr>
+                                            <td>@row.Label</td>
+                                            <td><Bdi Text="@row.Value" /></td>
+                                            <td>
+                                                @* Everything here travels — except the revocation
+                                                   list while no device has ever been shut out, and
+                                                   a row that says «مضمّن» over an empty list would
+                                                   be telling the administrator something untrue. *@
+                                                <WChip Label="@(row.Carried ? AdminAr.Export.IncludedChip : AdminAr.Export.NotCarriedChip)"
+                                                       Variant="@(row.Carried ? WChipVariant.Success : WChipVariant.Neutral)" />
+                                            </td>
+                                        </tr>
+                                    }
+                                </ChildContent>
+                            </WTable>
+
+                            <WSectionHeader Title="@AdminAr.Export.OptionalHeading" />
+
+                            <WTable>
+                                <HeaderRow>
+                                    <th scope="col">@AdminAr.Export.ColumnAttachment</th>
+                                    <th scope="col">@AdminAr.Export.ColumnDetail</th>
+                                    <th scope="col">@AdminAr.Export.ColumnSize</th>
+                                    <th scope="col">@AdminAr.Export.ColumnState</th>
+                                </HeaderRow>
+                                <ChildContent>
+                                    @foreach (var row in Optional)
+                                    {
+                                        <tr>
+                                            <td>@row.Label</td>
+                                            <td><Bdi Text="@row.Value" /></td>
+                                            <td>
+                                                @* The guide is written at the moment the file is
+                                                   made, so its size is not a fact yet. *@
+                                                <Bdi Text="@(row.Available && row.Bytes > 0
+                                                               ? AdminAr.Export.Size(row.Bytes)
+                                                               : AdminAr.Export.UnknownSize)" />
+                                            </td>
+                                            <td>
+                                                @if (row.Available)
+                                                {
+                                                    <WCheckbox Value="@row.Chosen"
+                                                               Label="@AdminAr.Export.IncludedChip"
+                                                               ValueChanged="@(value => row.Set(this, value))" />
+                                                }
+                                                else
+                                                {
+                                                    <WChip Label="@AdminAr.Export.MissingChip"
+                                                           Variant="WChipVariant.Neutral" />
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </ChildContent>
+                            </WTable>
+                        </WCard>
+
+                        break;
+
+                    case 3:
+                        <WCard>
+                            <WSectionHeader Title="@AdminAr.Export.StepPasswordHeading"
+                                            Sub="@AdminAr.Export.StepPasswordDesc" />
+
+                            <div class="a08-password">
+                                <span class="a08-password-value"><bdi>@_shownPassword</bdi></span>
+                                <WButton Variant="WButtonVariant.Icon"
+                                         Icon="copy"
+                                         Tooltip="@AdminAr.Export.CopyPasswordTooltip"
+                                         OnClick="CopyPassword" />
+                            </div>
+
+                            <WBanner Variant="WSemanticVariant.Danger"
+                                     Icon="alert-triangle"
+                                     Title="@AdminAr.Export.StepPasswordHeading"
+                                     Body="@AdminAr.Export.PasswordWarning" />
+
+                            <WCheckbox Value="@_passwordKept"
+                                       Label="@AdminAr.Export.PasswordKept"
+                                       ValueChanged="@(value => _passwordKept = value)" />
+
+                            <WButton Variant="WButtonVariant.Secondary"
+                                     Icon="refresh-cw"
+                                     Label="@AdminAr.Export.GeneratePassword"
+                                     Tooltip="@AdminAr.Export.GeneratePasswordTooltip"
+                                     OnClick="NewPassword" />
+                        </WCard>
+
+                        break;
+
+                    default:
+                        <WCard>
+                            <WSectionHeader Title="@AdminAr.Export.StepSaveHeading"
+                                            Sub="@AdminAr.Export.StepSaveDesc" />
+
+                            @if (_result is null)
+                            {
+                                <WKvRow Key="@AdminAr.Export.FileNameLabel" Value="@FileName" />
+                                <WKvRow Key="@AdminAr.Export.SavedAtLabel" Value="@Paths.ExportsFolder" />
+
+                                <WButton Variant="WButtonVariant.Primary"
+                                         Icon="save"
+                                         Label="@AdminAr.Export.CreateFile"
+                                         Tooltip="@AdminAr.Export.CreateFileTooltip"
+                                         Disabled="@(!_passwordKept)"
+                                         OnClick="CreateFile" />
+
+                                @if (!_passwordKept)
+                                {
+                                    <p class="a08-reason">@AdminAr.Export.PasswordNotYet</p>
+                                }
+                            }
+                            else
+                            {
+                                <WStateCard Icon="check-circle"
+                                            Variant="WSemanticVariant.Success"
+                                            Title="@AdminAr.Export.SuccessTitle"
+                                            Desc="@AdminAr.Export.SuccessDesc" />
+
+                                <WKvRow Key="@AdminAr.Export.FileNameLabel" Value="@_result.FileName" />
+                                <WKvRow Key="@AdminAr.Export.SavedAtLabel" Value="@_result.FilePath" />
+
+                                <div class="a08-actions">
+                                    <WButton Variant="WButtonVariant.Secondary"
+                                             Icon="save"
+                                             Label="@AdminAr.Export.SaveCopy"
+                                             Tooltip="@AdminAr.Export.SaveCopyTooltip"
+                                             Disabled="@(!Files.IsAvailable)"
+                                             OnClick="SaveCopy" />
+
+                                    <WButton Variant="WButtonVariant.Secondary"
+                                             Icon="folder-open"
+                                             Label="@AdminAr.Export.OpenFolder"
+                                             Tooltip="@AdminAr.Export.OpenFolderTooltip"
+                                             Disabled="@(!Files.IsAvailable)"
+                                             OnClick="@(() => Files.Reveal(_result.FilePath))" />
+
+                                    <WButton Variant="WButtonVariant.Primary"
+                                             Icon="plus"
+                                             Label="@AdminAr.Export.NewExport"
+                                             Tooltip="@AdminAr.Export.NewExportTooltip"
+                                             OnClick="StartAgain" />
+                                </div>
+                            }
+                        </WCard>
+
+                        break;
+                }
+
+                @if (_failure is not null)
+                {
+                    <WBanner Variant="WSemanticVariant.Danger"
+                             Icon="alert-triangle"
+                             Title="@AdminAr.Errors.Title"
+                             Body="@_failure" />
+                }
+
+                <div class="a08-nav">
+                    <WButton Variant="WButtonVariant.Secondary"
+                             Icon="chevron-right"
+                             Label="@AdminAr.Export.Previous"
+                             Tooltip="@AdminAr.Export.PreviousTooltip"
+                             Disabled="@(_step == 1 || _result is not null)"
+                             OnClick="Back" />
+
+                    <WButton Variant="WButtonVariant.Primary"
+                             Icon="chevron-left"
+                             Label="@AdminAr.Export.Next"
+                             Tooltip="@AdminAr.Export.NextTooltip"
+                             Disabled="@(!CanGoOn)"
+                             OnClick="Forward" />
+                </div>
+            </div>
+
+            <div class="a08-side">
+                <WCard>
+                    <WSectionHeader Title="@AdminAr.Export.SummaryHeading" Sub="@AdminAr.Export.SummaryDesc" />
+
+                    @if (_plan is null)
+                    {
+                        <p class="a08-reason">@AdminAr.Export.SummaryEmpty</p>
+                    }
+                    else
+                    {
+                        <WKvRow Key="@AdminAr.Export.OfficeLabel"
+                                Value="@AdminAr.Export.OfficeOption(_plan.OfficeName, _plan.OfficeCode)" />
+                        <WKvRow Key="@AdminAr.Export.DeviceLabel"
+                                Value="@AdminAr.Devices.DeviceName(_plan.DeviceNo)" />
+                        <WKvRow Key="@AdminAr.Keys.ColumnEmployee"
+                                Value="@AdminAr.Devices.EmployeeLine(_plan.EmployeeName, _plan.EmployeeNo)" />
+                        <WKvRow Key="@AdminAr.Devices.ColumnRole"
+                                Value="@AdminAr.Devices.RoleName(_plan.Role)" />
+                        <WKvRow Key="@AdminAr.Export.SequenceLabel"
+                                Value="@AdminAr.Export.SequenceLine(_plan.Sequence)" />
+                        <WKvRow Key="@AdminAr.Export.FileNameLabel" Value="@FileName" />
+                    }
+                </WCard>
+
+                <WBanner Variant="WSemanticVariant.Warning"
+                         Icon="key"
+                         Title="@AdminAr.Export.StepPasswordHeading"
+                         Body="@AdminAr.Export.PasswordWarning" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<AdminOffice>? _offices;
+    private IReadOnlyList<AdminDevice> _devices = [];
+    private SetupExportPlan? _plan;
+    private SetupExportResult? _result;
+
+    private string? _officeId;
+    private string? _deviceId;
+    private string? _failure;
+    private int _step = 1;
+
+    // The password lives here and nowhere else: it is made on step three, shown once, handed to the
+    // writer on step four, and cleared the moment this screen starts again or goes away.
+    private string _password = string.Empty;
+    private string _shownPassword = string.Empty;
+    private bool _passwordKept;
+
+    private SetupExportOptions _options = SetupExportOptions.All;
+
+    private IReadOnlyList<(string Value, string Label)> OfficeOptions =>
+        _offices is null
+            ? []
+            : [.. _offices.Select(office => (office.Id, AdminAr.Export.OfficeOption(office.Name, office.OfficeCode)))];
+
+    private IReadOnlyList<(string Value, string Label)> DeviceOptions =>
+        [.. _devices
+            .Where(device => !device.IsPhone && !device.IsRevoked && device.HasAccount)
+            .Select(device => (
+                device.Id,
+                AdminAr.Export.DeviceOption(
+                    device.DeviceNo,
+                    AdminAr.Devices.RoleName(device.Role),
+                    device.EmployeeName)))];
+
+    private string FileName => _plan is null ? "—" : Exports.FileNameFor(_plan);
+
+    private bool CanGoOn => _step switch
+    {
+        1 => _plan is { HasOfficeKey: true },
+        2 => true,
+        3 => _passwordKept,
+        _ => false,
+    };
+
+    /// <summary>The facts every file carries, whatever the administrator chooses on this step.</summary>
+    private IReadOnlyList<(string Label, string Value, bool Carried)> Always => _plan is null
+        ? []
+        :
+        [
+            (AdminAr.Export.ItemStructure,
+                AdminAr.Export.StructureCount(_plan.Departments, _plan.Sections, _plan.Units), true),
+            (AdminAr.Export.ItemOfficeKey, AdminAr.Export.OfficeKeyVersion(_plan.OfficeKeyVersion), true),
+            (AdminAr.Export.ItemCertificate,
+                _plan.IsFirstFile ? AdminAr.Export.FirstFileChip : AdminAr.Export.RepeatFileChip, true),
+            (AdminAr.Export.ItemEmployee,
+                AdminAr.Devices.EmployeeLine(_plan.EmployeeName, _plan.EmployeeNo), true),
+            (AdminAr.Export.ItemCycleDay, AdminAr.Export.CycleDayValue(_plan.CycleStartDay), true),
+            (AdminAr.Export.ItemNumbering, _plan.NumberingFormat, true),
+            (AdminAr.Export.ItemRevocation,
+                _plan.RevokedDevices == 0
+                    ? AdminAr.Export.RevocationEmpty
+                    : AdminAr.Export.RevocationCount(_plan.RevokedDevices),
+                _plan.RevokedDevices > 0),
+        ];
+
+    /// <summary>The four attachments, each with what it is, how big it is, and whether it can travel.</summary>
+    private IReadOnlyList<OptionalRow> Optional => _plan is null
+        ? []
+        :
+        [
+            new(AdminAr.Export.ItemLogo,
+                _plan.HasLogo ? AdminAr.Export.IncludedChip : AdminAr.Export.LogoMissing,
+                _plan.LogoBytes,
+                _plan.HasLogo,
+                _options.Logo,
+                static (page, value) => page._options = page._options with { Logo = value }),
+            new(AdminAr.Export.ItemLetterTemplate,
+                _plan.UsesBuiltInLetterTemplate ? AdminAr.Export.LetterTemplateBuiltIn : AdminAr.Export.IncludedChip,
+                _plan.LetterTemplateBytes,
+                _plan.LetterTemplateBytes > 0,
+                _options.LetterTemplate,
+                static (page, value) => page._options = page._options with { LetterTemplate = value }),
+            new(AdminAr.Export.ItemReportTemplate,
+                _plan.HasReportTemplate ? AdminAr.Export.IncludedChip : AdminAr.Export.ReportTemplateMissing,
+                _plan.ReportTemplateBytes,
+                _plan.HasReportTemplate,
+                _options.ReportTemplate,
+                static (page, value) => page._options = page._options with { ReportTemplate = value }),
+            new(AdminAr.Export.ItemGuide,
+                AdminAr.Export.GuideGenerated,
+                0,
+                true,
+                _options.Guide,
+                static (page, value) => page._options = page._options with { Guide = value }),
+        ];
+
+    /// <summary>One optional attachment, and how it is switched on and off.</summary>
+    private sealed record OptionalRow(
+        string Label,
+        string Value,
+        long Bytes,
+        bool Available,
+        bool Chosen,
+        Action<A08SetupExport, bool> Apply)
+    {
+        public void Set(A08SetupExport page, bool value) => Apply(page, value);
+    }
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(AdminAr.Export.Title, AdminAr.Export.Sub, AdminAr.Tabs.SetupExport);
+        Reload();
+    }
+
+    private void Reload()
+    {
+        try
+        {
+            _offices = Devices.ListOffices();
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            _offices = null;
+            return;
+        }
+
+        _officeId ??= AdminQuery.Value(Nav.Uri, "office") ?? _offices.FirstOrDefault()?.Id;
+        LoadDevices();
+    }
+
+    private void LoadDevices()
+    {
+        _devices = _officeId is null ? [] : Devices.ListDevices(_officeId);
+        if (_deviceId is null || _devices.All(device => device.Id != _deviceId))
+        {
+            _deviceId = DeviceOptions.FirstOrDefault().Value;
+        }
+
+        _plan = _deviceId is null ? null : Exports.Plan(_deviceId);
+    }
+
+    private void OnOfficeChanged(string? officeId)
+    {
+        _officeId = officeId;
+        _deviceId = null;
+        _failure = null;
+        LoadDevices();
+    }
+
+    private void OnDeviceChanged(string? deviceId)
+    {
+        _deviceId = deviceId;
+        _failure = null;
+        _plan = deviceId is null ? null : Exports.Plan(deviceId);
+    }
+
+    private void Back()
+    {
+        _failure = null;
+        if (_step > 1)
+        {
+            _step--;
+        }
+    }
+
+    private void Forward()
+    {
+        _failure = null;
+        if (!CanGoOn)
+        {
+            return;
+        }
+
+        _step++;
+        if (_step == 3 && _password.Length == 0)
+        {
+            NewPassword();
+        }
+    }
+
+    private void NewPassword()
+    {
+        _password = Wakeel.Crypto.PackagePassword.New();
+        _shownPassword = Wakeel.Crypto.PackagePassword.Display(_password);
+        _passwordKept = false;
+    }
+
+    private async Task CopyPassword()
+    {
+        var copied = false;
+        try
+        {
+            copied = await Js.InvokeAsync<bool>("wakeelAdmin.copyText", _shownPassword);
+        }
+        catch (JSException)
+        {
+            copied = false;
+        }
+
+        Toasts.Show(
+            copied ? AdminAr.Export.PasswordCopied : AdminAr.Export.PasswordCopyFailed,
+            copied ? WSemanticVariant.Success : WSemanticVariant.Warning);
+    }
+
+    private void CreateFile()
+    {
+        if (_deviceId is null || !_passwordKept)
+        {
+            return;
+        }
+
+        var refusal = Exports.Export(_deviceId, _options, _password, out var result);
+        if (refusal != ExportRefusal.None || result is null)
+        {
+            _failure = Explain(refusal);
+            return;
+        }
+
+        _result = result;
+        _failure = null;
+
+        // The file is written and the password has been shown; nothing on this screen needs it again.
+        _password = string.Empty;
+        _plan = Exports.Plan(_deviceId);
+        Toasts.Show(AdminAr.Export.SuccessTitle, WSemanticVariant.Success);
+    }
+
+    private void SaveCopy()
+    {
+        if (_result is null)
+        {
+            return;
+        }
+
+        var choice = Files.AskWhereToSave(
+            _result.FileName,
+            AdminAr.Maintenance.FileKindLabel,
+            SetupExportService.Extension);
+
+        if (!choice.Chosen || choice.Path is null)
+        {
+            Toasts.Show(AdminAr.Export.CopyNotSaved, WSemanticVariant.Warning);
+            return;
+        }
+
+        try
+        {
+            File.Copy(_result.FilePath, choice.Path, overwrite: true);
+            Toasts.Show(AdminAr.Export.CopySaved, WSemanticVariant.Success);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show(AdminAr.Errors.CannotWriteFolder, WSemanticVariant.Danger);
+        }
+    }
+
+    private void StartAgain()
+    {
+        _result = null;
+        _step = 1;
+        _password = string.Empty;
+        _shownPassword = string.Empty;
+        _passwordKept = false;
+        _failure = null;
+        _options = SetupExportOptions.All;
+        Reload();
+    }
+
+    private static string Explain(ExportRefusal refusal) => refusal switch
+    {
+        ExportRefusal.NoOrganisation => AdminAr.Export.FailedNoOrganisation,
+        ExportRefusal.DeviceNotFound => AdminAr.Export.FailedNoDevice,
+        ExportRefusal.DeviceRevoked => AdminAr.Export.FailedRevoked,
+        ExportRefusal.NoAccount => AdminAr.Export.FailedNoAccount,
+        ExportRefusal.NoOfficeKey => AdminAr.Export.FailedNoOfficeKey,
+        ExportRefusal.StructureIncomplete => AdminAr.Export.FailedStructure,
+        ExportRefusal.PasswordInvalid => AdminAr.Export.FailedPassword,
+        _ => AdminAr.Export.FailedWrite,
+    };
+}

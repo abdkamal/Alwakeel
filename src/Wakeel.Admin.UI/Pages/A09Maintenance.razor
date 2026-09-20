@@ -1,0 +1,358 @@
+@page "/maintenance"
+@namespace Wakeel.Admin.UI.Pages
+@inject MaintenanceService Maintenance
+@inject AdminDeviceService Devices
+@inject AdminAuditQuery AuditLog
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IAdminFileDialog Files
+@inject IToastService Toasts
+@inject NavigationManager Nav
+
+@* A09 — the three things only the organisation's own keys can do: read a copy of الوكيل, open a
+   correspondence nobody here has the office key for, and give a person their account back. The first
+   two only ever read; the third is the one action on this screen that changes something, so it sits
+   behind a red button and a word typed by hand. *@
+<div class="a09">
+    <div class="a09-row">
+        <WCard>
+            <WSectionHeader Title="@AdminAr.Maintenance.OpenHeading" Sub="@AdminAr.Maintenance.OpenDesc" />
+
+            <div class="a09-open">
+                <WButton Variant="WButtonVariant.Secondary"
+                         Icon="folder-open"
+                         Label="@AdminAr.Maintenance.ChooseFolder"
+                         Tooltip="@AdminAr.Maintenance.ChooseFolderTooltip"
+                         Disabled="@(!Files.IsAvailable)"
+                         OnClick="OpenFolder" />
+
+                <WButton Variant="WButtonVariant.Secondary"
+                         Icon="hard-drive"
+                         Label="@AdminAr.Maintenance.ChooseBackup"
+                         Tooltip="@AdminAr.Maintenance.ChooseBackupTooltip"
+                         Disabled="@(!Files.IsAvailable)"
+                         OnClick="@(() => OpenFile(BackupExtension))" />
+
+                <WButton Variant="WButtonVariant.Secondary"
+                         Icon="mail"
+                         Label="@AdminAr.Maintenance.ChooseMessage"
+                         Tooltip="@AdminAr.Maintenance.ChooseMessageTooltip"
+                         Disabled="@(!Files.IsAvailable)"
+                         OnClick="@(() => OpenFile(MessageExtension))" />
+            </div>
+
+            @if (!Files.IsAvailable)
+            {
+                <p class="a09-reason">@AdminAr.Maintenance.NoDialog</p>
+            }
+
+            @if (_openFailure is not null)
+            {
+                <WBanner Variant="WSemanticVariant.Danger"
+                         Icon="alert-triangle"
+                         Title="@AdminAr.Errors.Title"
+                         Body="@_openFailure" />
+            }
+
+            @if (_report is null)
+            {
+                <WStateCard Icon="search"
+                            Title="@AdminAr.Maintenance.NothingOpenYet"
+                            Desc="@AdminAr.Maintenance.NothingOpenYetDesc" />
+            }
+            else
+            {
+                <WSectionHeader Title="@AdminAr.Maintenance.ResultHeading" Sub="@_report.Subtitle" />
+
+                <WBanner Variant="@(_report.Ok ? WSemanticVariant.Success : WSemanticVariant.Warning)"
+                         Icon="@(_report.Ok ? "check-circle" : "alert-triangle")"
+                         Title="@_report.Title"
+                         Body="@(_report.Ok ? AdminAr.Maintenance.ResultOk : AdminAr.Maintenance.ResultProblem)" />
+
+                <WTable>
+                    <HeaderRow>
+                        <th scope="col">@AdminAr.Maintenance.ColumnCheck</th>
+                        <th scope="col">@AdminAr.Maintenance.ColumnResult</th>
+                    </HeaderRow>
+                    <ChildContent>
+                        @foreach (var finding in _report.Findings)
+                        {
+                            <tr>
+                                <td>@finding.Label</td>
+                                <td>
+                                    <span class="a09-finding">
+                                        <Bdi Text="@finding.Value" />
+                                        @if (!finding.Ok)
+                                        {
+                                            <WChip Label="@AdminAr.Maintenance.CheckDamaged"
+                                                   Variant="WChipVariant.Danger" />
+                                        }
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </ChildContent>
+                </WTable>
+
+                <WSectionHeader Title="@AdminAr.Maintenance.ItemsHeading" />
+
+                <WTable IsEmpty="@(_report.Items.Count == 0)">
+                    <EmptyState>
+                        <WStateCard Icon="file-text" Title="@AdminAr.Maintenance.NoItems" />
+                    </EmptyState>
+                    <HeaderRow>
+                        <th scope="col">@AdminAr.Maintenance.ColumnItem</th>
+                        <th scope="col">@AdminAr.Maintenance.ColumnSize</th>
+                    </HeaderRow>
+                    <ChildContent>
+                        @foreach (var item in _report.Items)
+                        {
+                            <tr>
+                                <td><Bdi Text="@item.Name" /></td>
+                                <td><Bdi Text="@AdminAr.Maintenance.ItemSize(item.Size)" /></td>
+                            </tr>
+                        }
+                    </ChildContent>
+                </WTable>
+            }
+        </WCard>
+
+        <WCard>
+            <WSectionHeader Title="@AdminAr.Maintenance.RecoverHeading" Sub="@AdminAr.Maintenance.RecoverDesc" />
+
+            @if (_offices.Count == 0)
+            {
+                <WStateCard Icon="cpu"
+                            Title="@AdminAr.Maintenance.RecoverNoDevices"
+                            Desc="@AdminAr.Maintenance.RecoverNoDevicesDesc"
+                            ActionLabel="@AdminAr.Export.OpenDevices"
+                            ActionIcon="cpu"
+                            OnAction="@(() => Nav.NavigateTo(AdminRoutes.OfficesAndDevices))" />
+            }
+            else
+            {
+                <div class="a09-fields">
+                    <WSelect Label="@AdminAr.Maintenance.RecoverOfficeLabel"
+                             Options="OfficeOptions"
+                             Value="@_officeId"
+                             ValueChanged="OnOfficeChanged" />
+
+                    <WSelect Label="@AdminAr.Maintenance.RecoverDeviceLabel"
+                             Options="DeviceOptions"
+                             Value="@_deviceId"
+                             Disabled="@(DeviceOptions.Count == 0)"
+                             Hint="@(DeviceOptions.Count == 0 ? AdminAr.Maintenance.RecoverNoDevices : null)"
+                             ValueChanged="@(value => _deviceId = value)" />
+                </div>
+
+                <WBanner Variant="WSemanticVariant.Danger"
+                         Icon="alert-triangle"
+                         Title="@AdminAr.Confirm.DangerTitle"
+                         Body="@AdminAr.Maintenance.RecoverWarning"
+                         Notice="@AdminAr.Maintenance.RecoverWhatStays" />
+
+                <WButton Variant="WButtonVariant.Danger"
+                         Icon="refresh-cw"
+                         Label="@AdminAr.Maintenance.RecoverButton"
+                         Tooltip="@AdminAr.Maintenance.RecoverButtonTooltip"
+                         Disabled="@(_deviceId is null)"
+                         OnClick="@(() => _confirmRecover = true)" />
+
+                @if (_recovered is not null)
+                {
+                    <WSectionHeader Title="@AdminAr.Maintenance.RecoverDone" />
+                    <WKvRow Key="@AdminAr.Export.FileNameLabel" Value="@_recovered.FileName" />
+                    <WKvRow Key="@AdminAr.Distribution.ColumnPassword">
+                        <ValueContent>
+                            <span class="a09-password"><bdi>@_recoveredPassword</bdi></span>
+                        </ValueContent>
+                    </WKvRow>
+
+                    <WBanner Variant="WSemanticVariant.Warning"
+                             Icon="key"
+                             Title="@AdminAr.Export.StepPasswordHeading"
+                             Body="@AdminAr.Export.PasswordWarning" />
+                }
+            }
+        </WCard>
+    </div>
+
+    <WCard>
+        <WSectionHeader Title="@AdminAr.Maintenance.RecentHeading" Sub="@AdminAr.Maintenance.RecentDesc" />
+
+        <WTable IsEmpty="@(_recent.Count == 0)">
+            <EmptyState>
+                <WStateCard Icon="clock"
+                            Title="@AdminAr.Maintenance.RecentEmpty"
+                            Desc="@AdminAr.Maintenance.RecentEmptyDesc" />
+            </EmptyState>
+            <HeaderRow>
+                <th scope="col">@AdminAr.Audit.ColumnWhat</th>
+                <th scope="col">@AdminAr.Audit.ColumnDetail</th>
+                <th scope="col">@AdminAr.Audit.ColumnWhen</th>
+            </HeaderRow>
+            <ChildContent>
+                @foreach (var entry in _recent)
+                {
+                    <tr>
+                        <td>@AdminAr.Audit.ActionName(entry.Action)</td>
+                        <td><Bdi Text="@entry.SummaryAr" /></td>
+                        <td><Bdi Text="@AdminAr.Audit.Moment(entry.At)" /></td>
+                    </tr>
+                }
+            </ChildContent>
+        </WTable>
+    </WCard>
+</div>
+
+<AdminConfirmDialog Open="@_confirmRecover"
+                    Danger="true"
+                    Title="@AdminAr.Maintenance.RecoverTitle"
+                    Desc="@AdminAr.Maintenance.RecoverWarning"
+                    ConfirmLabel="@AdminAr.Maintenance.RecoverButton"
+                    ConfirmIcon="refresh-cw"
+                    OnConfirm="Recover"
+                    OnCancel="@(() => _confirmRecover = false)">
+    <p class="a09-reason">@AdminAr.Maintenance.RecoverWhatStays</p>
+</AdminConfirmDialog>
+
+@code {
+    private static readonly string BackupExtension = Wakeel.Crypto.ContainerKinds.Extension(Wakeel.Crypto.ContainerKind.Backup);
+    private static readonly string MessageExtension = Wakeel.Crypto.ContainerKinds.Extension(Wakeel.Crypto.ContainerKind.Msg);
+
+    /// <summary>The actions this screen draws in its own recent list; everything else belongs to A11.</summary>
+    private static readonly string[] OwnActions =
+        ["maintenance_file_opened", "maintenance_folder_opened", "account_recovered"];
+
+    private IReadOnlyList<AdminOffice> _offices = [];
+    private IReadOnlyList<AdminDevice> _devices = [];
+    private IReadOnlyList<AdminAuditEntry> _recent = [];
+
+    private MaintenanceReport? _report;
+    private string? _openFailure;
+
+    private string? _officeId;
+    private string? _deviceId;
+    private bool _confirmRecover;
+
+    private SetupExportResult? _recovered;
+    private string _recoveredPassword = string.Empty;
+
+    private IReadOnlyList<(string Value, string Label)> OfficeOptions =>
+        [.. _offices.Select(office => (office.Id, AdminAr.Export.OfficeOption(office.Name, office.OfficeCode)))];
+
+    private IReadOnlyList<(string Value, string Label)> DeviceOptions =>
+        [.. _devices
+            .Where(device => !device.IsPhone && !device.IsRevoked && device.HasAccount)
+            .Select(device => (
+                device.Id,
+                AdminAr.Export.DeviceOption(
+                    device.DeviceNo,
+                    AdminAr.Devices.RoleName(device.Role),
+                    device.EmployeeName)))];
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(AdminAr.Maintenance.Title, AdminAr.Maintenance.Sub, AdminAr.Tabs.Maintenance);
+        Reload();
+    }
+
+    private void Reload()
+    {
+        _offices = Devices.ListOffices();
+        _officeId ??= _offices.FirstOrDefault()?.Id;
+        LoadDevices();
+        _recent = [.. AuditLog.Read().Where(entry => OwnActions.Contains(entry.Action, StringComparer.Ordinal)).Take(12)];
+    }
+
+    private void LoadDevices()
+    {
+        _devices = _officeId is null ? [] : Devices.ListDevices(_officeId);
+        if (_deviceId is null || _devices.All(device => device.Id != _deviceId))
+        {
+            _deviceId = DeviceOptions.FirstOrDefault().Value;
+        }
+    }
+
+    private void OnOfficeChanged(string? officeId)
+    {
+        _officeId = officeId;
+        _deviceId = null;
+        LoadDevices();
+    }
+
+    private void OpenFolder()
+    {
+        var choice = Files.AskWhichFolder(AdminAr.Maintenance.ChooseFolderPrompt);
+        if (!choice.Chosen || choice.Path is null)
+        {
+            return;
+        }
+
+        Show(Maintenance.OpenFolder(choice.Path, out var report), report);
+    }
+
+    private void OpenFile(string extension)
+    {
+        var choice = Files.AskWhichFile(AdminAr.Maintenance.FileKindLabel, [extension]);
+        if (!choice.Chosen || choice.Path is null)
+        {
+            return;
+        }
+
+        Show(Maintenance.OpenFile(choice.Path, out var report), report);
+    }
+
+    private void Show(MaintenanceRefusal refusal, MaintenanceReport? report)
+    {
+        if (refusal != MaintenanceRefusal.None)
+        {
+            _report = null;
+            _openFailure = Explain(refusal);
+            return;
+        }
+
+        _report = report;
+        _openFailure = null;
+        Reload();
+    }
+
+    private void Recover()
+    {
+        _confirmRecover = false;
+        if (_deviceId is null)
+        {
+            return;
+        }
+
+        var password = Wakeel.Crypto.PackagePassword.New();
+        var refusal = Maintenance.RecoverAccount(_deviceId, password, out var result);
+        if (refusal != MaintenanceRefusal.None || result is null)
+        {
+            Toasts.Show(Explain(refusal), WSemanticVariant.Danger);
+            return;
+        }
+
+        _recovered = result;
+        _recoveredPassword = Wakeel.Crypto.PackagePassword.Display(password);
+        Toasts.Show(AdminAr.Maintenance.RecoverDone, WSemanticVariant.Success);
+        Reload();
+    }
+
+    private static string Explain(MaintenanceRefusal refusal) => refusal switch
+    {
+        MaintenanceRefusal.NoOrganisation => AdminAr.Maintenance.FailedNoOrganisation,
+        MaintenanceRefusal.NotFound => AdminAr.Maintenance.FailedNotFound,
+        MaintenanceRefusal.NotOurs => AdminAr.Maintenance.FailedNotOurs,
+        MaintenanceRefusal.OtherOrganisation => AdminAr.Maintenance.FailedOtherOrganisation,
+        MaintenanceRefusal.DeviceNotFound => AdminAr.Maintenance.FailedDevice,
+        MaintenanceRefusal.CouldNotWrite => AdminAr.Maintenance.FailedWrite,
+        _ => AdminAr.Maintenance.FailedUnreadable,
+    };
+}

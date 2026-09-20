@@ -48,6 +48,12 @@ public static class AdminRoutes
     public const string AuditLog = "/audit";
 
     /// <summary>
+    /// A12 — the sheet of the tool's own dialogs and states (admin-3). It has no tab of its own: it
+    /// is a reference, reached deliberately, not one of the seven areas the work is done in.
+    /// </summary>
+    public const string States = "/states";
+
+    /// <summary>
     /// The route behind a tab label, or null while that area's screen has not been built yet.
     /// </summary>
     public static string? ForTab(string tab) => tab switch
@@ -71,6 +77,7 @@ public static class AdminRoutes
     {
         Dashboard, FirstRun, SignIn,
         Organisation, Structure, OfficesAndDevices, AccountsAndKeys,
+        SetupExport, Maintenance, Distribution, AuditLog, States,
     };
 
     private static string? Exists(string route) => Built.Contains(route) ? route : null;

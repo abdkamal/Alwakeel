@@ -30,6 +30,12 @@
     <!-- The admin tool carries its own schema (DATA-MODEL §13); Wakeel.Core's migration set belongs
          to a الوكيل installation and is never applied to admin.db. -->
     <EmbeddedResource Include="Migrations\*.sql" />
+
+    <!-- The product's own Arabic typeface, carried so the provisional guide (A08) can be written as
+         a readable PDF on a computer that has no such font installed. Open Font License, the same
+         face the design system and the phone application ship; the licence travels beside it. -->
+    <EmbeddedResource Include="Assets\NotoSansArabic-Regular.ttf" />
+    <None Include="Assets\OFL-LICENSE.txt" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,70 @@
+/* A09 — opening a copy beside giving an account back, with what this screen has done lately under
+   both of them. */
+.a09 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Two cards of equal weight: what is opened is read on the right, what is issued is decided on the
+   left, and neither is the main thing on the screen. */
+.a09-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* The three ways in sit on one line and wrap together rather than stacking one under the other. */
+.a09-open {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.a09-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* A finding and the chip that marks it as a problem read as one line. */
+.a09-finding {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* The recovery file's password is read character by character off the screen, like A08's. */
+.a09-password {
+  font-family: var(--w-font-mono, monospace);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  direction: ltr;
+}
+
+.a09-reason {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  line-height: 1.6;
+}
+
+/* File names and folder paths mix Arabic with Latin and digits, so every line a design component
+   draws as plain text takes its direction from its own first word (AGREEMENT item 55). */
+.a09 ::deep .w-kv-value,
+.a09 ::deep .w-section-header-title,
+.a09 ::deep .w-section-header-sub,
+.a09 ::deep .w-banner-title,
+.a09 ::deep .w-card-title {
+  unicode-bidi: plaintext;
+}
+
+/* The tables here hold short lists whose cells may wrap rather than push a card into a sideways
+   scroll bar; the table's own class is named so this rule outweighs the component's. */
+.a09 ::deep .w-table th,
+.a09 ::deep .w-table td {
+  white-space: normal;
+}

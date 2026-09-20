@@ -1,0 +1,148 @@
+@page "/audit"
+@namespace Wakeel.Admin.UI.Pages
+@inject AdminAuditQuery AuditLog
+@inject AdminSession Session
+@inject AdminPageHeaderState HeaderState
+@inject IAdminFileDialog Files
+@inject IToastService Toasts
+@inject NavigationManager Nav
+
+@* A11 — everything that has happened in the tool, newest first: who did it, what it was, and when.
+   The log is written elsewhere and only read here; no row carries a password, a key or a recovery
+   code, and the table that goes out carries exactly the four columns on the screen. *@
+<div class="a11">
+    <WCard>
+        <WSectionHeader Title="@AdminAr.Audit.Title" Sub="@AdminAr.Audit.Sub" />
+
+        <div class="a11-bar">
+            <WSearch Value="@_search"
+                     Placeholder="@AdminAr.Audit.SearchPlaceholder"
+                     ValueChanged="OnSearchChanged" />
+
+            <WButton Variant="WButtonVariant.Secondary"
+                     Icon="download"
+                     Label="@AdminAr.Audit.ExportCsv"
+                     Tooltip="@AdminAr.Audit.ExportCsvTooltip"
+                     Disabled="@(_rows.Count == 0 || !Files.IsAvailable)"
+                     OnClick="ExportCsv" />
+        </div>
+
+        @if (!Files.IsAvailable)
+        {
+            <p class="a11-reason">@AdminAr.Audit.NoDialog</p>
+        }
+
+        <WTable IsEmpty="@(Shown.Count == 0)"
+                FooterText="@AdminAr.Audit.Showing(_rows.Count, _total)"
+                Page="@_page"
+                PageCount="@PageCount"
+                PageChanged="@(page => _page = page)">
+            <EmptyState>
+                <WStateCard Icon="clock"
+                            Title="@(_total == 0 ? AdminAr.Audit.Empty : AdminAr.Audit.NoneFound)"
+                            Desc="@(_total == 0 ? AdminAr.Audit.EmptyDesc : AdminAr.Audit.NoneFoundDesc)" />
+            </EmptyState>
+            <HeaderRow>
+                <th scope="col">@AdminAr.Audit.ColumnWhen</th>
+                <th scope="col">@AdminAr.Audit.ColumnDetail</th>
+                <th scope="col">@AdminAr.Audit.ColumnWho</th>
+                <th scope="col">@AdminAr.Audit.ColumnWhat</th>
+            </HeaderRow>
+            <ChildContent>
+                @foreach (var row in Shown)
+                {
+                    <tr>
+                        <td><Bdi Text="@AdminAr.Audit.Moment(row.At)" /></td>
+                        <td><Bdi Text="@row.SummaryAr" /></td>
+                        <td><Bdi Text="@row.Actor" /></td>
+                        <td>
+                            <WChip Label="@AdminAr.Audit.ActionName(row.Action)"
+                                   Variant="@AdminAr.Audit.ActionTone(row.Action)" />
+                        </td>
+                    </tr>
+                }
+            </ChildContent>
+        </WTable>
+    </WCard>
+</div>
+
+@code {
+    /// <summary>How many rows one page of the table holds.</summary>
+    private const int PageSize = 12;
+
+    private IReadOnlyList<AdminAuditEntry> _rows = [];
+    private string? _search;
+    private int _page = 1;
+    private int _total;
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(_rows.Count / (double)PageSize));
+
+    private IReadOnlyList<AdminAuditEntry> Shown =>
+        [.. _rows.Skip((Math.Clamp(_page, 1, PageCount) - 1) * PageSize).Take(PageSize)];
+
+    protected override void OnInitialized()
+    {
+        if (!Session.IsSignedIn)
+        {
+            Nav.NavigateTo(AdminRoutes.SignIn, replace: true);
+            return;
+        }
+
+        HeaderState.Set(
+            AdminAr.Audit.Title,
+            AdminAr.Audit.Sub,
+            AdminAr.Tabs.AuditLog,
+            actions: BuildActions());
+
+        Reload();
+    }
+
+    private RenderFragment BuildActions() => builder =>
+    {
+        builder.OpenComponent<WButton>(0);
+        builder.AddComponentParameter(1, nameof(WButton.Variant), WButtonVariant.Secondary);
+        builder.AddComponentParameter(2, nameof(WButton.Icon), "refresh-cw");
+        builder.AddComponentParameter(3, nameof(WButton.Label), AdminAr.Audit.Refresh);
+        builder.AddComponentParameter(4, nameof(WButton.Tooltip), AdminAr.Audit.RefreshTooltip);
+        builder.AddComponentParameter(5, nameof(WButton.OnClick),
+            EventCallback.Factory.Create<MouseEventArgs>(this, Reload));
+        builder.CloseComponent();
+    };
+
+    private void Reload()
+    {
+        _rows = AuditLog.Read(_search);
+        _total = AuditLog.Count;
+        _page = 1;
+    }
+
+    private void OnSearchChanged(string? text)
+    {
+        _search = text;
+        Reload();
+    }
+
+    private void ExportCsv()
+    {
+        var choice = Files.AskWhereToSave(
+            AdminAr.Audit.FileName(DateTimeOffset.Now),
+            AdminAr.Audit.ExportFileKind,
+            ".csv");
+
+        if (!choice.Chosen || choice.Path is null)
+        {
+            Toasts.Show(AdminAr.Audit.ExportNotSaved, WSemanticVariant.Warning);
+            return;
+        }
+
+        try
+        {
+            File.WriteAllText(choice.Path, AdminAuditQuery.ToCsv(_rows), System.Text.Encoding.UTF8);
+            Toasts.Show(AdminAr.Audit.Exported, WSemanticVariant.Success);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Toasts.Show(AdminAr.Audit.ExportFailed, WSemanticVariant.Danger);
+        }
+    }
+}

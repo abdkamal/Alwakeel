@@ -1,0 +1,44 @@
+/* A10 — what is waiting, who it reaches, and the batch that answers it, one card under another. */
+.a10 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.a10-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The passwords of a batch are read off the screen and typed on other machines, so they are drawn
+   the same way A08 draws the one password it shows. */
+.a10-password {
+  font-family: var(--w-font-mono, monospace);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  direction: ltr;
+  white-space: nowrap;
+}
+
+.a10-reason {
+  margin: 0;
+  color: var(--w-muted);
+  font-size: var(--w-fs-meta);
+  line-height: 1.6;
+}
+
+/* Office names, file names and dates mix Arabic with Latin and digits (AGREEMENT item 55). */
+.a10 ::deep .w-section-header-title,
+.a10 ::deep .w-section-header-sub,
+.a10 ::deep .w-banner-title,
+.a10 ::deep .w-card-title {
+  unicode-bidi: plaintext;
+}
+
+/* Five columns of sentences: the cells wrap rather than push the card into a sideways scroll bar,
+   and the table's own class is named so this rule outweighs the component's. */
+.a10 ::deep .w-table th,
+.a10 ::deep .w-table td {
+  white-space: normal;
+}

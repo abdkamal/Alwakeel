@@ -138,7 +138,11 @@ public class AdminDeviceKeyTests : AdminTestContext
         Assert.NotNull(certificate);
         Assert.NotNull(org);
         Assert.Equal(org.Id, certificate.Body.OrgId);
-        Assert.Equal(office, certificate.Body.OfficeId);
+
+        // The certificate names the office by the structure node it sits in, because that is the
+        // identifier a setup file carries as its office and the one an installation stores. A
+        // certificate that named the offices row instead would fail the reader's own office check.
+        Assert.Equal(DeviceRegistry.ReadOffice(office)!.UnitId, certificate.Body.OfficeId);
         Assert.Equal(device, certificate.Body.DeviceId);
         Assert.Equal(2, certificate.Body.DeviceNo);
         Assert.Equal(5, certificate.Body.EmployeeNo);

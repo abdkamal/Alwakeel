@@ -1,0 +1,42 @@
+[
+  {
+    "name": "sample-01",
+    "input": "{\"b\":1,\"a\":2}",
+    "canonical": "{\"a\":2,\"b\":1}"
+  },
+  {
+    "name": "sample-02",
+    "input": "{\"Z\":\"z\",\"a\":\"a\",\"A\":\"A\",\"_\":\"_\"}",
+    "canonical": "{\"A\":\"A\",\"Z\":\"z\",\"_\":\"_\",\"a\":\"a\"}"
+  },
+  {
+    "name": "sample-03",
+    "input": "{\"subject\":\"طلب صيانة مبنى الدائرة\",\"number\":\"20260917/1101\"}",
+    "canonical": "{\"number\":\"20260917/1101\",\"subject\":\"طلب صيانة مبنى الدائرة\"}"
+  },
+  {
+    "name": "sample-04",
+    "input": "{\"text\":\"سطر\\nفيه \\\"اقتباس\\\" و\\\\ ومسافة\\tجدولة\"}",
+    "canonical": "{\"text\":\"سطر\\nفيه \\\"اقتباس\\\" و\\\\ ومسافة\\tجدولة\"}"
+  },
+  {
+    "name": "sample-05",
+    "input": "{\"nested\":{\"y\":[3,2,1],\"x\":{\"b\":false,\"a\":true}},\"n\":null}",
+    "canonical": "{\"n\":null,\"nested\":{\"x\":{\"a\":true,\"b\":false},\"y\":[3,2,1]}}"
+  },
+  {
+    "name": "sample-06",
+    "input": "{\"amount\":12345678901,\"zero\":0,\"negative\":-7}",
+    "canonical": "{\"amount\":12345678901,\"negative\":-7,\"zero\":0}"
+  },
+  {
+    "name": "sample-07",
+    "input": "{\"list\":[{\"b\":1,\"a\":2},{\"d\":\"د\",\"c\":\"ج\"}]}",
+    "canonical": "{\"list\":[{\"a\":2,\"b\":1},{\"c\":\"ج\",\"d\":\"د\"}]}"
+  },
+  {
+    "name": "sample-08",
+    "input": "{\"empty\":{},\"emptyList\":[],\"blank\":\"\"}",
+    "canonical": "{\"blank\":\"\",\"empty\":{},\"emptyList\":[]}"
+  }
+]

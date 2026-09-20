@@ -1,0 +1,31 @@
+{
+  "orgId": "ORG-VECTOR",
+  "officeId": "OFFICE-VECTOR",
+  "pcDeviceId": "PC-VECTOR",
+  "phoneDeviceId": "PHONE-VECTOR",
+  "revokedDeviceId": "PHONE-REVOKED",
+  "issuedAt": "2026-09-01T08:00:00.000Z",
+  "now": "2026-09-17T09:10:00.000Z",
+  "org": {
+    "signingSeed": "ERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzA",
+    "agreementSeed": "EhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDE",
+    "ed25519Pub": "7VSln7GsOlEjk1E2KUG4aOhaYOPXskhdgogh3Hppwnk",
+    "x25519Pub": "ibDpg8y_OATNrjurVAnknHIgmw-cDmqyTKyjXF06NGw"
+  },
+  "pc": {
+    "signingSeed": "ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0-P0A",
+    "agreementSeed": "IiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4_QEE",
+    "ed25519Pub": "5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA",
+    "x25519Pub": "hsFaERkgHSqaYCOs7q9JZkpUGGrS20ZYRTMXB7baKw0"
+  },
+  "phone": {
+    "signingSeed": "MTIzNDU2Nzg5Ojs8PT4_QEFCQ0RFRkdISUpLTE1OT1A",
+    "agreementSeed": "MjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFE",
+    "ed25519Pub": "bCj9BYwYyIxszir5gdLRHIUbEj7Vtpt4dnc-0JnqP4M",
+    "x25519Pub": "4Fsa4yICSDgJX_3v2GVGjdt3sUst0nUXXqCrQpT6bXo"
+  },
+  "officeKey": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+  "sessionKey": "UVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3A",
+  "pairingToken": "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1-f4A",
+  "pairingShortCode": "371212"
+}

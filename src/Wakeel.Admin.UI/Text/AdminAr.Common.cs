@@ -78,6 +78,10 @@ public static partial class AdminAr
 
         public static string Changes(int count) => Count(count, "تغيير", "تغييران", "تغييرات", "تغييرًا");
 
+        public static string Files(int count) => Count(count, "ملف", "ملفان", "ملفات", "ملفًا");
+
+        public static string Rows(int count) => Count(count, "سطر", "سطران", "أسطر", "سطرًا");
+
         public static string Seconds(int count) => Count(count, "ثانية", "ثانيتان", "ثوانٍ", "ثانية");
 
         public static string Attempts(int count) => Count(count, "محاولة", "محاولتان", "محاولات", "محاولة");

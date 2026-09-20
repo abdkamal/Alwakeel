@@ -1,0 +1,20 @@
+{
+  "kind": "phone",
+  "mode": "session",
+  "createdAt": "2026-09-17T09:10:00.000Z",
+  "entries": [
+    {
+      "Name": "files/pinned-1.txt",
+      "Size": 46,
+      "Sha256": "fb0ece5eac896ba6bd0a3172c65d923572a48c5035b9bff5aa9b37149656ffc3"
+    },
+    {
+      "Name": "package.json",
+      "Size": 286,
+      "Sha256": "10fe7db4965186ec97e76c6d6334bde66ed3b3ba6f1aa42d7923427c1776ebe6"
+    }
+  ],
+  "packageJson": "{\"createdAt\":\"2026-09-17T09:05:00.000Z\",\"seq\":1,\"tables\":{\"settings\":[{\"key\":\"meeting_reminder_minutes\",\"updated_at\":\"2026-09-17T09:00:00.000Z\",\"value\":\"15\"}],\"tasks\":[{\"id\":\"T-1\",\"status\":\"open\",\"title\":\"مراجعة كتاب التزويد\",\"updated_at\":\"2026-09-17T09:00:00.000Z\"}]}}",
+  "pinnedFileBase64Url": "2YXZhNmBINmF2KvYqNmR2Kog2YTZhNi52YXZhCDYr9mI2YYg2KfYqti12KfZhA",
+  "manifestCanonical": "{\"createdAt\":\"2026-09-17T09:10:00.000Z\",\"entries\":[{\"name\":\"files/pinned-1.txt\",\"sha256\":\"fb0ece5eac896ba6bd0a3172c65d923572a48c5035b9bff5aa9b37149656ffc3\",\"size\":46},{\"name\":\"package.json\",\"sha256\":\"10fe7db4965186ec97e76c6d6334bde66ed3b3ba6f1aa42d7923427c1776ebe6\",\"size\":286}],\"keySalt\":\"qdkEBhqxgslYRZ/eYZ2hVA==\",\"mode\":\"session\",\"producer\":{\"body\":{\"deviceId\":\"PC-VECTOR\",\"deviceNo\":1,\"ed25519Pub\":\"5_FioQvsVZr-oZXk3OhLaVaNXSywlj60RsBoXisX8vA\",\"employeeNo\":2,\"issuedAt\":\"2026-09-01T08:00:00.000Z\",\"issuerId\":\"ORG-VECTOR\",\"kind\":\"pc\",\"officeId\":\"OFFICE-VECTOR\",\"orgId\":\"ORG-VECTOR\",\"role\":\"secretary\",\"x25519Pub\":\"hsFaERkgHSqaYCOs7q9JZkpUGGrS20ZYRTMXB7baKw0\"},\"signature\":\"QGnLxM_c63foLRH_iGcHIW0JpSSWxmtln0f3EdZVZeYl4by1CnwTlF0158xMgVdTQlhUefw4Uh-0iCEyPQVXAw\"},\"type\":\"phone\",\"version\":1}"
+}
