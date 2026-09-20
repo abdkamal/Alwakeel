@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Wakeel.Admin.UI/Wakeel.Admin.UI.csproj" />
+    <Project Path="src/Wakeel.Admin/Wakeel.Admin.csproj" />
+    <Project Path="src/Wakeel.Core/Wakeel.Core.csproj" />
+    <Project Path="src/Wakeel.Crypto/Wakeel.Crypto.csproj" />
+    <Project Path="src/Wakeel.Design/Wakeel.Design.csproj" />
+    <Project Path="src/Wakeel.Desktop/Wakeel.Desktop.csproj" />
+    <Project Path="src/Wakeel.Ocr/Wakeel.Ocr.csproj" />
+    <Project Path="src/Wakeel.Reports/Wakeel.Reports.csproj" />
+    <Project Path="src/Wakeel.Search/Wakeel.Search.csproj" />
+    <Project Path="src/Wakeel.Sync/Wakeel.Sync.csproj" />
+    <Project Path="src/Wakeel.UI/Wakeel.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Wakeel.Admin.Tests/Wakeel.Admin.Tests.csproj" />
+    <Project Path="tests/Wakeel.Core.Tests/Wakeel.Core.Tests.csproj" />
+    <Project Path="tests/Wakeel.Crypto.Tests/Wakeel.Crypto.Tests.csproj" />
+    <Project Path="tests/Wakeel.E2E/Wakeel.E2E.csproj" />
+    <Project Path="tests/Wakeel.Sync.Tests/Wakeel.Sync.Tests.csproj" />
+    <Project Path="tests/Wakeel.UI.Tests/Wakeel.UI.Tests.csproj" />
+    <Project Path="tests/Wakeel.Walkthrough.Tests/Wakeel.Walkthrough.Tests.csproj" />
+  </Folder>
+</Solution>
